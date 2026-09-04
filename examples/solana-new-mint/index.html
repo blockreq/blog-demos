@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch Solana new mints (logsSubscribe)</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <h1>Watch Solana new mints</h1>
+    <p class="meta">
+      Public WSS only ·
+      <code>logsSubscribe</code> on Token / Token-2022 · filter
+      <code>InitializeMint(2)</code>
+      ·
+      <a href="./get-mint.html">getTransaction helper →</a>
+    </p>
+    <div class="row">
+      <button id="btnStart" type="button">Start</button>
+      <button id="btnStop" class="secondary" type="button" disabled>Stop</button>
+      <button id="btnClear" class="secondary" type="button">Clear</button>
+    </div>
+    <div id="status">Idle — click Start (or Run in StackBlitz)</div>
+    <pre id="out"></pre>
+    <script type="module" src="/src/index.ts"></script>
+  </body>
+</html>

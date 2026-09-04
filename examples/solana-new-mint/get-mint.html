@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resolve mint from signature (getTransaction)</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <h1>Resolve mint from signature</h1>
+    <p class="meta">
+      Public HTTPS · <code>getTransaction</code> + <code>jsonParsed</code> ·
+      <a href="./">← back to logsSubscribe watcher</a>
+    </p>
+    <label for="sig">Transaction signature</label>
+    <input id="sig" type="text" placeholder="Paste a signature that contains InitializeMint / InitializeMint2" />
+    <div class="row">
+      <button id="btnFetch" type="button">Fetch mint</button>
+      <button id="btnClear" class="secondary" type="button">Clear</button>
+    </div>
+    <pre id="out" class="tall">Paste a signature from the watcher, then click Fetch mint.</pre>
+    <script type="module" src="/src/get-mint.ts"></script>
+  </body>
+</html>
