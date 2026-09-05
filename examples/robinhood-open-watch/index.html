@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain open watch (newHeads)</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 52rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 16rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · open watch</h1>
+  <p>Public WSS · <code>eth_subscribe → newHeads</code> · observe only, no orders.</p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code><br />
+    Optional logs: fill a contract address and check the option below (Transfer topic).
+  </p>
+  <label>
+    <input type="checkbox" id="alsoLogs" />
+    Also subscribe Transfer logs (requires address)
+  </label>
+  <p>
+    <input id="watchAddress" placeholder="0x… contract address (optional)" size="48" />
+  </p>
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <pre id="out"></pre>
+  <script>
+const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const TRANSFER =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function subscribeAll() {
+      send("eth_subscribe", ["newHeads"]);
+      log("sent eth_subscribe newHeads");
+      const addr = document.getElementById("watchAddress").value.trim();
+      if (document.getElementById("alsoLogs").checked) {
+        if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+          log("skip logs: enter a valid 0x address");
+          return;
+        }
+        send("eth_subscribe", ["logs", { address: addr, topics: [TRANSFER] }]);
+        log("sent eth_subscribe logs Transfer @ " + addr);
+      }
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        setStatus("connected · subscribed");
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r) return;
+        if (r.number) {
+          const n = parseInt(r.number, 16);
+          const key = "b:" + r.hash;
+          if (seen.has(key)) return;
+          seen.add(key);
+          log(`head #${n} hash=${r.hash.slice(0, 12)}… ts=${parseInt(r.timestamp, 16)}`);
+          return;
+        }
+        if (r.transactionHash) {
+          const key = "l:" + r.transactionHash + ":" + r.logIndex;
+          if (seen.has(key)) return;
+          seen.add(key);
+          log(`log tx=${r.transactionHash.slice(0, 12)}… addr=${r.address}`);
+        }
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => { out.textContent = ""; seen.clear(); };
+  
+  </script>
+</body>
+</html>
+

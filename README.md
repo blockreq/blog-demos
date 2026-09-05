@@ -6,6 +6,8 @@ Runnable browser demos for BlockReq blog posts.
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/solana-new-mint
 
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-open-watch
+
 Click Run after open (ctl=1).
 
 ## Public-only warning
@@ -15,6 +17,7 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 ## Examples
 
 - examples/solana-new-mint
+- examples/robinhood-open-watch
 
 ## License
 
