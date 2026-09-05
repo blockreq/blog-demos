@@ -1,6 +1,6 @@
 # Robinhood Chain open watch
 
-Browser demo: `eth_subscribe` → `newHeads` (optional Transfer logs). Observe only — no orders, no signing.
+Browser demo: `eth_subscribe` → `newHeads` (optional Transfer logs).
 
 ## Endpoints (public only)
 
