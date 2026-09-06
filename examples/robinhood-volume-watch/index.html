@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · volume watch</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 52rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 16rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 4.5rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · volume watch</h1>
+  <p>Public WSS · <code>eth_subscribe → newHeads</code> + volume tags (<code>gas</code>, <code>burst</code>, <code>same-block</code>).</p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+  <div class="row">
+    <label class="field">
+      Gas high threshold
+      <input type="number" id="gasThreshold" min="0" max="1" step="0.05" value="0.7" />
+      (ratio gasUsed/gasLimit)
+    </label>
+    <label class="field">
+      Burst multiplier
+      <input type="number" id="burstMult" min="1" max="10" step="0.1" value="2" />
+      (txCount ≥ max(avg×m, avg+20))
+    </label>
+    <label class="field">
+      Rolling window N
+      <input type="number" id="rollN" min="3" max="100" step="1" value="20" />
+    </label>
+  </div>
+  <label>
+    <input type="checkbox" id="alsoLogs" />
+    Also subscribe Transfer logs (requires address) — tags <code>same-block</code>
+  </label>
+  <p>
+    <input id="watchAddress" type="text" placeholder="0x… contract address (optional)" size="48" />
+  </p>
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <pre id="out"></pre>
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const TRANSFER =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** @type {number[]} */
+    let txCounts = [];
+    /** pending eth_getBlockByNumber id → blockNumber hex */
+    const pendingBlocks = new Map();
+    /** blockNumber hex → Transfer log count (for same-block) */
+    const transfersByBlock = new Map();
+    const taggedSameBlock = new Set();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function gasThreshold() {
+      const v = parseFloat(document.getElementById("gasThreshold").value);
+      return Number.isFinite(v) ? v : 0.7;
+    }
+    function burstMult() {
+      const v = parseFloat(document.getElementById("burstMult").value);
+      return Number.isFinite(v) && v >= 1 ? v : 2;
+    }
+    function rollN() {
+      const v = parseInt(document.getElementById("rollN").value, 10);
+      return Number.isFinite(v) && v >= 3 ? v : 20;
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function subscribeAll() {
+      send("eth_subscribe", ["newHeads"]);
+      log("sent eth_subscribe newHeads");
+      const addr = document.getElementById("watchAddress").value.trim();
+      if (document.getElementById("alsoLogs").checked) {
+        if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+          log("skip logs: enter a valid 0x address");
+          return;
+        }
+        send("eth_subscribe", ["logs", { address: addr, topics: [TRANSFER] }]);
+        log("sent eth_subscribe logs Transfer @ " + addr);
+      }
+    }
+
+    function avgTx() {
+      if (!txCounts.length) return 0;
+      const sum = txCounts.reduce((a, b) => a + b, 0);
+      return sum / txCounts.length;
+    }
+
+    function formatHead(r, tags) {
+      const n = parseInt(r.number, 16);
+      const gasUsed = parseInt(r.gasUsed, 16);
+      const gasLimit = parseInt(r.gasLimit, 16);
+      const ratio = gasLimit > 0 ? gasUsed / gasLimit : 0;
+      const pct = (ratio * 100).toFixed(1);
+      const tagStr = tags.length ? " [" + tags.join(" ") + "]" : "";
+      return `head #${n} hash=${r.hash.slice(0, 12)}… gas=${pct}%${tagStr}`;
+    }
+
+    function onHead(r) {
+      const key = "b:" + r.hash;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const gasUsed = parseInt(r.gasUsed, 16);
+      const gasLimit = parseInt(r.gasLimit, 16);
+      const ratio = gasLimit > 0 ? gasUsed / gasLimit : 0;
+      const tags = [];
+      if (ratio >= gasThreshold()) tags.push("gas:high");
+
+      // Fetch tx hashes only for burst detection
+      const id = send("eth_getBlockByNumber", [r.number, false]);
+      pendingBlocks.set(id, { header: r, tags, ratio });
+    }
+
+    function onBlockResult(id, block) {
+      const pending = pendingBlocks.get(id);
+      pendingBlocks.delete(id);
+      if (!pending) return;
+      const { header, tags } = pending;
+      const count = (block && block.transactions) ? block.transactions.length : 0;
+      const avg = avgTx();
+      const m = burstMult();
+      const threshold = avg > 0 ? Math.max(avg * m, avg + 20) : Infinity;
+      if (avg > 0 && count >= threshold) {
+        tags.push(`burst txs=${count} avg=${avg.toFixed(1)}`);
+      } else {
+        tags.push(`txs=${count}`);
+      }
+      txCounts.push(count);
+      const n = rollN();
+      if (txCounts.length > n) txCounts = txCounts.slice(-n);
+
+      // same-block from Transfer logs already seen for this block
+      const bn = header.number;
+      const k = transfersByBlock.get(bn) || 0;
+      if (k >= 2 && !taggedSameBlock.has(bn)) {
+        tags.push(`same-block n=${k}`);
+        taggedSameBlock.add(bn);
+      }
+
+      log(formatHead(header, tags));
+    }
+
+    function onTransferLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const bn = r.blockNumber;
+      const k = (transfersByBlock.get(bn) || 0) + 1;
+      transfersByBlock.set(bn, k);
+      log(`log Transfer tx=${r.transactionHash.slice(0, 12)}… block=${parseInt(bn, 16)} n=${k}`);
+      if (k >= 2 && !taggedSameBlock.has(bn)) {
+        taggedSameBlock.add(bn);
+        log(`same-block n=${k} @ #${parseInt(bn, 16)}`);
+      }
+      // prune old block counts (keep last ~200)
+      if (transfersByBlock.size > 200) {
+        const first = transfersByBlock.keys().next().value;
+        transfersByBlock.delete(first);
+        taggedSameBlock.delete(first);
+      }
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        setStatus("connected · subscribed");
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        // JSON-RPC response (subscription ack or eth_getBlockByNumber)
+        if (msg.id != null && pendingBlocks.has(msg.id)) {
+          onBlockResult(msg.id, msg.result);
+          return;
+        }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r) return;
+        if (r.number && r.gasUsed != null) {
+          onHead(r);
+          return;
+        }
+        if (r.transactionHash) {
+          onTransferLog(r);
+        }
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        pendingBlocks.clear();
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      seen.clear();
+      txCounts = [];
+      transfersByBlock.clear();
+      taggedSameBlock.clear();
+      pendingBlocks.clear();
+    };
+  </script>
+</body>
+</html>
