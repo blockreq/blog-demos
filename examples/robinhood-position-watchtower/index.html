@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · position watchtower</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 52rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 16rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 5.5rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.55rem 0.75rem;
+            margin: 0.35rem 0; font-size: 0.85rem; background: #f8fafc; }
+    .card.alert { border-color: #f59e0b; background: #fffbeb; }
+    .card.plunge { border-color: #ef4444; background: #fef2f2; }
+    .card.swap { border-color: #3b82f6; background: #eff6ff; }
+    .card.phase { border-color: #a855f7; background: #faf5ff; }
+    #cards { max-height: 14rem; overflow: auto; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · position watchtower</h1>
+  <p>
+    Public WSS · <code>eth_subscribe → logs</code> (Transfer / Swap / Sync)
+    + local state-diff alerts (<code>LP plunge</code>, <code>large swap</code>, <code>phase-switch</code>).
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <p class="hint">Optional pair address scopes filters. Empty = topic-wide (hotter feed).</p>
+  <p>
+    <input id="pairAddress" type="text" placeholder="0x… pair / pool (optional)" size="48" />
+  </p>
+
+  <div class="row">
+    <label class="field">
+      <input type="checkbox" id="subTransfer" checked /> Transfer
+    </label>
+    <label class="field">
+      <input type="checkbox" id="subSwap" checked /> Swap
+    </label>
+    <label class="field">
+      <input type="checkbox" id="subSync" checked /> Sync (reserves)
+    </label>
+  </div>
+
+  <div class="row">
+    <label class="field">
+      LP plunge %
+      <input type="number" id="plungePct" min="1" max="99" step="1" value="15" />
+    </label>
+    <label class="field">
+      Large swap ≥
+      <input type="number" id="swapMin" min="0" step="1" value="1" />
+      ×1e18
+    </label>
+    <label class="field">
+      Phase pivot
+      <input type="number" id="phasePivot" min="0.01" max="100" step="0.1" value="1" />
+      (r0/r1)
+    </label>
+  </div>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <div id="cards"></div>
+  <pre id="out"></pre>
+
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const TRANSFER =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const SWAP =
+      "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822";
+    const SYNC =
+      "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const cards = document.getElementById("cards");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** @type {Map<string,{r0:bigint,r1:bigint,ratio:number,side:number}>} */
+    const reserveState = new Map();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function plungePct() {
+      const v = parseFloat(document.getElementById("plungePct").value);
+      return Number.isFinite(v) && v > 0 ? v : 15;
+    }
+    function swapMinWei() {
+      const v = parseFloat(document.getElementById("swapMin").value);
+      const n = Number.isFinite(v) && v >= 0 ? v : 1;
+      try { return BigInt(Math.floor(n * 1e18)); } catch { return 10n ** 18n; }
+    }
+    function phasePivot() {
+      const v = parseFloat(document.getElementById("phasePivot").value);
+      return Number.isFinite(v) && v > 0 ? v : 1;
+    }
+
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+    function wordU256(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return 0n;
+      return BigInt("0x" + data.slice(2 + i * 64, 2 + (i + 1) * 64));
+    }
+
+    function pushCard(cls, title, body) {
+      const el = document.createElement("div");
+      el.className = "card alert " + cls;
+      el.innerHTML = `<strong>${title}</strong><br/><span style="font-family:ui-monospace,monospace;font-size:11px">${body}</span>`;
+      cards.prepend(el);
+      while (cards.children.length > 40) cards.removeChild(cards.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function filterBase() {
+      const addr = document.getElementById("pairAddress").value.trim();
+      if (/^0x[a-fA-F0-9]{40}$/.test(addr)) return { address: addr.toLowerCase() };
+      return {};
+    }
+
+    function subscribeAll() {
+      const base = filterBase();
+      const topics = [];
+      if (document.getElementById("subTransfer").checked) topics.push(TRANSFER);
+      if (document.getElementById("subSwap").checked) topics.push(SWAP);
+      if (document.getElementById("subSync").checked) topics.push(SYNC);
+      if (!topics.length) {
+        log("pick at least one topic");
+        return;
+      }
+      // one subscribe per topic (OR inside a single topics[0] array also works on many nodes)
+      send("eth_subscribe", ["logs", { ...base, topics: [topics] }]);
+      log("sent eth_subscribe logs · topics=" + topics.length +
+          (base.address ? " @ " + short(base.address) : " (topic-wide)"));
+      setStatus("connected · watchtower armed");
+    }
+
+    function onTransfer(r) {
+      const from = unpadTopic((r.topics || [])[1]);
+      const to = unpadTopic((r.topics || [])[2]);
+      const amt = wordU256(r.data, 0);
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+      log(`Transfer ${short(from)}→${short(to)} amt=${amt.toString()} pool=${short(r.address)} #${bn}`);
+    }
+
+    function onSwap(r) {
+      // data: amount0In, amount1In, amount0Out, amount1Out
+      const a0in = wordU256(r.data, 0);
+      const a1in = wordU256(r.data, 1);
+      const a0out = wordU256(r.data, 2);
+      const a1out = wordU256(r.data, 3);
+      const maxIn = a0in > a1in ? a0in : a1in;
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+      const tags = [];
+      if (maxIn >= swapMinWei()) {
+        tags.push("large-swap");
+        pushCard(
+          "swap",
+          "large swap",
+          `pool=${short(r.address)} in0=${a0in} in1=${a1in} out0=${a0out} out1=${a1out} #${bn} tx=${short(r.transactionHash)}`
+        );
+      }
+      log(
+        `Swap pool=${short(r.address)} in0=${a0in} in1=${a1in} out0=${a0out} out1=${a1out} #${bn}` +
+        (tags.length ? " [" + tags.join(" ") + "]" : "")
+      );
+    }
+
+    function onSync(r) {
+      const r0 = wordU256(r.data, 0);
+      const r1 = wordU256(r.data, 1);
+      const pool = (r.address || "").toLowerCase();
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+      const ratio = r1 === 0n ? Infinity : Number(r0) / Number(r1);
+      const pivot = phasePivot();
+      const side = ratio >= pivot ? 1 : -1;
+      const prev = reserveState.get(pool);
+      const tags = [];
+
+      if (prev) {
+        // LP plunge: either reserve drops hard
+        const drop0 = prev.r0 > 0n ? Number(prev.r0 - (r0 < prev.r0 ? r0 : prev.r0)) / Number(prev.r0) : 0;
+        const drop1 = prev.r1 > 0n ? Number(prev.r1 - (r1 < prev.r1 ? r1 : prev.r1)) / Number(prev.r1) : 0;
+        const drop = Math.max(drop0, drop1) * 100;
+        if (drop >= plungePct()) {
+          tags.push(`LP-plunge ${drop.toFixed(1)}%`);
+          pushCard(
+            "plunge",
+            "LP plunge",
+            `pool=${short(pool)} Δ=${drop.toFixed(1)}% r0 ${prev.r0}→${r0} r1 ${prev.r1}→${r1} #${bn}`
+          );
+        }
+        if (prev.side !== 0 && side !== 0 && prev.side !== side && Number.isFinite(ratio)) {
+          tags.push("phase-switch");
+          pushCard(
+            "phase",
+            "phase-switch",
+            `pool=${short(pool)} ratio ${prev.ratio.toFixed(4)}→${ratio.toFixed(4)} pivot=${pivot} #${bn}`
+          );
+        }
+      }
+
+      reserveState.set(pool, {
+        r0, r1,
+        ratio: Number.isFinite(ratio) ? ratio : 0,
+        side: Number.isFinite(ratio) ? side : 0,
+      });
+
+      log(
+        `Sync pool=${short(pool)} r0=${r0} r1=${r1} ratio=${Number.isFinite(ratio) ? ratio.toFixed(4) : "∞"} #${bn}` +
+        (tags.length ? " [" + tags.join(" · ") + "]" : "")
+      );
+    }
+
+    function onLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const t0 = ((r.topics || [])[0] || "").toLowerCase();
+      if (t0 === TRANSFER) return onTransfer(r);
+      if (t0 === SWAP) return onSwap(r);
+      if (t0 === SYNC) return onSync(r);
+      log("log other topic=" + t0.slice(0, 10) + "…");
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        onLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      cards.innerHTML = "";
+      seen.clear();
+      reserveState.clear();
+    };
+  </script>
+</body>
+</html>
