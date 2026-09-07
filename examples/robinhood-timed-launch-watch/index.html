@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · timed launch watch</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 52rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 5rem; }
+    input[type="datetime-local"] { font-family: ui-monospace, monospace; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    #windowBadge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px;
+                   font-size: 0.8rem; font-weight: 600; background: #e2e8f0; color: #334155; }
+    #windowBadge.hot { background: #fef3c7; color: #92400e; }
+    #windowBadge.live { background: #dcfce7; color: #166534; }
+    .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.55rem 0.75rem;
+            margin: 0.35rem 0; font-size: 0.85rem; background: #f8fafc; }
+    .card.pair { border-color: #22c55e; background: #f0fdf4; }
+    .card.swap { border-color: #3b82f6; background: #eff6ff; }
+    .card.lp { border-color: #f59e0b; background: #fffbeb; }
+    #cards { max-height: 16rem; overflow: auto; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · timed launch watch</h1>
+  <p>
+    Public WSS · time-window <code>eth_subscribe → logs</code>
+    (PairCreated / Swap / Mint) → on-time alert cards.
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <div class="row">
+    <label class="field">
+      Window start
+      <input type="datetime-local" id="winStart" />
+    </label>
+    <label class="field">
+      Duration
+      <input type="number" id="winDur" min="10" max="86400" step="10" value="300" />
+      sec
+    </label>
+    <button id="nowPlus" type="button">Start = now+30s</button>
+  </div>
+  <p class="hint">
+    Window badge: <span id="windowBadge">idle</span>
+    · outside-window events counted but not carded.
+  </p>
+
+  <p>
+    <input id="factoryAddress" type="text" placeholder="0x… factory (optional, PairCreated scope)" size="48" />
+  </p>
+  <div class="row">
+    <label class="field"><input type="checkbox" id="subPair" checked /> PairCreated</label>
+    <label class="field"><input type="checkbox" id="subSwap" checked /> Swap (first per pair)</label>
+    <label class="field"><input type="checkbox" id="subMint" checked /> Mint (LP in)</label>
+  </div>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <div id="cards"></div>
+  <pre id="out"></pre>
+
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const PAIR_CREATED =
+      "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
+    const SWAP =
+      "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822";
+    const MINT =
+      "0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const cards = document.getElementById("cards");
+    const badge = document.getElementById("windowBadge");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    let tickTimer = null;
+    let outsideN = 0;
+    const seen = new Set();
+    /** pairs that already fired first-swap card */
+    const firstSwapDone = new Set();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function winBounds() {
+      const raw = document.getElementById("winStart").value;
+      const dur = parseInt(document.getElementById("winDur").value, 10);
+      const durMs = (Number.isFinite(dur) && dur >= 10 ? dur : 300) * 1000;
+      if (!raw) return null;
+      const start = new Date(raw).getTime();
+      if (!Number.isFinite(start)) return null;
+      return { start, end: start + durMs };
+    }
+
+    function inWindow(now) {
+      const b = winBounds();
+      if (!b) return false;
+      return now >= b.start && now <= b.end;
+    }
+
+    function refreshBadge() {
+      const b = winBounds();
+      const now = Date.now();
+      if (!b) {
+        badge.textContent = "no window set";
+        badge.className = "";
+        return;
+      }
+      if (now < b.start) {
+        const sec = Math.ceil((b.start - now) / 1000);
+        badge.textContent = `armed · T-${sec}s`;
+        badge.className = "hot";
+      } else if (now <= b.end) {
+        const left = Math.ceil((b.end - now) / 1000);
+        badge.textContent = `LIVE · ${left}s left`;
+        badge.className = "live";
+      } else {
+        badge.textContent = `closed · outside=${outsideN}`;
+        badge.className = "";
+      }
+    }
+
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+    function wordAddr(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return "";
+      return "0x" + data.slice(2 + i * 64 + 24, 2 + (i + 1) * 64).toLowerCase();
+    }
+    function wordU256(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return 0n;
+      return BigInt("0x" + data.slice(2 + i * 64, 2 + (i + 1) * 64));
+    }
+
+    function pushCard(cls, title, body) {
+      const el = document.createElement("div");
+      el.className = "card " + cls;
+      const t = new Date().toISOString().slice(11, 19);
+      el.innerHTML = `<strong>${title}</strong> <span style="color:#64748b">${t}</span><br/>` +
+        `<span style="font-family:ui-monospace,monospace;font-size:11px">${body}</span>`;
+      cards.prepend(el);
+      while (cards.children.length > 50) cards.removeChild(cards.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function subscribeAll() {
+      const factory = document.getElementById("factoryAddress").value.trim();
+      const factoryOk = /^0x[a-fA-F0-9]{40}$/.test(factory);
+
+      if (document.getElementById("subPair").checked) {
+        const filt = { topics: [PAIR_CREATED] };
+        if (factoryOk) filt.address = factory.toLowerCase();
+        send("eth_subscribe", ["logs", filt]);
+        log("sent eth_subscribe PairCreated" + (factoryOk ? " @ " + short(factory) : " (topic-wide)"));
+      }
+      if (document.getElementById("subSwap").checked) {
+        send("eth_subscribe", ["logs", { topics: [SWAP] }]);
+        log("sent eth_subscribe Swap (topic-wide)");
+      }
+      if (document.getElementById("subMint").checked) {
+        send("eth_subscribe", ["logs", { topics: [MINT] }]);
+        log("sent eth_subscribe Mint (topic-wide)");
+      }
+      setStatus("connected · timed launch armed");
+      refreshBadge();
+    }
+
+    function handleInWindow(kind, r, extra) {
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+      if (kind === "pair") {
+        pushCard("pair", "⏱ PairCreated", extra + ` #${bn} tx=${short(r.transactionHash)}`);
+        log(`IN-WINDOW PairCreated ${extra} #${bn}`);
+      } else if (kind === "swap") {
+        pushCard("swap", "⏱ first swap", extra + ` #${bn} tx=${short(r.transactionHash)}`);
+        log(`IN-WINDOW first-swap ${extra} #${bn}`);
+      } else if (kind === "lp") {
+        pushCard("lp", "⏱ LP in", extra + ` #${bn} tx=${short(r.transactionHash)}`);
+        log(`IN-WINDOW Mint/LP ${extra} #${bn}`);
+      }
+    }
+
+    function onLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const now = Date.now();
+      const hot = inWindow(now);
+      const t0 = ((r.topics || [])[0] || "").toLowerCase();
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+
+      if (t0 === PAIR_CREATED) {
+        const token0 = unpadTopic((r.topics || [])[1]);
+        const token1 = unpadTopic((r.topics || [])[2]);
+        const pair = wordAddr(r.data, 0);
+        const extra = `pair=${short(pair)} t0=${short(token0)} t1=${short(token1)}`;
+        if (hot) handleInWindow("pair", r, extra);
+        else { outsideN++; log(`out PairCreated ${extra} #${bn}`); }
+        return;
+      }
+
+      if (t0 === SWAP) {
+        const pool = (r.address || "").toLowerCase();
+        if (!hot) { outsideN++; return; }
+        if (firstSwapDone.has(pool)) {
+          log(`IN-WINDOW Swap (repeat) pool=${short(pool)} #${bn}`);
+          return;
+        }
+        firstSwapDone.add(pool);
+        handleInWindow("swap", r, `pool=${short(pool)}`);
+        return;
+      }
+
+      if (t0 === MINT) {
+        const pool = (r.address || "").toLowerCase();
+        const a0 = wordU256(r.data, 0);
+        const a1 = wordU256(r.data, 1);
+        const extra = `pool=${short(pool)} a0=${a0} a1=${a1}`;
+        if (hot) handleInWindow("lp", r, extra);
+        else { outsideN++; log(`out Mint ${extra} #${bn}`); }
+        return;
+      }
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        onLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("nowPlus").onclick = () => {
+      const d = new Date(Date.now() + 30000);
+      // datetime-local wants local YYYY-MM-DDTHH:mm
+      const pad = (n) => String(n).padStart(2, "0");
+      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      document.getElementById("winStart").value = local.slice(0, 19);
+      refreshBadge();
+      log("window start set to ~now+30s");
+    };
+
+    document.getElementById("start").onclick = () => {
+      if (!winBounds()) {
+        setStatus("set window start first");
+        log("start blocked: no window");
+        return;
+      }
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      if (tickTimer) clearInterval(tickTimer);
+      tickTimer = setInterval(refreshBadge, 500);
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (tickTimer) clearInterval(tickTimer);
+      tickTimer = null;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+      refreshBadge();
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      cards.innerHTML = "";
+      seen.clear();
+      firstSwapDone.clear();
+      outsideN = 0;
+      refreshBadge();
+    };
+
+    // default: now+60s
+    (function initWin() {
+      const d = new Date(Date.now() + 60000);
+      const pad = (n) => String(n).padStart(2, "0");
+      document.getElementById("winStart").value =
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      refreshBadge();
+    })();
+  </script>
+</body>
+</html>
