@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · whale / FOMO watch</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 52rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 16rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 4.5rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+    textarea { font-family: ui-monospace, monospace; width: 100%; max-width: 48rem;
+               min-height: 5.5rem; font-size: 12px; padding: 0.5rem; border-radius: 6px;
+               border: 1px solid #cbd5e1; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    #watchChips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0 0.75rem; }
+    .chip { background: #f1f5f9; border-radius: 999px; padding: 0.15rem 0.55rem;
+            font-family: ui-monospace, monospace; font-size: 11px; }
+    .chip.hit { background: #fef3c7; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · whale / FOMO watch</h1>
+  <p>
+    Public WSS · <code>eth_subscribe → logs</code> (Transfer involving 车头 watchlist)
+    + FOMO window tags (<code>FOMO</code>, <code>车头跟风</code>, <code>打狗</code>).
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <h2 style="font-size:1.05rem;margin:1rem 0 0.35rem">车头 watchlist</h2>
+  <p class="hint">One <code>0x</code> address per line (localStorage). Transfer from/to any entry → hit.</p>
+  <textarea id="watchlist" placeholder="0x… whale / 车头 address&#10;0x…"></textarea>
+  <div class="row">
+    <button id="saveList" type="button">Save list</button>
+    <button id="reloadList" type="button">Reload</button>
+  </div>
+  <div id="watchChips"></div>
+
+  <div class="row">
+    <label class="field">
+      FOMO window
+      <input type="number" id="fomoSec" min="1" max="300" step="1" value="30" />
+      sec
+    </label>
+    <label class="field">
+      Min hits
+      <input type="number" id="fomoMin" min="2" max="50" step="1" value="3" />
+      (in window → FOMO)
+    </label>
+    <label class="field">
+      Min distinct 车头
+      <input type="number" id="fomoDistinct" min="1" max="20" step="1" value="2" />
+      (→ 车头跟风)
+    </label>
+  </div>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <pre id="out"></pre>
+
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const TRANSFER =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const LS_KEY = "blockreq.rh-whale-fomo.watchlist";
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const chips = document.getElementById("watchChips");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** @type {{t:number, addr:string, dir:string, tx:string}[]} */
+    let recentHits = [];
+    /** @type {Set<string>} */
+    let watchSet = new Set();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function fomoSec() {
+      const v = parseInt(document.getElementById("fomoSec").value, 10);
+      return Number.isFinite(v) && v >= 1 ? v : 30;
+    }
+    function fomoMin() {
+      const v = parseInt(document.getElementById("fomoMin").value, 10);
+      return Number.isFinite(v) && v >= 2 ? v : 3;
+    }
+    function fomoDistinct() {
+      const v = parseInt(document.getElementById("fomoDistinct").value, 10);
+      return Number.isFinite(v) && v >= 1 ? v : 2;
+    }
+
+    function padTopic(addr) {
+      return "0x" + addr.slice(2).toLowerCase().padStart(64, "0");
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+
+    function parseWatchlistText(text) {
+      const addrs = [];
+      const seenLocal = new Set();
+      for (const line of text.split(/\r?\n/)) {
+        const a = line.trim().toLowerCase();
+        if (!a || a.startsWith("#")) continue;
+        if (!/^0x[a-f0-9]{40}$/.test(a)) continue;
+        if (seenLocal.has(a)) continue;
+        seenLocal.add(a);
+        addrs.push(a);
+      }
+      return addrs;
+    }
+
+    function loadWatchlist() {
+      const raw = localStorage.getItem(LS_KEY) || "";
+      document.getElementById("watchlist").value = raw;
+      applyWatchlist(raw, false);
+    }
+
+    function saveWatchlist() {
+      const text = document.getElementById("watchlist").value;
+      const addrs = parseWatchlistText(text);
+      const normalized = addrs.join("\n");
+      document.getElementById("watchlist").value = normalized;
+      localStorage.setItem(LS_KEY, normalized);
+      applyWatchlist(normalized, true);
+      log("watchlist saved · n=" + addrs.length);
+    }
+
+    function applyWatchlist(text, render) {
+      const addrs = parseWatchlistText(text);
+      watchSet = new Set(addrs);
+      if (render !== false) renderChips();
+      return addrs;
+    }
+
+    function renderChips() {
+      chips.innerHTML = "";
+      for (const a of watchSet) {
+        const el = document.createElement("span");
+        el.className = "chip";
+        el.dataset.addr = a;
+        el.title = a;
+        el.textContent = a.slice(0, 8) + "…" + a.slice(-4);
+        chips.appendChild(el);
+      }
+      if (!watchSet.size) {
+        chips.textContent = "(empty — add 车头 addresses above)";
+      }
+    }
+
+    function flashChip(addr) {
+      const el = chips.querySelector(`[data-addr="${addr}"]`);
+      if (!el) return;
+      el.classList.add("hit");
+      setTimeout(() => el.classList.remove("hit"), 1200);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function subscribeAll() {
+      const addrs = applyWatchlist(document.getElementById("watchlist").value);
+      if (!addrs.length) {
+        log("skip subscribe: watchlist empty — add 车头 addresses + Save");
+        setStatus("connected · waiting for watchlist");
+        return;
+      }
+      // Cap topic OR lists (RPC nodes often limit topic fan-out)
+      const capped = addrs.slice(0, 20);
+      if (addrs.length > 20) {
+        log("note: subscribing first 20 of " + addrs.length + " addresses");
+      }
+      const pads = capped.map(padTopic);
+      send("eth_subscribe", ["logs", { topics: [TRANSFER, pads] }]);
+      log("sent eth_subscribe Transfer from 车头 · n=" + pads.length);
+      send("eth_subscribe", ["logs", { topics: [TRANSFER, null, pads] }]);
+      log("sent eth_subscribe Transfer to 车头 · n=" + pads.length);
+      setStatus("connected · watching " + capped.length + " 车头");
+    }
+
+    function pruneHits(now) {
+      const winMs = fomoSec() * 1000;
+      recentHits = recentHits.filter((h) => now - h.t <= winMs);
+    }
+
+    function tagWindow(now) {
+      pruneHits(now);
+      const tags = [];
+      const n = recentHits.length;
+      const distinct = new Set(recentHits.map((h) => h.addr)).size;
+      if (n >= fomoMin()) tags.push(`FOMO hits=${n}/${fomoSec()}s`);
+      if (distinct >= fomoDistinct() && n >= 2) {
+        tags.push(`车头跟风 distinct=${distinct}`);
+      }
+      // 打狗: dense burst — many hits in a tight sub-window (≤ window/3 or 10s)
+      const tightMs = Math.min(10000, Math.max(3000, (fomoSec() * 1000) / 3));
+      const tight = recentHits.filter((h) => now - h.t <= tightMs).length;
+      if (tight >= Math.max(fomoMin(), 4)) {
+        tags.push(`打狗 burst=${tight}/${Math.round(tightMs / 1000)}s`);
+      }
+      return tags;
+    }
+
+    function onTransferLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const topics = r.topics || [];
+      const from = unpadTopic(topics[1]);
+      const to = unpadTopic(topics[2]);
+      let dir = "";
+      let whale = "";
+      if (watchSet.has(from)) { dir = "from"; whale = from; }
+      if (watchSet.has(to)) {
+        if (whale && whale !== to) {
+          dir = "both";
+          // prefer logging from; still count to as separate hit below if different
+        } else {
+          dir = "to";
+          whale = to;
+        }
+      }
+      if (!whale) return; // not involving watchlist (shouldn't happen with topic filter)
+
+      const now = Date.now();
+      const involved = [];
+      if (watchSet.has(from)) involved.push({ addr: from, dir: "from" });
+      if (watchSet.has(to) && to !== from) involved.push({ addr: to, dir: "to" });
+      if (!involved.length) involved.push({ addr: whale, dir: dir || "?" });
+
+      for (const inv of involved) {
+        recentHits.push({
+          t: now,
+          addr: inv.addr,
+          dir: inv.dir,
+          tx: r.transactionHash,
+        });
+        flashChip(inv.addr);
+      }
+
+      const tags = tagWindow(now);
+      const tagStr = tags.length ? " [" + tags.join(" · ") + "]" : "";
+      const token = (r.address || "").slice(0, 10);
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+      log(
+        `Transfer ${dir || involved.map((i) => i.dir).join("+")} ` +
+        `车头=${whale.slice(0, 8)}… tx=${r.transactionHash.slice(0, 12)}… ` +
+        `token=${token}… block=#${bn}` +
+        tagStr
+      );
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r) return;
+        if (r.transactionHash) onTransferLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("saveList").onclick = () => {
+      saveWatchlist();
+      if (wantRun && ws && ws.readyState === WebSocket.OPEN) {
+        log("re-subscribe after watchlist change…");
+        try { ws.close(); } catch {}
+      }
+    };
+    document.getElementById("reloadList").onclick = () => {
+      loadWatchlist();
+      log("watchlist reloaded from localStorage");
+    };
+    document.getElementById("start").onclick = () => {
+      applyWatchlist(document.getElementById("watchlist").value);
+      if (!watchSet.size) {
+        setStatus("add 车头 addresses first");
+        log("start blocked: empty watchlist");
+        return;
+      }
+      // persist current textarea so Start also saves
+      localStorage.setItem(LS_KEY, [...watchSet].join("\n"));
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      seen.clear();
+      recentHits = [];
+    };
+
+    loadWatchlist();
+  </script>
+</body>
+</html>

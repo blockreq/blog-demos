@@ -10,6 +10,8 @@ https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-o
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-volume-watch
 
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-whale-fomo
+
 Click Run after open (ctl=1).
 
 ## Public-only warning
@@ -21,6 +23,7 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 - examples/solana-new-mint
 - examples/robinhood-open-watch
 - examples/robinhood-volume-watch
+- examples/robinhood-whale-fomo
 
 ## License
 
