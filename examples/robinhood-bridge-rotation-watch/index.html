@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · bridge rotation watch</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 5.5rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+    textarea { font-family: ui-monospace, monospace; width: 100%; max-width: 50rem;
+               min-height: 3.5rem; font-size: 12px; padding: 0.5rem; border-radius: 6px;
+               border: 1px solid #cbd5e1; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.55rem 0.75rem;
+            margin: 0.35rem 0; font-size: 0.85rem; background: #f8fafc; }
+    .card.lift { border-color: #22c55e; background: #f0fdf4; }
+    .card.confirm { border-color: #3b82f6; background: #eff6ff; }
+    .card.thick { border-color: #a855f7; background: #faf5ff; }
+    .card.flow { border-color: #94a3b8; background: #f1f5f9; }
+    #cards { max-height: 14rem; overflow: auto; margin-bottom: 0.75rem; }
+    #windows { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+               gap: 0.5rem; margin: 0.5rem 0 0.75rem; }
+    .win { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.55rem 0.7rem;
+           background: #fff; font-size: 0.85rem; }
+    .win .lbl { color: #64748b; font-size: 0.75rem; }
+    .win .net { font-family: ui-monospace, monospace; font-size: 1.05rem; font-weight: 600; }
+    .win .io { font-family: ui-monospace, monospace; font-size: 11px; color: #475569; }
+    .tag { display: inline-block; background: #1e293b; color: #fbbf24; border-radius: 999px;
+           padding: 0.05rem 0.45rem; margin-right: 0.25rem; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · bridge rotation</h1>
+  <p>
+    Public WSS · <code>eth_subscribe → logs</code> (Deposit / Withdraw)
+    → 5 / 15 / 60m netflow · tag <code>lift</code> / <code>confirm</code> / <code>thicken</code>.
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <h2 style="font-size:1.05rem;margin:1rem 0 0.35rem">Bridge watchlist</h2>
+  <p class="hint">One <code>0x</code> bridge address per line. Always scoped by <code>address</code>.</p>
+  <textarea id="bridges" placeholder="0x… bridge&#10;0x…"></textarea>
+
+  <div class="row">
+    <label class="field"><input type="checkbox" id="subIn" checked /> Deposit / in</label>
+    <label class="field"><input type="checkbox" id="subOut" checked /> Withdraw / out</label>
+  </div>
+
+  <div class="row">
+    <label class="field">
+      Lift floor
+      <input type="number" id="liftFloor" min="0" step="0.1" value="1" />
+      ×1e18
+    </label>
+    <label class="field">
+      Lift ≥ baseline ×
+      <input type="number" id="liftMult" min="1" max="20" step="0.5" value="2" />
+    </label>
+    <label class="field">
+      Decimals
+      <input type="number" id="decimals" min="0" max="18" step="1" value="18" />
+    </label>
+  </div>
+  <p class="hint">
+    Topic0 defaults: WETH-style <code>Deposit</code> / <code>Withdrawal</code> — paste custom topics if your bridge ABI differs.
+  </p>
+  <p>
+    <input id="topicIn" type="text" size="68"
+      value="0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c" />
+  </p>
+  <p>
+    <input id="topicOut" type="text" size="68"
+      value="0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65" />
+  </p>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+
+  <div id="windows">
+    <div class="win"><div class="lbl">5m net</div><div class="net" id="net5">0</div><div class="io" id="io5">in 0 · out 0</div></div>
+    <div class="win"><div class="lbl">15m net</div><div class="net" id="net15">0</div><div class="io" id="io15">in 0 · out 0</div></div>
+    <div class="win"><div class="lbl">60m net</div><div class="net" id="net60">0</div><div class="io" id="io60">in 0 · out 0</div></div>
+  </div>
+
+  <div id="cards"></div>
+  <pre id="out"></pre>
+
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const LS_KEY = "blockreq.rh-bridge-rotation.bridges";
+    const WINDOWS = [5, 15, 60];
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const cards = document.getElementById("cards");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** @type {{t:number, dir:string, amt:number, bridge:string, tx:string}[]} */
+    let samples = [];
+    let lastTagAt = { lift: 0, confirm: 0, thick: 0 };
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function num(id, fallback) {
+      const v = parseFloat(document.getElementById(id).value);
+      return Number.isFinite(v) ? v : fallback;
+    }
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function wordU256(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return 0n;
+      return BigInt("0x" + data.slice(2 + i * 64, 2 + (i + 1) * 64));
+    }
+    function decodeAmount(data, topics) {
+      // Prefer data word0; if empty try last topic as amount (rare)
+      if (data && data.length >= 66) return wordU256(data, 0);
+      if (topics && topics.length > 2) {
+        try { return BigInt(topics[topics.length - 1]); } catch { return 0n; }
+      }
+      return 0n;
+    }
+    function asHuman(bi) {
+      const d = Math.max(0, Math.min(18, Math.floor(num("decimals", 18))));
+      const div = 10n ** BigInt(d);
+      try {
+        const whole = bi / div;
+        const frac = bi % div;
+        return Number(whole) + Number(frac) / Number(div);
+      } catch { return 0; }
+    }
+
+    function parseBridges(text) {
+      const addrs = [];
+      const local = new Set();
+      for (const line of text.split(/\r?\n/)) {
+        const a = line.trim().toLowerCase();
+        if (!a || a.startsWith("#")) continue;
+        if (!/^0x[a-f0-9]{40}$/.test(a)) continue;
+        if (local.has(a)) continue;
+        local.add(a);
+        addrs.push(a);
+      }
+      return addrs;
+    }
+
+    function loadBridges() {
+      const raw = localStorage.getItem(LS_KEY) || "";
+      document.getElementById("bridges").value = raw;
+    }
+
+    function saveBridges() {
+      const addrs = parseBridges(document.getElementById("bridges").value);
+      const normalized = addrs.join("\n");
+      document.getElementById("bridges").value = normalized;
+      localStorage.setItem(LS_KEY, normalized);
+      log("bridges saved · n=" + addrs.length);
+      return addrs;
+    }
+
+    function pushCard(cls, title, tags, body) {
+      const el = document.createElement("div");
+      el.className = "card " + cls;
+      const tagHtml = (tags || []).map((t) => `<span class="tag">${t}</span>`).join("");
+      el.innerHTML =
+        `<strong>${title}</strong> ${tagHtml}<br/>` +
+        `<span style="font-family:ui-monospace,monospace;font-size:11px">${body}</span>`;
+      cards.prepend(el);
+      while (cards.children.length > 40) cards.removeChild(cards.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function topicIn() {
+      const t = document.getElementById("topicIn").value.trim().toLowerCase();
+      return /^0x[a-f0-9]{64}$/.test(t) ? t : "";
+    }
+    function topicOut() {
+      const t = document.getElementById("topicOut").value.trim().toLowerCase();
+      return /^0x[a-f0-9]{64}$/.test(t) ? t : "";
+    }
+
+    function subscribeAll() {
+      const bridges = saveBridges();
+      if (!bridges.length) {
+        log("skip subscribe: bridge list empty");
+        setStatus("connected · waiting for bridges");
+        return;
+      }
+      const tin = topicIn();
+      const tout = topicOut();
+      const capped = bridges.slice(0, 10);
+      if (bridges.length > 10) log("note: subscribing first 10 of " + bridges.length + " bridges");
+
+      for (const addr of capped) {
+        if (document.getElementById("subIn").checked && tin) {
+          send("eth_subscribe", ["logs", { address: addr, topics: [tin] }]);
+          log("sent Deposit/in @ " + short(addr));
+        }
+        if (document.getElementById("subOut").checked && tout) {
+          send("eth_subscribe", ["logs", { address: addr, topics: [tout] }]);
+          log("sent Withdraw/out @ " + short(addr));
+        }
+      }
+      setStatus("connected · watching " + capped.length + " bridge(s)");
+    }
+
+    function prune(now) {
+      const maxMs = 60 * 60 * 1000;
+      samples = samples.filter((s) => now - s.t <= maxMs);
+    }
+
+    function windowStats(now, minutes) {
+      const ms = minutes * 60 * 1000;
+      let inn = 0, outt = 0;
+      for (const s of samples) {
+        if (now - s.t > ms) continue;
+        if (s.dir === "in") inn += s.amt;
+        else outt += s.amt;
+      }
+      return { in: inn, out: outt, net: inn - outt };
+    }
+
+    function renderWindows(now) {
+      for (const m of WINDOWS) {
+        const st = windowStats(now, m);
+        document.getElementById("net" + m).textContent = st.net.toFixed(4);
+        document.getElementById("io" + m).textContent =
+          `in ${st.in.toFixed(4)} · out ${st.out.toFixed(4)}`;
+      }
+    }
+
+    function maybeTag(now) {
+      const s5 = windowStats(now, 5);
+      const s15 = windowStats(now, 15);
+      const s60 = windowStats(now, 60);
+      const floor = num("liftFloor", 1);
+      const mult = num("liftMult", 2);
+      const baseline = Math.max(Math.abs(s60.net) / 12, floor); // ~5m slice of 60m
+      const tags = [];
+
+      // cooldown 20s per tag family
+      if (Math.abs(s5.net) >= baseline * mult && Math.abs(s5.net) >= floor) {
+        if (now - lastTagAt.lift > 20000) {
+          lastTagAt.lift = now;
+          tags.push("bridge-netflow-lift");
+          pushCard(
+            "lift",
+            "bridge-netflow-lift",
+            ["5m", s5.net >= 0 ? "net-in" : "net-out"],
+            `net5=${s5.net.toFixed(4)} baseline≈${baseline.toFixed(4)} · in5=${s5.in.toFixed(4)} out5=${s5.out.toFixed(4)}`
+          );
+        }
+      }
+
+      if (Math.sign(s15.net) === Math.sign(s5.net) && Math.abs(s15.net) >= floor &&
+          Math.abs(s5.net) >= baseline * mult) {
+        if (now - lastTagAt.confirm > 20000) {
+          lastTagAt.confirm = now;
+          tags.push("bridge-rotation-confirm");
+          pushCard(
+            "confirm",
+            "bridge-rotation-confirm",
+            ["15m holds"],
+            `net5=${s5.net.toFixed(4)} net15=${s15.net.toFixed(4)} net60=${s60.net.toFixed(4)}`
+          );
+        }
+      }
+
+      // both sides thicken vs 60m per-minute rate * window
+      const rateIn = s60.in / 12;  // per 5m
+      const rateOut = s60.out / 12;
+      if (s5.in > rateIn * 1.5 + floor / 2 && s5.out > rateOut * 1.5 + floor / 2) {
+        if (now - lastTagAt.thick > 20000) {
+          lastTagAt.thick = now;
+          tags.push("bridge-activity-thick");
+          pushCard(
+            "thick",
+            "bridge-activity-thick",
+            ["both sides"],
+            `in5=${s5.in.toFixed(4)} out5=${s5.out.toFixed(4)} · 60m-rate×1.5 check`
+          );
+        }
+      }
+      return tags;
+    }
+
+    function onLog(r, dir) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const amtBi = decodeAmount(r.data, r.topics);
+      const amt = asHuman(amtBi);
+      const now = Date.now();
+      const bridge = (r.address || "").toLowerCase();
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+
+      samples.push({ t: now, dir, amt, bridge, tx: r.transactionHash });
+      prune(now);
+      renderWindows(now);
+      const tags = maybeTag(now);
+
+      pushCard(
+        "flow",
+        dir === "in" ? "bridge in" : "bridge out",
+        tags,
+        `${short(bridge)} amt≈${amt.toFixed(4)} #${bn} tx=${short(r.transactionHash)}`
+      );
+
+      log(
+        `${dir} bridge=${short(bridge)} amt≈${amt.toFixed(4)} #${bn}` +
+        (tags.length ? " [" + tags.join(" · ") + "]" : "")
+      );
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        const t0 = ((r.topics || [])[0] || "").toLowerCase();
+        const tin = topicIn();
+        const tout = topicOut();
+        if (tin && t0 === tin) return onLog(r, "in");
+        if (tout && t0 === tout) return onLog(r, "out");
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      const bridges = parseBridges(document.getElementById("bridges").value);
+      if (!bridges.length) {
+        setStatus("add bridge addresses first");
+        log("start blocked: empty bridge list");
+        return;
+      }
+      localStorage.setItem(LS_KEY, bridges.join("\n"));
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      cards.innerHTML = "";
+      seen.clear();
+      samples = [];
+      lastTagAt = { lift: 0, confirm: 0, thick: 0 };
+      renderWindows(Date.now());
+    };
+
+    loadBridges();
+    renderWindows(Date.now());
+  </script>
+</body>
+</html>
