@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · gas heat radar</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 5rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; width: 5rem; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    #windows { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+               gap: 0.5rem; margin: 0.5rem 0 0.75rem; }
+    .win { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.55rem 0.7rem;
+           background: #fff; font-size: 0.85rem; }
+    .win .lbl { color: #64748b; font-size: 0.75rem; }
+    .win .val { font-family: ui-monospace, monospace; font-size: 1.05rem; font-weight: 600; }
+    .win .sub { font-family: ui-monospace, monospace; font-size: 11px; color: #475569; }
+    .win.hot { border-color: #f59e0b; background: #fffbeb; }
+    .win.spike { border-color: #ef4444; background: #fef2f2; }
+    .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.55rem 0.75rem;
+            margin: 0.35rem 0; font-size: 0.85rem; background: #f8fafc; }
+    .card.lift { border-color: #f59e0b; background: #fffbeb; }
+    .card.spike { border-color: #ef4444; background: #fef2f2; }
+    .card.hint { border-color: #3b82f6; background: #eff6ff; }
+    .tag { display: inline-block; background: #1e293b; color: #fbbf24; border-radius: 999px;
+           padding: 0.05rem 0.45rem; margin-right: 0.25rem; font-size: 11px; }
+    #cards { max-height: 14rem; overflow: auto; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · gas heat radar</h1>
+  <p>
+    Public WSS · <code>eth_subscribe → newHeads</code> + rolling <code>eth_feeHistory</code>
+    → 5m / 15m heat · spike alerts.
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <div class="row">
+    <label class="field">
+      Spike mult
+      <input type="number" id="spikeMult" min="1" max="5" step="0.05" value="1.2" />
+      (5m fee &gt; 15m ×)
+    </label>
+    <label class="field">
+      Util floor
+      <input type="number" id="utilFloor" min="0" max="1" step="0.05" value="0.7" />
+    </label>
+    <label class="field">
+      feeHistory every
+      <input type="number" id="feeEvery" min="1" max="60" step="1" value="5" />
+      heads
+    </label>
+    <label class="field">
+      feeHistory blocks
+      <input type="number" id="feeBlocks" min="4" max="1024" step="1" value="64" />
+    </label>
+  </div>
+  <div class="row">
+    <label class="field">
+      Open window HH:MM
+      <input type="text" id="openHHMM" placeholder="optional" maxlength="5" />
+    </label>
+    <label class="field">
+      ± minutes
+      <input type="number" id="openSlack" min="1" max="120" step="1" value="30" />
+    </label>
+  </div>
+  <p class="hint">
+    Heat from head <code>baseFeePerGas</code> / util + periodic <code>eth_feeHistory</code> ratios.
+    Optional open-window HH:MM (local) tags <code>open-window-hint</code> on heat-spike.
+  </p>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+
+  <div id="windows">
+    <div class="win" id="winNow">
+      <div class="lbl">now</div>
+      <div class="val" id="nowFee">—</div>
+      <div class="sub" id="nowUtil">util — · #—</div>
+    </div>
+    <div class="win" id="win5">
+      <div class="lbl">5m heat</div>
+      <div class="val" id="fee5">—</div>
+      <div class="sub" id="util5">util — · n=0</div>
+    </div>
+    <div class="win" id="win15">
+      <div class="lbl">15m heat</div>
+      <div class="val" id="fee15">—</div>
+      <div class="sub" id="util15">util — · n=0</div>
+    </div>
+    <div class="win" id="winFh">
+      <div class="lbl">feeHistory</div>
+      <div class="val" id="fhFee">—</div>
+      <div class="sub" id="fhUtil">avg util — · blocks=0</div>
+    </div>
+  </div>
+
+  <div id="cards"></div>
+  <pre id="out"></pre>
+
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const cards = document.getElementById("cards");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** @type {{t:number, fee:number, util:number, n:number}[]} */
+    let samples = [];
+    let headCount = 0;
+    /** pending rpc id → kind */
+    const pending = new Map();
+    let lastLiftAt = 0;
+    let lastSpikeAt = 0;
+    let lastFhFee = 0;
+    let lastFhUtil = 0;
+    let lastFhBlocks = 0;
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function num(id, fallback) {
+      const v = parseFloat(document.getElementById(id).value);
+      return Number.isFinite(v) ? v : fallback;
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function pushCard(cls, title, tags, body) {
+      const el = document.createElement("div");
+      el.className = "card " + (cls || "");
+      const tagHtml = (tags || []).map((t) => `<span class="tag">${t}</span>`).join("");
+      el.innerHTML =
+        `<strong>${title}</strong> ${tagHtml}<br/>` +
+        `<span style="font-family:ui-monospace,monospace;font-size:11px">${body}</span>`;
+      cards.prepend(el);
+      while (cards.children.length > 40) cards.removeChild(cards.lastChild);
+    }
+
+    function formatGwei(wei) {
+      if (!Number.isFinite(wei) || wei <= 0) return "—";
+      const gwei = wei / 1e9;
+      if (gwei >= 1) return gwei.toFixed(3) + " gwei";
+      return (wei / 1e6).toFixed(2) + " µgwei";
+    }
+
+    function subscribeAll() {
+      send("eth_subscribe", ["newHeads"]);
+      log("sent eth_subscribe newHeads");
+      requestFeeHistory("latest");
+      setStatus("connected · heat radar live");
+    }
+
+    function requestFeeHistory(blockTag) {
+      const n = Math.max(4, Math.min(1024, Math.floor(num("feeBlocks", 64))));
+      const id = send("eth_feeHistory", [n, blockTag || "latest", []]);
+      pending.set(id, { kind: "feeHistory" });
+      log("sent eth_feeHistory blocks=" + n);
+    }
+
+    function prune(now) {
+      const maxMs = 15 * 60 * 1000;
+      samples = samples.filter((s) => now - s.t <= maxMs);
+    }
+
+    function windowAvg(now, minutes) {
+      const ms = minutes * 60 * 1000;
+      let feeSum = 0, utilSum = 0, n = 0;
+      for (const s of samples) {
+        if (now - s.t > ms) continue;
+        feeSum += s.fee;
+        utilSum += s.util;
+        n++;
+      }
+      return {
+        fee: n ? feeSum / n : 0,
+        util: n ? utilSum / n : 0,
+        n,
+      };
+    }
+
+    function nearOpenWindow() {
+      const hhmm = document.getElementById("openHHMM").value.trim();
+      if (!/^\d{1,2}:\d{2}$/.test(hhmm)) return false;
+      const [h, m] = hhmm.split(":").map((x) => parseInt(x, 10));
+      if (!Number.isFinite(h) || !Number.isFinite(m)) return false;
+      const now = new Date();
+      const target = new Date(now);
+      target.setHours(h, m, 0, 0);
+      const slackMs = num("openSlack", 30) * 60 * 1000;
+      return Math.abs(now.getTime() - target.getTime()) <= slackMs;
+    }
+
+    function renderWindows(now, latest) {
+      const s5 = windowAvg(now, 5);
+      const s15 = windowAvg(now, 15);
+      document.getElementById("nowFee").textContent = formatGwei(latest ? latest.fee : 0);
+      document.getElementById("nowUtil").textContent =
+        latest
+          ? `util ${(latest.util * 100).toFixed(1)}% · #${latest.n}`
+          : "util — · #—";
+      document.getElementById("fee5").textContent = formatGwei(s5.fee);
+      document.getElementById("util5").textContent =
+        `util ${(s5.util * 100).toFixed(1)}% · n=${s5.n}`;
+      document.getElementById("fee15").textContent = formatGwei(s15.fee);
+      document.getElementById("util15").textContent =
+        `util ${(s15.util * 100).toFixed(1)}% · n=${s15.n}`;
+      document.getElementById("fhFee").textContent = formatGwei(lastFhFee);
+      document.getElementById("fhUtil").textContent =
+        `avg util ${(lastFhUtil * 100).toFixed(1)}% · blocks=${lastFhBlocks}`;
+
+      const mult = num("spikeMult", 1.2);
+      const utilFloor = num("utilFloor", 0.7);
+      const win5 = document.getElementById("win5");
+      const win15 = document.getElementById("win15");
+      win5.className = "win";
+      win15.className = "win";
+      if (s5.fee > s15.fee && s15.n >= 3) win5.classList.add("hot");
+      if (s5.fee > s15.fee * mult && s5.util >= utilFloor && s15.n >= 3) {
+        win5.classList.add("spike");
+      }
+    }
+
+    function maybeTag(now, latest) {
+      const s5 = windowAvg(now, 5);
+      const s15 = windowAvg(now, 15);
+      if (s15.n < 3 || s5.n < 2) return;
+      const mult = num("spikeMult", 1.2);
+      const utilFloor = num("utilFloor", 0.7);
+
+      if (s5.fee > s15.fee) {
+        if (now - lastLiftAt > 20000) {
+          lastLiftAt = now;
+          pushCard(
+            "lift",
+            "heat-lift",
+            ["5m > 15m"],
+            `fee5=${formatGwei(s5.fee)} fee15=${formatGwei(s15.fee)} util5=${(s5.util * 100).toFixed(1)}%`
+          );
+          log(`heat-lift fee5=${formatGwei(s5.fee)} fee15=${formatGwei(s15.fee)}`);
+        }
+      }
+
+      if (s5.fee > s15.fee * mult && s5.util >= utilFloor) {
+        if (now - lastSpikeAt > 20000) {
+          lastSpikeAt = now;
+          const tags = ["spike", `×${mult}`, `util≥${utilFloor}`];
+          pushCard(
+            "spike",
+            "heat-spike",
+            tags,
+            `fee5=${formatGwei(s5.fee)} fee15=${formatGwei(s15.fee)} util5=${(s5.util * 100).toFixed(1)}%` +
+            (latest ? ` · #${latest.n}` : "")
+          );
+          log(`heat-spike fee5=${formatGwei(s5.fee)} util5=${(s5.util * 100).toFixed(1)}%`);
+          if (nearOpenWindow()) {
+            pushCard(
+              "hint",
+              "open-window hint",
+              ["heat-spike", "local-window"],
+              `spike near open HH:MM · pair with open-watch / volume-watch`
+            );
+            log("open-window-hint · heat-spike near local window");
+          }
+        }
+      }
+    }
+
+    function onHead(r) {
+      const key = "b:" + (r.hash || r.number);
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      // newHeads may omit gasUsed on some nodes — request full header if needed
+      const hasGas = r.gasUsed != null && r.gasLimit != null;
+      const hasFee = r.baseFeePerGas != null;
+      if (!hasGas || !hasFee) {
+        const id = send("eth_getBlockByNumber", [r.number, false]);
+        pending.set(id, { kind: "block", number: r.number });
+        return;
+      }
+      ingestHead(r);
+    }
+
+    function ingestHead(r) {
+      const fee = r.baseFeePerGas ? parseInt(r.baseFeePerGas, 16) : 0;
+      const gasUsed = r.gasUsed ? parseInt(r.gasUsed, 16) : 0;
+      const gasLimit = r.gasLimit ? parseInt(r.gasLimit, 16) : 0;
+      const util = gasLimit > 0 ? gasUsed / gasLimit : 0;
+      const n = r.number ? parseInt(r.number, 16) : 0;
+      const now = Date.now();
+      const sample = { t: now, fee, util, n };
+      samples.push(sample);
+      prune(now);
+      renderWindows(now, sample);
+      maybeTag(now, sample);
+
+      headCount++;
+      const every = Math.max(1, Math.floor(num("feeEvery", 5)));
+      if (headCount % every === 0) {
+        requestFeeHistory(r.number || "latest");
+      }
+
+      log(
+        `head #${n} fee=${formatGwei(fee)} util=${(util * 100).toFixed(1)}%` +
+        (lastFhBlocks ? ` · fhUtil=${(lastFhUtil * 100).toFixed(1)}%` : "")
+      );
+    }
+
+    function onFeeHistory(result) {
+      if (!result) return;
+      const baseFees = result.baseFeePerGas || [];
+      const ratios = result.gasUsedRatio || [];
+      let feeSum = 0, feeN = 0;
+      for (const hex of baseFees) {
+        if (!hex) continue;
+        feeSum += parseInt(hex, 16);
+        feeN++;
+      }
+      let utilSum = 0, utilN = 0;
+      for (const u of ratios) {
+        if (typeof u !== "number") continue;
+        utilSum += u;
+        utilN++;
+      }
+      lastFhFee = feeN ? feeSum / feeN : 0;
+      lastFhUtil = utilN ? utilSum / utilN : 0;
+      lastFhBlocks = Math.max(feeN, utilN);
+      renderWindows(Date.now(), samples.length ? samples[samples.length - 1] : null);
+      log(
+        `feeHistory avgFee=${formatGwei(lastFhFee)} avgUtil=${(lastFhUtil * 100).toFixed(1)}%` +
+        ` blocks≈${lastFhBlocks}`
+      );
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        headCount = 0;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id != null && pending.has(msg.id)) {
+          const meta = pending.get(msg.id);
+          pending.delete(msg.id);
+          if (msg.error) {
+            log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+            return;
+          }
+          if (meta.kind === "feeHistory") return onFeeHistory(msg.result);
+          if (meta.kind === "block" && msg.result) return ingestHead(msg.result);
+          return;
+        }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.number) return;
+        onHead(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      cards.innerHTML = "";
+      seen.clear();
+      samples = [];
+      pending.clear();
+      lastLiftAt = 0;
+      lastSpikeAt = 0;
+      lastFhFee = 0;
+      lastFhUtil = 0;
+      lastFhBlocks = 0;
+      headCount = 0;
+      renderWindows(Date.now(), null);
+    };
+
+    renderWindows(Date.now(), null);
+  </script>
+</body>
+</html>

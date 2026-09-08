@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robinhood Chain · KOL wallet watch</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 4.5rem; }
+    textarea { font-family: ui-monospace, monospace; width: 100%; max-width: 50rem;
+               min-height: 5.5rem; font-size: 12px; padding: 0.5rem; border-radius: 6px;
+               border: 1px solid #cbd5e1; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    #watchChips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0 0.75rem; }
+    .chip { background: #f1f5f9; border-radius: 999px; padding: 0.15rem 0.55rem;
+            font-family: ui-monospace, monospace; font-size: 11px; }
+    .chip.hit { background: #fef3c7; }
+    .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.55rem 0.75rem;
+            margin: 0.35rem 0; font-size: 0.85rem; background: #f8fafc; }
+    .card.spike { border-color: #f59e0b; background: #fffbeb; }
+    .card.rotate { border-color: #a855f7; background: #faf5ff; }
+    .tag { display: inline-block; background: #1e293b; color: #fbbf24; border-radius: 999px;
+           padding: 0.05rem 0.45rem; margin-right: 0.25rem; font-size: 11px; }
+    #cards { max-height: 16rem; overflow: auto; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>Robinhood Chain · KOL wallet watch</h1>
+  <p>
+    Public WSS · <code>eth_subscribe → logs</code> (Transfer involving multi-address watchlist)
+    + dedupe / <code>follow-spike</code> tags.
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <h2 style="font-size:1.05rem;margin:1rem 0 0.35rem">KOL / smart-money watchlist</h2>
+  <p class="hint">One line: <code>0xaddr</code> or <code>LABEL 0xaddr</code> (localStorage). Transfer from/to → hit.</p>
+  <textarea id="watchlist" placeholder="alpha 0x…&#10;beta 0x…&#10;0x…"></textarea>
+  <div class="row">
+    <button id="saveList" type="button">Save list</button>
+    <button id="reloadList" type="button">Reload</button>
+  </div>
+  <div id="watchChips"></div>
+
+  <div class="row">
+    <label class="field">
+      Follow window
+      <input type="number" id="followMin" min="1" max="60" step="1" value="5" />
+      min
+    </label>
+    <label class="field">
+      Min distinct
+      <input type="number" id="followK" min="2" max="20" step="1" value="2" />
+      (→ follow-spike)
+    </label>
+    <label class="field">
+      Rotate ≥
+      <input type="number" id="rotateN" min="2" max="20" step="1" value="3" />
+      hits / window
+    </label>
+    <label class="field">
+      Dust floor
+      <input type="number" id="dustFloor" min="0" step="0.0001" value="0" />
+      (raw / 1e18)
+    </label>
+  </div>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <div id="cards"></div>
+  <pre id="out"></pre>
+
+  <script>
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const TRANSFER =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const LS_KEY = "blockreq.rh-kol-wallet.watchlist";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const chips = document.getElementById("watchChips");
+    const cards = document.getElementById("cards");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    /** txHash|addr|token|side */
+    const seen = new Set();
+    /** @type {{t:number, addr:string, label:string, token:string, side:string, tx:string}[]} */
+    let recentHits = [];
+    /** addr → label */
+    let watchMap = new Map();
+    let lastSpikeAt = 0;
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function num(id, fallback) {
+      const v = parseFloat(document.getElementById(id).value);
+      return Number.isFinite(v) ? v : fallback;
+    }
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function padTopic(addr) {
+      return "0x" + addr.slice(2).toLowerCase().padStart(64, "0");
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+    function wordU256(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return 0n;
+      return BigInt("0x" + data.slice(2 + i * 64, 2 + (i + 1) * 64));
+    }
+    function asHuman(bi) {
+      const div = 10n ** 18n;
+      try {
+        return Number(bi / div) + Number(bi % div) / Number(div);
+      } catch { return 0; }
+    }
+
+    function parseWatchlist(text) {
+      const map = new Map();
+      for (const line of text.split(/\r?\n/)) {
+        const raw = line.trim();
+        if (!raw || raw.startsWith("#")) continue;
+        const parts = raw.split(/\s+/);
+        let label = "";
+        let addr = "";
+        if (parts.length === 1 && /^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+          addr = parts[0].toLowerCase();
+          label = short(addr);
+        } else if (parts.length >= 2) {
+          if (/^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+            addr = parts[0].toLowerCase();
+            label = parts.slice(1).join(" ");
+          } else if (/^0x[a-fA-F0-9]{40}$/.test(parts[parts.length - 1])) {
+            addr = parts[parts.length - 1].toLowerCase();
+            label = parts.slice(0, -1).join(" ");
+          }
+        }
+        if (addr) map.set(addr, label || short(addr));
+      }
+      return map;
+    }
+
+    function loadWatchlist() {
+      const raw = localStorage.getItem(LS_KEY) || "";
+      document.getElementById("watchlist").value = raw;
+      applyWatchlist(raw, false);
+    }
+
+    function saveWatchlist() {
+      const map = parseWatchlist(document.getElementById("watchlist").value);
+      const lines = [];
+      for (const [a, l] of map) lines.push(l + " " + a);
+      const normalized = lines.join("\n");
+      document.getElementById("watchlist").value = normalized;
+      localStorage.setItem(LS_KEY, normalized);
+      applyWatchlist(normalized, true);
+      log("watchlist saved · n=" + map.size);
+    }
+
+    function applyWatchlist(text, render) {
+      watchMap = parseWatchlist(text);
+      if (render !== false) renderChips();
+      return watchMap;
+    }
+
+    function renderChips() {
+      chips.innerHTML = "";
+      for (const [a, l] of watchMap) {
+        const el = document.createElement("span");
+        el.className = "chip";
+        el.dataset.addr = a;
+        el.title = a;
+        el.textContent = l + " · " + short(a);
+        chips.appendChild(el);
+      }
+      if (!watchMap.size) chips.textContent = "(empty — add KOL addresses above)";
+    }
+
+    function flashChip(addr) {
+      const el = chips.querySelector(`[data-addr="${addr}"]`);
+      if (!el) return;
+      el.classList.add("hit");
+      setTimeout(() => el.classList.remove("hit"), 1200);
+    }
+
+    function pushCard(cls, title, tags, body) {
+      const el = document.createElement("div");
+      el.className = "card " + (cls || "");
+      const tagHtml = (tags || []).map((t) => `<span class="tag">${t}</span>`).join("");
+      el.innerHTML =
+        `<strong>${title}</strong> ${tagHtml}<br/>` +
+        `<span style="font-family:ui-monospace,monospace;font-size:11px">${body}</span>`;
+      cards.prepend(el);
+      while (cards.children.length > 40) cards.removeChild(cards.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function subscribeAll() {
+      applyWatchlist(document.getElementById("watchlist").value);
+      const addrs = [...watchMap.keys()];
+      if (!addrs.length) {
+        log("skip subscribe: watchlist empty");
+        setStatus("connected · waiting for watchlist");
+        return;
+      }
+      const capped = addrs.slice(0, 20);
+      if (addrs.length > 20) log("note: subscribing first 20 of " + addrs.length + " addresses");
+      const pads = capped.map(padTopic);
+      send("eth_subscribe", ["logs", { topics: [TRANSFER, pads] }]);
+      log("sent eth_subscribe Transfer from KOL · n=" + pads.length);
+      send("eth_subscribe", ["logs", { topics: [TRANSFER, null, pads] }]);
+      log("sent eth_subscribe Transfer to KOL · n=" + pads.length);
+      setStatus("connected · watching " + capped.length + " KOL addr(s)");
+    }
+
+    function pruneHits(now) {
+      const winMs = num("followMin", 5) * 60 * 1000;
+      recentHits = recentHits.filter((h) => now - h.t <= winMs);
+    }
+
+    function tagWindow(now, addr, token) {
+      pruneHits(now);
+      const tags = ["kol-hit"];
+      const byAddr = recentHits.filter((h) => h.addr === addr);
+      if (byAddr.length >= num("rotateN", 3)) tags.push("rotate");
+
+      const sameToken = recentHits.filter((h) => h.token === token);
+      const distinct = new Set(sameToken.map((h) => h.addr)).size;
+      if (distinct >= num("followK", 2) && sameToken.length >= 2) {
+        tags.push("follow-spike");
+        if (now - lastSpikeAt > 15000) {
+          lastSpikeAt = now;
+          pushCard(
+            "spike",
+            "follow-spike",
+            ["token=" + short(token), "distinct=" + distinct],
+            `${distinct} watchlist addrs touched ${short(token)} in ${num("followMin", 5)}m`
+          );
+        }
+      }
+      return tags;
+    }
+
+    function onTransferLog(r) {
+      const topics = r.topics || [];
+      const from = unpadTopic(topics[1]);
+      const to = unpadTopic(topics[2]);
+      const token = (r.address || "").toLowerCase();
+      const value = asHuman(wordU256(r.data, 0));
+      const dust = num("dustFloor", 0);
+      if (value < dust) return;
+
+      const involved = [];
+      if (watchMap.has(from)) involved.push({ addr: from, side: "out" });
+      if (watchMap.has(to)) involved.push({ addr: to, side: "in" });
+      if (!involved.length) return;
+
+      // self-shuffle: both on watchlist with tiny value
+      if (watchMap.has(from) && watchMap.has(to) && value < Math.max(dust, 1e-6)) {
+        log("noise self-shuffle " + short(from) + "→" + short(to));
+        return;
+      }
+
+      const now = Date.now();
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+
+      for (const inv of involved) {
+        const dedupeKey = [r.transactionHash, inv.addr, token, inv.side].join("|");
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+
+        const label = watchMap.get(inv.addr) || short(inv.addr);
+        recentHits.push({
+          t: now, addr: inv.addr, label, token, side: inv.side, tx: r.transactionHash,
+        });
+        flashChip(inv.addr);
+        const tags = tagWindow(now, inv.addr, token);
+        const cls = tags.includes("follow-spike") ? "spike"
+          : tags.includes("rotate") ? "rotate" : "";
+        pushCard(
+          cls,
+          label + " · " + inv.side,
+          tags,
+          `token=${short(token)} value≈${value.toFixed(6)} #${bn} tx=${short(r.transactionHash)}`
+        );
+        log(
+          `Transfer ${inv.side} ${label} token=${short(token)} value≈${value.toFixed(6)} #${bn}` +
+          (tags.length ? " [" + tags.join(" · ") + "]" : "")
+        );
+      }
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        onTransferLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("saveList").onclick = () => {
+      saveWatchlist();
+      if (wantRun && ws && ws.readyState === WebSocket.OPEN) {
+        log("re-subscribe after watchlist change…");
+        try { ws.close(); } catch {}
+      }
+    };
+    document.getElementById("reloadList").onclick = () => {
+      loadWatchlist();
+      log("watchlist reloaded from localStorage");
+    };
+    document.getElementById("start").onclick = () => {
+      applyWatchlist(document.getElementById("watchlist").value);
+      if (!watchMap.size) {
+        setStatus("add KOL addresses first");
+        log("start blocked: empty watchlist");
+        return;
+      }
+      const lines = [];
+      for (const [a, l] of watchMap) lines.push(l + " " + a);
+      localStorage.setItem(LS_KEY, lines.join("\n"));
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      cards.innerHTML = "";
+      seen.clear();
+      recentHits = [];
+      lastSpikeAt = 0;
+    };
+
+    loadWatchlist();
+  </script>
+</body>
+</html>
