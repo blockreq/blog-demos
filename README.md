@@ -24,6 +24,12 @@ https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-s
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-bridge-rotation-watch
 
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/arc-bridge-launch-watch
+
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-kol-wallet-watch
+
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-gas-heat-radar
+
 Click Run after open (ctl=1).
 
 ## Public-only warning
@@ -42,6 +48,9 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 - examples/robinhood-thin-liquidity-watch
 - examples/robinhood-stock-pairs-launch
 - examples/robinhood-bridge-rotation-watch
+- examples/arc-bridge-launch-watch
+- examples/robinhood-kol-wallet-watch
+- examples/robinhood-gas-heat-radar
 
 ## License
 

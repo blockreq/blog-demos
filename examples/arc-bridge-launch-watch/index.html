@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arc · bridge + launch watch (RH demo pattern)</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="number"] { width: 5.5rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+    textarea { font-family: ui-monospace, monospace; width: 100%; max-width: 50rem;
+               min-height: 3.2rem; font-size: 12px; padding: 0.5rem; border-radius: 6px;
+               border: 1px solid #cbd5e1; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    .banner { border: 1px solid #f59e0b; background: #fffbeb; color: #92400e;
+              border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.75rem 0; font-size: 0.9rem; }
+    .card { border: 1px solid #334155; border-radius: 8px; padding: 0.65rem 0.8rem;
+            margin: 0.4rem 0; background: #0f172a; color: #e2e8f0; font-size: 12px; }
+    .card .kind { color: #38bdf8; font-weight: 600; }
+    .card .tag { display: inline-block; background: #1e293b; border: 1px solid #475569;
+                 border-radius: 999px; padding: 0.05rem 0.45rem; margin-right: 0.25rem;
+                 font-size: 11px; color: #fbbf24; }
+    #feed { max-height: 22rem; overflow: auto; margin-bottom: 0.75rem; }
+    #windows { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+               gap: 0.5rem; margin: 0.5rem 0 0.75rem; }
+    .win { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.55rem 0.7rem;
+           background: #fff; font-size: 0.85rem; }
+    .win .lbl { color: #64748b; font-size: 0.75rem; }
+    .win .net { font-family: ui-monospace, monospace; font-size: 1.05rem; font-weight: 600; }
+    .win .io { font-family: ui-monospace, monospace; font-size: 11px; color: #475569; }
+  </style>
+</head>
+<body>
+  <h1>Arc · bridge + launch watch</h1>
+  <p>
+    Day-0 recipe · <code>eth_subscribe → logs</code> (bridge Deposit / Withdraw + Factory PairCreated / Mint)
+    → launch cards (<code>inflow spike</code> · <code>first pool</code> · <code>first LP</code>).
+  </p>
+  <div class="banner">
+    <strong>Arc public not live yet.</strong>
+    Demo runs on Robinhood public WSS so the recipe is runnable today.
+    When Arc BlockReq public endpoints light up, swap the WSS host — same logic ports over.
+  </div>
+  <p>
+    Demo WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <h2 style="font-size:1.05rem;margin:1rem 0 0.35rem">Bridge watchlist</h2>
+  <p class="hint">One <code>0x</code> bridge address per line. Always scoped by <code>address</code>.</p>
+  <textarea id="bridges" placeholder="0x… bridge&#10;0x…"></textarea>
+
+  <h2 style="font-size:1.05rem;margin:1rem 0 0.35rem">Factory watchlist</h2>
+  <p class="hint">One <code>0x</code> factory per line (optional — leave empty for topic-wide PairCreated).</p>
+  <textarea id="factories" placeholder="0x… factory&#10;0x…"></textarea>
+
+  <div class="row">
+    <label class="field"><input type="checkbox" id="subIn" checked /> Deposit / in</label>
+    <label class="field"><input type="checkbox" id="subOut" checked /> Withdraw / out</label>
+    <label class="field"><input type="checkbox" id="subPair" checked /> PairCreated</label>
+    <label class="field"><input type="checkbox" id="subMint" checked /> Mint (first LP)</label>
+  </div>
+
+  <div class="row">
+    <label class="field">
+      Spike floor
+      <input type="number" id="spikeFloor" min="0" step="0.1" value="1" />
+      ×1e18
+    </label>
+    <label class="field">
+      Spike ≥ baseline ×
+      <input type="number" id="spikeMult" min="1" max="20" step="0.5" value="2" />
+    </label>
+    <label class="field">
+      Compose window
+      <input type="number" id="composeMin" min="1" max="60" step="1" value="15" />
+      min
+    </label>
+    <label class="field">
+      Decimals
+      <input type="number" id="decimals" min="0" max="18" step="1" value="18" />
+    </label>
+  </div>
+  <p class="hint">
+    Topic0 defaults: WETH-style Deposit / Withdrawal + Uniswap V2 PairCreated / Mint — paste custom topics if ABI differs.
+  </p>
+  <p>
+    <input id="topicIn" type="text" size="68"
+      value="0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c" />
+  </p>
+  <p>
+    <input id="topicOut" type="text" size="68"
+      value="0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65" />
+  </p>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+
+  <div id="windows">
+    <div class="win"><div class="lbl">5m net</div><div class="net" id="net5">0</div><div class="io" id="io5">in 0 · out 0</div></div>
+    <div class="win"><div class="lbl">15m net</div><div class="net" id="net15">0</div><div class="io" id="io15">in 0 · out 0</div></div>
+  </div>
+
+  <div id="feed"></div>
+  <pre id="out"></pre>
+
+  <script>
+    // Arc public not live yet — Robinhood public WSS is the runnable demo pattern.
+    // Swap this host when Arc BlockReq public endpoints light up.
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const PAIR_CREATED =
+      "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
+    const MINT =
+      "0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f";
+    const LS_BRIDGES = "blockreq.arc-bridge-launch.bridges";
+    const LS_FACTORIES = "blockreq.arc-bridge-launch.factories";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const feed = document.getElementById("feed");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** @type {{t:number, dir:string, amt:number, bridge:string, tx:string}[]} */
+    let samples = [];
+    /** pair → {token0,token1,block,t,tx,firstLp} */
+    const pairs = new Map();
+    let lastSpikeAt = 0;
+    let lastSpikeTs = 0;
+    let lastPoolTs = 0;
+    let lastLpTs = 0;
+    let lastComposeAt = 0;
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+
+    function num(id, fallback) {
+      const v = parseFloat(document.getElementById(id).value);
+      return Number.isFinite(v) ? v : fallback;
+    }
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+    function wordAddr(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return "";
+      return "0x" + data.slice(2 + i * 64 + 24, 2 + (i + 1) * 64).toLowerCase();
+    }
+    function wordU256(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return 0n;
+      return BigInt("0x" + data.slice(2 + i * 64, 2 + (i + 1) * 64));
+    }
+    function decodeAmount(data, topics) {
+      if (data && data.length >= 66) return wordU256(data, 0);
+      if (topics && topics.length > 2) {
+        try { return BigInt(topics[topics.length - 1]); } catch { return 0n; }
+      }
+      return 0n;
+    }
+    function asHuman(bi) {
+      const d = Math.max(0, Math.min(18, Math.floor(num("decimals", 18))));
+      const div = 10n ** BigInt(d);
+      try {
+        const whole = bi / div;
+        const frac = bi % div;
+        return Number(whole) + Number(frac) / Number(div);
+      } catch { return 0; }
+    }
+
+    function parseAddrs(text) {
+      const addrs = [];
+      const local = new Set();
+      for (const line of text.split(/\r?\n/)) {
+        const a = line.trim().toLowerCase();
+        if (!a || a.startsWith("#")) continue;
+        if (!/^0x[a-f0-9]{40}$/.test(a)) continue;
+        if (local.has(a)) continue;
+        local.add(a);
+        addrs.push(a);
+      }
+      return addrs;
+    }
+
+    function loadLists() {
+      document.getElementById("bridges").value = localStorage.getItem(LS_BRIDGES) || "";
+      document.getElementById("factories").value = localStorage.getItem(LS_FACTORIES) || "";
+    }
+
+    function saveLists() {
+      const bridges = parseAddrs(document.getElementById("bridges").value);
+      const factories = parseAddrs(document.getElementById("factories").value);
+      document.getElementById("bridges").value = bridges.join("\n");
+      document.getElementById("factories").value = factories.join("\n");
+      localStorage.setItem(LS_BRIDGES, bridges.join("\n"));
+      localStorage.setItem(LS_FACTORIES, factories.join("\n"));
+      log("lists saved · bridges=" + bridges.length + " factories=" + factories.length);
+      return { bridges, factories };
+    }
+
+    function pushCard(kind, tags, body) {
+      const el = document.createElement("div");
+      el.className = "card";
+      const tagHtml = (tags || []).map((t) => `<span class="tag">${t}</span>`).join("");
+      el.innerHTML =
+        `<div><span class="kind">${kind}</span> ${tagHtml}</div>` +
+        `<div style="margin-top:0.3rem;font-family:ui-monospace,monospace">${body}</div>`;
+      feed.prepend(el);
+      while (feed.children.length > 40) feed.removeChild(feed.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function topicIn() {
+      const t = document.getElementById("topicIn").value.trim().toLowerCase();
+      return /^0x[a-f0-9]{64}$/.test(t) ? t : "";
+    }
+    function topicOut() {
+      const t = document.getElementById("topicOut").value.trim().toLowerCase();
+      return /^0x[a-f0-9]{64}$/.test(t) ? t : "";
+    }
+
+    function subscribeAll() {
+      const { bridges, factories } = saveLists();
+      const tin = topicIn();
+      const tout = topicOut();
+      const cappedB = bridges.slice(0, 10);
+      if (bridges.length > 10) log("note: subscribing first 10 of " + bridges.length + " bridges");
+
+      for (const addr of cappedB) {
+        if (document.getElementById("subIn").checked && tin) {
+          send("eth_subscribe", ["logs", { address: addr, topics: [tin] }]);
+          log("sent Deposit/in @ " + short(addr));
+        }
+        if (document.getElementById("subOut").checked && tout) {
+          send("eth_subscribe", ["logs", { address: addr, topics: [tout] }]);
+          log("sent Withdraw/out @ " + short(addr));
+        }
+      }
+
+      if (document.getElementById("subPair").checked) {
+        if (factories.length) {
+          for (const f of factories.slice(0, 5)) {
+            send("eth_subscribe", ["logs", { address: f, topics: [PAIR_CREATED] }]);
+            log("sent PairCreated @ " + short(f));
+          }
+        } else {
+          send("eth_subscribe", ["logs", { topics: [PAIR_CREATED] }]);
+          log("sent PairCreated (topic-wide)");
+        }
+      }
+      if (document.getElementById("subMint").checked) {
+        send("eth_subscribe", ["logs", { topics: [MINT] }]);
+        log("sent Mint (topic-wide; filters to known pairs)");
+      }
+
+      const parts = [];
+      if (cappedB.length) parts.push(cappedB.length + " bridge(s)");
+      if (factories.length) parts.push(Math.min(factories.length, 5) + " factory(s)");
+      setStatus("connected · " + (parts.join(" · ") || "waiting for addresses") +
+        " · Arc public not live — RH demo pattern");
+    }
+
+    function prune(now) {
+      const maxMs = 15 * 60 * 1000;
+      samples = samples.filter((s) => now - s.t <= maxMs);
+    }
+
+    function windowStats(now, minutes) {
+      const ms = minutes * 60 * 1000;
+      let inn = 0, outt = 0;
+      for (const s of samples) {
+        if (now - s.t > ms) continue;
+        if (s.dir === "in") inn += s.amt;
+        else outt += s.amt;
+      }
+      return { in: inn, out: outt, net: inn - outt };
+    }
+
+    function renderWindows(now) {
+      for (const m of [5, 15]) {
+        const st = windowStats(now, m);
+        document.getElementById("net" + m).textContent = st.net.toFixed(4);
+        document.getElementById("io" + m).textContent =
+          `in ${st.in.toFixed(4)} · out ${st.out.toFixed(4)}`;
+      }
+    }
+
+    function maybeCompose(now) {
+      const winMs = num("composeMin", 15) * 60 * 1000;
+      if (!lastSpikeTs || !lastPoolTs || !lastLpTs) return;
+      if (now - lastComposeAt < 30000) return;
+      const newest = Math.max(lastSpikeTs, lastPoolTs, lastLpTs);
+      const oldest = Math.min(lastSpikeTs, lastPoolTs, lastLpTs);
+      if (newest - oldest <= winMs) {
+        lastComposeAt = now;
+        pushCard(
+          "day-0 compose",
+          ["inflow-spike", "first-pool", "first-LP"],
+          `spike→pool→LP packed inside ${num("composeMin", 15)}m · ready for day-0 board`
+        );
+        log("day-0 compose · spike+pool+LP within window");
+      }
+    }
+
+    function maybeSpike(now) {
+      const s5 = windowStats(now, 5);
+      const s15 = windowStats(now, 15);
+      const floor = num("spikeFloor", 1);
+      const mult = num("spikeMult", 2);
+      const baseline = Math.max(Math.abs(s15.net) / 3, floor); // ~5m slice of 15m
+      if (Math.abs(s5.net) >= baseline * mult && Math.abs(s5.net) >= floor) {
+        if (now - lastSpikeAt > 20000) {
+          lastSpikeAt = now;
+          lastSpikeTs = now;
+          pushCard(
+            "bridge inflow spike",
+            ["5m", s5.net >= 0 ? "net-in" : "net-out"],
+            `net5=${s5.net.toFixed(4)} baseline≈${baseline.toFixed(4)} · in5=${s5.in.toFixed(4)} out5=${s5.out.toFixed(4)}`
+          );
+          log(`inflow-spike net5=${s5.net.toFixed(4)}`);
+          maybeCompose(now);
+        }
+      }
+    }
+
+    function onBridgeLog(r, dir) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const amt = asHuman(decodeAmount(r.data, r.topics));
+      const now = Date.now();
+      const bridge = (r.address || "").toLowerCase();
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+
+      samples.push({ t: now, dir, amt, bridge, tx: r.transactionHash });
+      prune(now);
+      renderWindows(now);
+      maybeSpike(now);
+
+      pushCard(
+        dir === "in" ? "bridge in" : "bridge out",
+        [],
+        `${short(bridge)} amt≈${amt.toFixed(4)} #${bn} tx=${short(r.transactionHash)}`
+      );
+      log(`${dir} bridge=${short(bridge)} amt≈${amt.toFixed(4)} #${bn}`);
+    }
+
+    function onPairCreated(r) {
+      const token0 = unpadTopic((r.topics || [])[1]);
+      const token1 = unpadTopic((r.topics || [])[2]);
+      const pair = wordAddr(r.data, 0);
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : 0;
+      const now = Date.now();
+      pairs.set(pair.toLowerCase(), {
+        token0, token1, block: bn, t: now, tx: r.transactionHash, firstLp: false,
+      });
+      lastPoolTs = now;
+      pushCard(
+        "first pool",
+        ["PairCreated"],
+        `pair=${short(pair)} · t0=${short(token0)} · t1=${short(token1)} #${bn}`
+      );
+      log(`first-pool pair=${short(pair)} #${bn}`);
+      maybeCompose(now);
+    }
+
+    function onMint(r) {
+      const pool = (r.address || "").toLowerCase();
+      const known = pairs.get(pool);
+      if (!known) return;
+      if (known.firstLp) return;
+      known.firstLp = true;
+      const a0 = wordU256(r.data, 0);
+      const a1 = wordU256(r.data, 1);
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : 0;
+      const now = Date.now();
+      const ageMs = now - known.t;
+      lastLpTs = now;
+      const tags = ["first-LP"];
+      if (ageMs < 15000) tags.push("hot-<15s");
+      if (known.block === bn) tags.push("same-block-LP");
+      pushCard(
+        "first LP",
+        tags,
+        `pair=${short(pool)} a0=${a0.toString()} a1=${a1.toString()} age=${Math.round(ageMs / 1000)}s #${bn}`
+      );
+      log(`first-LP pair=${short(pool)} age=${Math.round(ageMs / 1000)}s #${bn}`);
+      maybeCompose(now);
+    }
+
+    function onLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key) && !r._bridgeHandled) {
+        // bridge path marks seen; PairCreated/Mint may share path — check topic
+      }
+      const t0 = ((r.topics || [])[0] || "").toLowerCase();
+      const tin = topicIn();
+      const tout = topicOut();
+      if (tin && t0 === tin) return onBridgeLog(r, "in");
+      if (tout && t0 === tout) return onBridgeLog(r, "out");
+      if (t0 === PAIR_CREATED) {
+        const k = "l:" + r.transactionHash + ":" + r.logIndex;
+        if (seen.has(k)) return;
+        seen.add(k);
+        return onPairCreated(r);
+      }
+      if (t0 === MINT) {
+        const k = "l:" + r.transactionHash + ":" + r.logIndex;
+        if (seen.has(k)) return;
+        seen.add(k);
+        return onMint(r);
+      }
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => {
+        backoffMs = 1000;
+        subscribeAll();
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        onLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      const bridges = parseAddrs(document.getElementById("bridges").value);
+      const factories = parseAddrs(document.getElementById("factories").value);
+      if (!bridges.length && !factories.length &&
+          !document.getElementById("subPair").checked) {
+        setStatus("add bridge or factory addresses first");
+        log("start blocked: empty lists");
+        return;
+      }
+      localStorage.setItem(LS_BRIDGES, bridges.join("\n"));
+      localStorage.setItem(LS_FACTORIES, factories.join("\n"));
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      feed.innerHTML = "";
+      seen.clear();
+      samples = [];
+      pairs.clear();
+      lastSpikeAt = 0;
+      lastSpikeTs = 0;
+      lastPoolTs = 0;
+      lastLpTs = 0;
+      lastComposeAt = 0;
+      renderWindows(Date.now());
+    };
+
+    loadLists();
+    renderWindows(Date.now());
+  </script>
+</body>
+</html>
