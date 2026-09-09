@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenLaunch · Base one-tx launch listen</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="text"] { font-family: ui-monospace, monospace; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    .banner { border: 1px solid #38bdf8; background: #f0f9ff; color: #0c4a6e;
+              border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.75rem 0; font-size: 0.9rem; }
+    .abi { background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 8px;
+           padding: 0.55rem 0.75rem; font-size: 11px; font-family: ui-monospace, monospace;
+           color: #334155; margin: 0.5rem 0 0.75rem; white-space: pre-wrap; }
+    .card { border: 1px solid #334155; border-radius: 8px; padding: 0.65rem 0.8rem;
+            margin: 0.4rem 0; background: #0f172a; color: #e2e8f0; font-size: 12px; }
+    .card .kind { color: #38bdf8; font-weight: 600; }
+    .card .tag { display: inline-block; background: #1e293b; border: 1px solid #475569;
+                 border-radius: 999px; padding: 0.05rem 0.45rem; margin-right: 0.25rem;
+                 font-size: 11px; color: #fbbf24; }
+    #feed { max-height: 22rem; overflow: auto; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>OpenLaunch · Base one-tx launch listen</h1>
+  <p>
+    Public WSS · chainId <code>0x2105</code> · <code>eth_subscribe → logs</code>
+    (Uniswap v4 Initialize / OpenLaunch factory · lock) → one-tx launch cards.
+  </p>
+  <p>
+    WSS: <code>wss://base-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <div class="banner">
+    <strong>Placeholder addresses / ABI.</strong>
+    Default PoolManager is the commonly cited Base Uniswap v4 address — confirm against live docs.
+    Paste real <code>OPENLAUNCH_FACTORY</code> + lock topic when known.
+  </div>
+
+  <div class="abi">// Placeholder ABI fragments — swap for live OpenLaunch / v4 when known
+// PoolManager (Uniswap v4):
+event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1,
+                 uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick);
+// topic0 = 0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438
+// OpenLaunch factory / lock: replace LOCK_TOPIC0 with real lock / full-supply event
+// env stand-ins: OPENLAUNCH_FACTORY · POOL_MANAGER</div>
+
+  <div class="row">
+    <label class="field">POOL_MANAGER
+      <input id="poolManager" type="text" size="46"
+        value="0x498581ff718922c3f8e6a244956af099b2652b2b" />
+    </label>
+  </div>
+  <div class="row">
+    <label class="field">OPENLAUNCH_FACTORY
+      <input id="factory" type="text" size="46"
+        placeholder="0x… optional — narrow lock / launch logs" />
+    </label>
+  </div>
+  <div class="row">
+    <label class="field"><input type="checkbox" id="subInit" checked /> Initialize</label>
+    <label class="field"><input type="checkbox" id="subLock" checked /> Lock / launch topic</label>
+    <label class="field"><input type="checkbox" id="cluster" checked /> same-tx cluster</label>
+  </div>
+  <p class="hint">
+    Initialize topic0 (v4) + editable lock topic0. Lock topic defaults to a placeholder
+    <code>LockLiquidity</code> hash — replace with real OpenLaunch event.
+  </p>
+  <p>
+    <input id="topicInit" type="text" size="68"
+      value="0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438" />
+  </p>
+  <p>
+    <input id="topicLock" type="text" size="68"
+      value="0xe9f76a8d85d1454b2ecdbf900a15a31155a945b0e7bf889f718773bf90a4c196" />
+  </p>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <div id="feed"></div>
+  <pre id="out"></pre>
+
+  <script>
+    // Base · public Free 3M path (host: base-rpc.blockreq.com — not base-mainnet-rpc)
+    const WSS = "wss://base-rpc.blockreq.com/v1/rpc/public";
+    const CHAIN_ID = "0x2105";
+    const LS = "blockreq.openlaunch-base.";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const feed = document.getElementById("feed");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** tx → {init?, lock?, t} */
+    const byTx = new Map();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+    function isAddr(a) { return /^0x[a-fA-F0-9]{40}$/.test(a || ""); }
+
+    function pushCard(kind, tags, body) {
+      const el = document.createElement("div");
+      el.className = "card";
+      const tagHtml = tags.map((t) => `<span class="tag">${t}</span>`).join("");
+      el.innerHTML =
+        `<div><span class="kind">${kind}</span> ${tagHtml}</div>` +
+        `<div style="margin-top:0.3rem;font-family:ui-monospace,monospace">${body}</div>`;
+      feed.prepend(el);
+      while (feed.children.length > 40) feed.removeChild(feed.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function loadFields() {
+      const pm = localStorage.getItem(LS + "poolManager");
+      const fac = localStorage.getItem(LS + "factory");
+      const ti = localStorage.getItem(LS + "topicInit");
+      const tl = localStorage.getItem(LS + "topicLock");
+      if (pm) document.getElementById("poolManager").value = pm;
+      if (fac != null) document.getElementById("factory").value = fac;
+      if (ti) document.getElementById("topicInit").value = ti;
+      if (tl) document.getElementById("topicLock").value = tl;
+    }
+    function saveFields() {
+      localStorage.setItem(LS + "poolManager", document.getElementById("poolManager").value.trim());
+      localStorage.setItem(LS + "factory", document.getElementById("factory").value.trim());
+      localStorage.setItem(LS + "topicInit", document.getElementById("topicInit").value.trim());
+      localStorage.setItem(LS + "topicLock", document.getElementById("topicLock").value.trim());
+    }
+
+    function subscribeAll() {
+      saveFields();
+      const pm = document.getElementById("poolManager").value.trim();
+      const factory = document.getElementById("factory").value.trim();
+      const topicInit = document.getElementById("topicInit").value.trim().toLowerCase();
+      const topicLock = document.getElementById("topicLock").value.trim().toLowerCase();
+
+      if (document.getElementById("subInit").checked) {
+        const filt = { topics: [topicInit] };
+        if (isAddr(pm)) filt.address = pm.toLowerCase();
+        send("eth_subscribe", ["logs", filt]);
+        log("eth_subscribe Initialize" + (isAddr(pm) ? " @ " + short(pm) : " (topic-wide)") +
+            " · chainId=" + CHAIN_ID);
+      }
+      if (document.getElementById("subLock").checked) {
+        const filt = { topics: [topicLock] };
+        if (isAddr(factory)) filt.address = factory.toLowerCase();
+        send("eth_subscribe", ["logs", filt]);
+        log("eth_subscribe Lock/launch" + (isAddr(factory) ? " @ " + short(factory) : " (topic-wide — noisy)"));
+      }
+      setStatus("connected · OpenLaunch / v4 armed · Base " + CHAIN_ID);
+    }
+
+    function latchTx(tx) {
+      let rec = byTx.get(tx);
+      if (!rec) {
+        rec = { init: null, lock: null, t: Date.now() };
+        byTx.set(tx, rec);
+      }
+      return rec;
+    }
+
+    function maybeCluster(tx, bn) {
+      if (!document.getElementById("cluster").checked) return;
+      const rec = byTx.get(tx);
+      if (!rec || !rec.init || !rec.lock) return;
+      if (rec.clustered) return;
+      rec.clustered = true;
+      const i = rec.init;
+      pushCard(
+        "一笔开盘",
+        ["one-tx", "Initialize+lock", "OpenLaunch?"],
+        `tx=${short(tx)} · c0=${short(i.currency0)} · c1=${short(i.currency1)} · ` +
+        `poolId=${short(i.poolId)} · lock@${short(rec.lock.address)} · #${bn}`
+      );
+      log(`one-tx cluster tx=${short(tx)} #${bn}`);
+    }
+
+    function onInitialize(r) {
+      // topics: [sig, id, currency0, currency1] for indexed fields
+      const poolId = (r.topics || [])[1] || "";
+      const currency0 = unpadTopic((r.topics || [])[2]);
+      const currency1 = unpadTopic((r.topics || [])[3]);
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : 0;
+      const tx = r.transactionHash;
+      const rec = latchTx(tx);
+      rec.init = { poolId, currency0, currency1, address: (r.address || "").toLowerCase() };
+
+      pushCard(
+        "pool Initialize",
+        ["v4", "Initialize", "Base"],
+        `poolId=${short(poolId)} · ${short(currency0)} / ${short(currency1)} · ` +
+        `pm=${short(r.address)} · #${bn} · tx=${short(tx)}`
+      );
+      log(`Initialize c0=${short(currency0)} c1=${short(currency1)} #${bn}`);
+      maybeCluster(tx, bn);
+    }
+
+    function onLock(r) {
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : 0;
+      const tx = r.transactionHash;
+      const tokenish = unpadTopic((r.topics || [])[1]) || unpadTopic((r.topics || [])[2]);
+      const rec = latchTx(tx);
+      rec.lock = { address: (r.address || "").toLowerCase(), tokenish };
+
+      pushCard(
+        "lock / launch",
+        ["lock", "permanent?", "placeholder-ABI"],
+        `addr=${short(r.address)} · hint=${short(tokenish || "?")} · #${bn} · tx=${short(tx)}`
+      );
+      log(`Lock/launch @${short(r.address)} #${bn}`);
+      maybeCluster(tx, bn);
+    }
+
+    function onLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const t0 = ((r.topics || [])[0] || "").toLowerCase();
+      const topicInit = document.getElementById("topicInit").value.trim().toLowerCase();
+      const topicLock = document.getElementById("topicLock").value.trim().toLowerCase();
+      if (t0 === topicInit) return onInitialize(r);
+      if (t0 === topicLock) return onLock(r);
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => { backoffMs = 1000; subscribeAll(); };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        onLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      feed.innerHTML = "";
+      seen.clear();
+      byTx.clear();
+    };
+
+    loadFields();
+  </script>
+</body>
+</html>
