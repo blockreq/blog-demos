@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anoncoin · RH anon launch listen</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
+    button { margin-right: 0.5rem; }
+    #status { margin: 0.75rem 0; color: #334155; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; min-height: 12rem;
+          overflow: auto; font-size: 12px; border-radius: 8px; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: 0.5rem 0; }
+    label.field { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+    input[type="text"], input[type="number"] { font-family: ui-monospace, monospace; }
+    .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
+    .banner { border: 1px solid #38bdf8; background: #f0f9ff; color: #0c4a6e;
+              border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.75rem 0; font-size: 0.9rem; }
+    .abi { background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 8px;
+           padding: 0.55rem 0.75rem; font-size: 11px; font-family: ui-monospace, monospace;
+           color: #334155; margin: 0.5rem 0 0.75rem; white-space: pre-wrap; }
+    .card { border: 1px solid #334155; border-radius: 8px; padding: 0.65rem 0.8rem;
+            margin: 0.4rem 0; background: #0f172a; color: #e2e8f0; font-size: 12px; }
+    .card .kind { color: #38bdf8; font-weight: 600; }
+    .card .tag { display: inline-block; background: #1e293b; border: 1px solid #475569;
+                 border-radius: 999px; padding: 0.05rem 0.45rem; margin-right: 0.25rem;
+                 font-size: 11px; color: #fbbf24; }
+    #feed { max-height: 22rem; overflow: auto; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>Anoncoin · RH anon launch listen</h1>
+  <p>
+    Public WSS · chainId <code>0x1237</code> · <code>eth_subscribe → logs</code>
+    (Factory PairCreated) → filter <code>quote=$SPCX</code> → 「新开盘」cards.
+  </p>
+  <p>
+    WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+  </p>
+
+  <div class="banner">
+    <strong>Placeholder factory.</strong>
+    Paste live <code>ANONCOIN_FACTORY</code> when known. Demo defaults to Uniswap V2-style
+    <code>PairCreated</code> topic0 — swap topic if Anoncoin uses an equivalent open event.
+  </div>
+
+  <div class="abi">// Placeholder ABI fragment (swap for real Anoncoin Factory when known)
+event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+// topics[0] = keccak256("PairCreated(address,address,address,uint256)")
+// env stand-ins: ANONCOIN_FACTORY · QUOTE_TOKEN ($SPCX) · MIN_LIQ</div>
+
+  <div class="row">
+    <label class="field">Factory
+      <input id="factory" type="text" size="46"
+        placeholder="0x… ANONCOIN_FACTORY (required for narrow sub)" />
+    </label>
+  </div>
+  <div class="row">
+    <label class="field">QUOTE_TOKEN ($SPCX)
+      <input id="quote" type="text" size="46"
+        placeholder="0x… quote whitelist" />
+    </label>
+  </div>
+  <div class="row">
+    <label class="field"><input type="checkbox" id="subPair" checked /> PairCreated</label>
+    <label class="field"><input type="checkbox" id="subMint" checked /> Mint (LP 到位)</label>
+    <label class="field"><input type="checkbox" id="onlyQuote" checked /> quote-only</label>
+    <label class="field">MIN_LIQ
+      <input id="minLiq" type="number" min="0" step="0.01" value="0" style="width:5rem" />
+      ×1e18
+    </label>
+  </div>
+  <p class="hint">
+    Topic0 editable. Leave factory empty → topic-wide (noisy). Quote empty + quote-only → start blocked.
+  </p>
+  <p>
+    <input id="topicPair" type="text" size="68"
+      value="0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9" />
+  </p>
+
+  <button id="start" type="button">Start</button>
+  <button id="stop" type="button" disabled>Stop</button>
+  <button id="clear" type="button">Clear</button>
+  <div id="status">Idle</div>
+  <div id="feed"></div>
+  <pre id="out"></pre>
+
+  <script>
+    // Robinhood Chain · public Free 3M path
+    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    const CHAIN_ID = "0x1237";
+    const MINT =
+      "0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f";
+    const LS = "blockreq.anoncoin-rh.";
+
+    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const feed = document.getElementById("feed");
+    let ws = null;
+    let nextId = 1;
+    let backoffMs = 1000;
+    let wantRun = false;
+    const seen = new Set();
+    /** pair → {token0,token1,baseSide,quote,block,t,tx,firstLp} */
+    const pairs = new Map();
+
+    function log(line) {
+      const t = new Date().toISOString().slice(11, 19);
+      out.textContent = `[${t}] ${line}\n` + out.textContent;
+    }
+    function setStatus(s) { status.textContent = s; }
+    function short(a) {
+      if (!a || a.length < 10) return a || "?";
+      return a.slice(0, 8) + "…" + a.slice(-4);
+    }
+    function unpadTopic(topic) {
+      if (!topic || topic.length < 42) return "";
+      return "0x" + topic.slice(-40).toLowerCase();
+    }
+    function wordAddr(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return "";
+      return "0x" + data.slice(2 + i * 64 + 24, 2 + (i + 1) * 64).toLowerCase();
+    }
+    function wordU256(data, i) {
+      if (!data || data.length < 2 + (i + 1) * 64) return 0n;
+      return BigInt("0x" + data.slice(2 + i * 64, 2 + (i + 1) * 64));
+    }
+    function isAddr(a) { return /^0x[a-fA-F0-9]{40}$/.test(a || ""); }
+
+    function pushCard(kind, tags, body) {
+      const el = document.createElement("div");
+      el.className = "card";
+      const tagHtml = tags.map((t) => `<span class="tag">${t}</span>`).join("");
+      el.innerHTML =
+        `<div><span class="kind">${kind}</span> ${tagHtml}</div>` +
+        `<div style="margin-top:0.3rem;font-family:ui-monospace,monospace">${body}</div>`;
+      feed.prepend(el);
+      while (feed.children.length > 40) feed.removeChild(feed.lastChild);
+    }
+
+    function send(method, params) {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
+    }
+
+    function loadFields() {
+      document.getElementById("factory").value = localStorage.getItem(LS + "factory") || "";
+      document.getElementById("quote").value = localStorage.getItem(LS + "quote") || "";
+      const topic = localStorage.getItem(LS + "topicPair");
+      if (topic) document.getElementById("topicPair").value = topic;
+    }
+    function saveFields() {
+      localStorage.setItem(LS + "factory", document.getElementById("factory").value.trim());
+      localStorage.setItem(LS + "quote", document.getElementById("quote").value.trim());
+      localStorage.setItem(LS + "topicPair", document.getElementById("topicPair").value.trim());
+    }
+
+    function subscribeAll() {
+      saveFields();
+      const factory = document.getElementById("factory").value.trim();
+      const topicPair = document.getElementById("topicPair").value.trim().toLowerCase();
+      const factoryOk = isAddr(factory);
+
+      if (document.getElementById("subPair").checked) {
+        const filt = { topics: [topicPair] };
+        if (factoryOk) filt.address = factory.toLowerCase();
+        send("eth_subscribe", ["logs", filt]);
+        log("eth_subscribe PairCreated" + (factoryOk ? " @ " + short(factory) : " (topic-wide)") +
+            " · chainId=" + CHAIN_ID);
+      }
+      if (document.getElementById("subMint").checked) {
+        send("eth_subscribe", ["logs", { topics: [MINT] }]);
+        log("eth_subscribe Mint (topic-wide; filters to quote-pairs in cache)");
+      }
+      setStatus("connected · anon launch armed · chainId " + CHAIN_ID);
+    }
+
+    function onPairCreated(r) {
+      const quote = document.getElementById("quote").value.trim().toLowerCase();
+      const token0 = unpadTopic((r.topics || [])[1]);
+      const token1 = unpadTopic((r.topics || [])[2]);
+      const pair = wordAddr(r.data, 0);
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : 0;
+      const onlyQuote = document.getElementById("onlyQuote").checked;
+      const hit0 = quote && token0 === quote;
+      const hit1 = quote && token1 === quote;
+      const quoteHit = hit0 || hit1;
+
+      if (!quoteHit && onlyQuote) {
+        log(`PairCreated skip non-quote pair=${short(pair)} #${bn}`);
+        return;
+      }
+
+      const baseSide = hit0 ? token1 : hit1 ? token0 : "";
+      const tags = ["新开盘", "anon"];
+      if (quoteHit) tags.push("$SPCX", "quote-hit");
+
+      const rec = {
+        token0, token1, baseSide, quote: quoteHit ? quote : "",
+        block: bn, t: Date.now(), tx: r.transactionHash, firstLp: false,
+      };
+      if (pair) pairs.set(pair.toLowerCase(), rec);
+
+      pushCard(
+        "新开盘",
+        tags,
+        `pair=${short(pair)} · base=${short(baseSide || "?")} · quote=${quoteHit ? short(quote) : "—"} · #${bn} · tx=${short(r.transactionHash)}`
+      );
+      if (quoteHit) {
+        pushCard(
+          "quote hit",
+          ["$SPCX", hit0 ? "token0" : "token1"],
+          `QUOTE_TOKEN=${quote} · meme/base=${baseSide} · factoryTx=${r.transactionHash}`
+        );
+      }
+      log(`新开盘 pair=${short(pair)} quoteHit=${quoteHit} #${bn}`);
+    }
+
+    function onMint(r) {
+      const pool = (r.address || "").toLowerCase();
+      const known = pairs.get(pool);
+      if (!known) return;
+      if (known.firstLp) {
+        log(`Mint again pool=${short(pool)}`);
+        return;
+      }
+      const a0 = wordU256(r.data, 0);
+      const a1 = wordU256(r.data, 1);
+      const minRaw = BigInt(Math.floor(Number(document.getElementById("minLiq").value || 0) * 1e18));
+      const sum = a0 + a1;
+      if (minRaw > 0n && sum < minRaw) {
+        log(`Mint below MIN_LIQ pool=${short(pool)} sum=${sum}`);
+        return;
+      }
+      known.firstLp = true;
+      const bn = r.blockNumber ? parseInt(r.blockNumber, 16) : "?";
+      pushCard(
+        "LP 到位",
+        ["first-LP", "开盘簇"],
+        `pair=${short(pool)} a0=${a0} a1=${a1} · quote=${known.quote ? short(known.quote) : "—"} · #${bn}`
+      );
+      log(`LP 到位 pool=${short(pool)} sum=${sum} #${bn}`);
+    }
+
+    function onLog(r) {
+      const key = "l:" + r.transactionHash + ":" + r.logIndex;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const t0 = ((r.topics || [])[0] || "").toLowerCase();
+      const topicPair = document.getElementById("topicPair").value.trim().toLowerCase();
+      if (t0 === topicPair) return onPairCreated(r);
+      if (t0 === MINT) return onMint(r);
+    }
+
+    function connect() {
+      if (!wantRun) return;
+      setStatus("connecting…");
+      ws = new WebSocket(WSS);
+      ws.onopen = () => { backoffMs = 1000; subscribeAll(); };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.id && msg.result && typeof msg.result === "string") {
+          log("subscription id=" + msg.result);
+          return;
+        }
+        if (msg.id && msg.error) {
+          log("rpc error: " + (msg.error.message || JSON.stringify(msg.error)));
+          return;
+        }
+        if (msg.method !== "eth_subscription") return;
+        const r = msg.params && msg.params.result;
+        if (!r || !r.transactionHash) return;
+        onLog(r);
+      };
+      ws.onclose = () => {
+        setStatus("closed");
+        if (!wantRun) return;
+        setStatus(`reconnect in ${backoffMs}ms`);
+        setTimeout(connect, backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 30000);
+      };
+      ws.onerror = () => { try { ws.close(); } catch {} };
+    }
+
+    document.getElementById("start").onclick = () => {
+      const quote = document.getElementById("quote").value.trim();
+      if (document.getElementById("onlyQuote").checked && !isAddr(quote)) {
+        setStatus("paste QUOTE_TOKEN ($SPCX) first, or uncheck quote-only");
+        log("start blocked: empty quote");
+        return;
+      }
+      wantRun = true;
+      document.getElementById("start").disabled = true;
+      document.getElementById("stop").disabled = false;
+      connect();
+    };
+    document.getElementById("stop").onclick = () => {
+      wantRun = false;
+      document.getElementById("start").disabled = false;
+      document.getElementById("stop").disabled = true;
+      if (ws) try { ws.close(); } catch {}
+      setStatus("stopped");
+    };
+    document.getElementById("clear").onclick = () => {
+      out.textContent = "";
+      feed.innerHTML = "";
+      seen.clear();
+      pairs.clear();
+    };
+
+    loadFields();
+  </script>
+</body>
+</html>

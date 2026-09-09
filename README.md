@@ -30,6 +30,12 @@ https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-k
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-gas-heat-radar
 
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/anoncoin-rh-launch-listen
+
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/openlaunch-base-eth-subscribe
+
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/equifold-multi-market-listen
+
 Click Run after open (ctl=1).
 
 ## Public-only warning
@@ -51,6 +57,9 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 - examples/arc-bridge-launch-watch
 - examples/robinhood-kol-wallet-watch
 - examples/robinhood-gas-heat-radar
+- examples/anoncoin-rh-launch-listen
+- examples/openlaunch-base-eth-subscribe
+- examples/equifold-multi-market-listen
 
 ## License
 
