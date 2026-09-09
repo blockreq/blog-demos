@@ -1,0 +1,100 @@
+name: demos1
+
+on:
+  pull_request:
+    paths:
+      - "apps/demos1/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/demos1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/demos1/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/demos1.yml"
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy Worker blockreq-demos1 (requires CF secrets)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: demos1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build demos1
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm --filter @blockreq/demos1 build
+      - name: Upload dist (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: demos1-dist
+          path: apps/demos1/dist
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy Worker (workflow_dispatch only)
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm --filter @blockreq/demos1 build
+      - name: Check secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN missing. Set org/repo secret (Workers Edit)."
+            exit 1
+          fi
+          ACCOUNT="${CLOUDFLARE_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}"
+          if [ -z "$ACCOUNT" ]; then
+            echo "::error::Set CF_ACCOUNT_ID or CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
+      - name: Deploy
+        working-directory: apps/demos1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler deploy

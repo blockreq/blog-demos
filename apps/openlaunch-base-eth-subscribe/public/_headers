@@ -1,5 +1,0 @@
-/*
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  Content-Security-Policy: frame-ancestors 'self' https://blockreq.com https://*.blockreq.com https://blog.blockreq.com https://docs.blockreq.com https://*.pages.dev http://localhost:* http://127.0.0.1:*
-  # Do not set X-Frame-Options — CSP frame-ancestors governs embedding.

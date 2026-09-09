@@ -63,25 +63,41 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 
 
 
-## Hosted Next.js demos (Cloudflare Pages)
+## Hosted demos1 (Cloudflare Worker + static assets)
 
-iframe-friendly App Router demos with big beginner UI + local enter/highlight/pulse motion.
+Single Worker (`blockreq-demos1`) serves many demos under `/demos1/`.
 
-| App | Source | Expected Pages URL | Blog deep-link (`NEXT_PUBLIC_BLOG_URL`) |
-| --- | --- | --- | --- |
-| Anoncoin RH launch listen | `apps/anoncoin-rh-launch-listen` | https://anoncoin-rh-launch-listen.pages.dev | https://blockreq.com/blog/en/anoncoin-rh-launch-listen |
-| OpenLaunch Base eth_subscribe | `apps/openlaunch-base-eth-subscribe` | https://openlaunch-base-eth-subscribe.pages.dev | https://blockreq.com/blog/en/openlaunch-base-eth-subscribe |
+| Demo | Paths |
+| --- | --- |
+| Anoncoin RH launch listen | `/demos1/anoncoin-rh-launch-listen/en/` · `/zh/` |
+| OpenLaunch Base eth_subscribe | `/demos1/openlaunch-base-eth-subscribe/en/` · `/zh/` |
+| Equifold multi-market listen | `/demos1/equifold-multi-market-listen/en/` · `/zh/` |
+| Index | `/demos1/` |
 
-StackBlitz twins stay under `examples/` (unchanged).
+Stack: **React + TanStack Router/Query + shadcn-style UI + viem**. No Next.js. Browser-only RPC — the Worker serves assets + CSP headers and does **not** proxy WSS/subscriptions.
 
-Deploy (CI on `main`, or locally):
+### Local
 
 ```bash
-cd apps/anoncoin-rh-launch-listen && npm ci && npm run pages:deploy
-cd apps/openlaunch-base-eth-subscribe && npm ci && npm run pages:deploy
+pnpm install
+pnpm --filter @blockreq/demos1 dev          # Vite at /demos1/
+pnpm --filter @blockreq/demos1 build
+pnpm --filter @blockreq/demos1 wrangler:dev # build + wrangler preview
 ```
 
-Requires org secret `CLOUDFLARE_API_TOKEN` + repo secret `CF_ACCOUNT_ID`.
+### Production route (Boss / gitops)
+
+Wire zone route `blockreq.com/demos1*` → Worker `blockreq-demos1` later. Local `wrangler dev` / Workers preview is enough for this PR.
+
+### Deploy (optional, secrets gated)
+
+Workflow `.github/workflows/demos1.yml`:
+- **pull_request / push**: build only (no secrets required to merge)
+- **workflow_dispatch** deploy: needs `CLOUDFLARE_API_TOKEN` + `CF_ACCOUNT_ID` (or `CLOUDFLARE_ACCOUNT_ID`)
+
+See `docs/BOSS-DEMOS1-WORKER.md`.
+
+StackBlitz twins stay under `examples/` (unchanged).
 
 ## License
 

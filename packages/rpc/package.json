@@ -1,0 +1,12 @@
+{
+  "name": "@blockreq/rpc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "viem": "^2.31.0"
+  },
+  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "devDependencies": { "typescript": "^5.8.3" }
+}
