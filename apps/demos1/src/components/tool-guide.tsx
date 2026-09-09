@@ -2,7 +2,7 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, cn } from "@blockreq/ui";
 
-/** Top guidance: BlockReq public · Free 3M + step hints (tool-oriented, not tutorial). */
+/** Top guidance: BlockReq public endpoint + step hints (tool-oriented, not tutorial). */
 export function ToolGuideBanner({
   locale,
   stepHint,

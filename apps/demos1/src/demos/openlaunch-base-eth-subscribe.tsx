@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Locale } from "@blockreq/i18n";
-import { t } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -20,6 +19,11 @@ import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildOpenFixtures, useDemoHits } from "../lib/demo-hits";
 import { mapInitializeLogs, useRecentHistory } from "../lib/recent-history";
 import { getDemo } from "../catalog";
+import {
+  isNewHeadsResult,
+  resolveLiveUpdateAt,
+  useTipHeartbeat,
+} from "../lib/live-pulse";
 
 const EP = PUBLIC_ENDPOINTS.base;
 const WSS = EP.wss;
@@ -257,6 +261,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       if (isAddr(fac)) filt.address = fac.toLowerCase();
       send("eth_subscribe", ["logs", filt]);
     }
+    send("eth_subscribe", ["newHeads"]);
     setStatus("listening");
   }, []);
 
@@ -284,6 +289,10 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       if (msg.method !== "eth_subscription") return;
       const params = msg.params as { result?: Record<string, unknown> } | undefined;
       const r = params?.result;
+      if (isNewHeadsResult(r)) {
+        setLastPulseAt(Date.now());
+        return;
+      }
       if (!r || !r.transactionHash) return;
       onLogMsg(r);
     };
@@ -362,6 +371,10 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     if (events[0]?.at) setLastPulseAt(events[0].at);
   }, [events]);
 
+  const runningLive = status === "connecting" || status === "listening" || status === "hit";
+  const { tipAt } = useTipHeartbeat({ https: HTTPS, enabled: runningLive });
+
+
   const settings = (
     <div className="space-y-3">
       <button
@@ -438,9 +451,14 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     </div>
   );
 
-  const lastUpdateAt =
-    lastPulseAt || events[0]?.at || listeningSince || seedEvents[0]?.at || null;
 
+
+  const lastUpdateAt = resolveLiveUpdateAt({
+    lastPulseAt,
+    tipAt,
+    listeningSince,
+    running: runningLive,
+  });
 
   return (
     <div className="flex min-h-screen flex-col pb-24" data-layout="open">
@@ -452,6 +470,8 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         status={status}
         hasHit={hasHit}
         slug={SLUG}
+        blogUrl={demoBlogUrl(SLUG, locale)}
+        siteUrl={demoSiteUrl(getDemo(SLUG))}
       />
       <OpenWaitLayout
         locale={locale}

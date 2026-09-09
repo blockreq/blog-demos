@@ -11,12 +11,12 @@ type Dict = Record<string, string>;
 const en: Dict = {
   "index.pill": "DEMOS1 // PUBLIC LISTEN TOOLS",
   "index.title": "Listen tools on BlockReq public RPC",
-  "index.subtitle": "Practical browser listen tools on BlockReq public endpoints (Free 3M). Dense idle with source + history; live on by default — Pause / Resume live.",
+  "index.subtitle": "Practical browser listen tools on BlockReq public endpoints. Dense idle with source + history; live on by default — Pause / Resume live. Free 3M after signup.",
   "index.open": "Open",
   "index.openEn": "EN",
   "index.openZh": "中文",
   "index.locale": "Language",
-  "index.radarBanner": "Published listen tools — open a product. Source + recent history load from BlockReq public (Free 3M).",
+  "index.radarBanner": "Published listen tools — open a product. Source + recent history load from BlockReq public endpoints.",
   "index.radarTitle": "Published tools · pick a listen product",
   "index.radarLog": "Catalog activity",
   "index.chainLabel": "Product lanes",
@@ -25,9 +25,19 @@ const en: Dict = {
   "shell.stackblitz": "Open in StackBlitz",
   "shell.readGuide": "Read the guide",
   "shell.pricing": "Pricing →",
+  "shell.site": "Site",
+  "shell.blog": "Blog",
+  "shell.publicMsg": "BlockReq public",
+  "shell.quotaAfter": "Free 3M after signup",
+  "shell.streaming": "streaming",
+  "shell.publicTag": "PUBLIC",
+  "shell.publicFree": "Free 3M",
+  "shell.signup": "Sign up",
+  "index.site": "Site",
+  "index.docs": "Blog",
   "shell.live": "LIVE",
   "shell.offline": "PAUSED",
-  "shell.demoData": "PUBLIC · Free 3M",
+  "shell.demoData": "DEMO DATA",
   "shell.freshJustNow": "Just now",
   "shell.freshAgo": "{n}s ago",
   "shell.freshUpdated": "Updated {rel}",
@@ -43,7 +53,7 @@ const en: Dict = {
   "common.clear": "Clear",
   "common.feed": "Launches",
   "common.waiting": "Live on — seeded/history rows until the next on-chain hit.",
-  "common.publicOnly": "No wallet. Browser → BlockReq public HTTPS/WSS only (Free 3M).",
+  "common.publicOnly": "No wallet. Browser → BlockReq public HTTPS/WSS. Free 3M after signup.",
   "common.settings": "Advanced (optional)",
   "common.copy": "Copy",
   "common.terminal": "Activity",
@@ -78,7 +88,7 @@ const en: Dict = {
   "openlaunch.hero.listening": "Live — waiting for Initialize + lock in one tx. History below.",
   "openlaunch.hero.hit": "Big event card owns the stage; short list below.",
   "openlaunch.stripTitle": "OpenLaunch · one-shot listen",
-  "openlaunch.stripSub": "Base · Initialize + lock · public Free 3M",
+  "openlaunch.stripSub": "Base · Initialize + lock · BlockReq public",
   "openlaunch.stageIdle": "Paused",
   "openlaunch.stageConn": "Connecting…",
   "openlaunch.stageListen": "Listening for the one shot",
@@ -111,7 +121,7 @@ const en: Dict = {
   "demoHits.toggle": "Demo / fixture hits",
 
   "endpoint.public": "Public endpoint in use",
-  "endpoint.free3m": "Free 3M · docs",
+  "endpoint.free3m": "Free 3M after signup · docs",
   "endpoint.signup": "Pricing / signup →",
   "endpoint.copied": "Copied",
   "endpoint.hint": "Your browser connects directly — Worker never proxies subscriptions. Swap to a paid key later without changing this listen flow.",
@@ -127,7 +137,7 @@ const en: Dict = {
   "equifold.guide": "NEONCAT header + market columns prefilled with demo quotes. Live on by default.",
   "history.seedNote": "Showing DEMO DATA seeds until public eth_getLogs returns rows.",
   "history.rpcNote": "From BlockReq public eth_getLogs (recent window).",
-  "tool.publicFree": "BlockReq public · Free 3M",
+  "tool.publicFree": "BlockReq public endpoint",
   "tool.guideLine": "HTTPS/WSS in-browser · no Worker proxy",
   "tool.stepAnon": "Feed + last hit already filled · Pause live anytime",
   "tool.stepOpen": "Source + history already filled · live on · Pause anytime",
@@ -135,7 +145,7 @@ const en: Dict = {
   "tool.watching": "Watching",
   "tool.sourceReady": "HTTPS tip synced",
   "tool.sourceLoading": "Fetching tip…",
-  "tool.usePublic": "public · Free 3M",
+  "tool.usePublic": "public endpoint",
   "history.title": "Recent history",
   "history.liveTitle": "Live feed",
   "history.windowBadge": "last {n} blocks",
@@ -166,12 +176,12 @@ const en: Dict = {
 const zh: Dict = {
   "index.pill": "DEMOS1 // 公共节点监听工具",
   "index.title": "用 BlockReq 公共节点听开盘",
-  "index.subtitle": "实用的浏览器监听工具，连 BlockReq 公共节点（Free 3M）。首屏有源+历史；实时默认开 — 暂停 / 恢复实时。",
+  "index.subtitle": "实用的浏览器监听工具，连 BlockReq 公共节点。首屏有源+历史；实时默认开 — 暂停 / 恢复实时。注册可得 Free 3M。",
   "index.open": "打开",
   "index.openEn": "EN",
   "index.openZh": "中文",
   "index.locale": "语言",
-  "index.radarBanner": "已发布的监听工具——点开产品。数据源与近期历史来自 BlockReq 公共节点（Free 3M）。",
+  "index.radarBanner": "已发布的监听工具——点开产品。数据源与近期历史来自 BlockReq 公共节点。",
   "index.radarTitle": "已发布工具 · 选一个开盘监听",
   "index.radarLog": "目录动态",
   "index.chainLabel": "产品通道",
@@ -180,9 +190,19 @@ const zh: Dict = {
   "shell.stackblitz": "在 StackBlitz 打开",
   "shell.readGuide": "看教程",
   "shell.pricing": "定价 →",
+  "shell.site": "官网",
+  "shell.blog": "Blog",
+  "shell.publicMsg": "BlockReq 公共节点",
+  "shell.quotaAfter": "注册可得 Free 3M",
+  "shell.streaming": "推流中",
+  "shell.publicTag": "PUBLIC",
+  "shell.publicFree": "Free 3M",
+  "shell.signup": "注册",
+  "index.site": "官网",
+  "index.docs": "Blog",
   "shell.live": "LIVE",
   "shell.offline": "PAUSED",
-  "shell.demoData": "公共节点 · Free 3M",
+  "shell.demoData": "示意数据 · DEMO DATA",
   "shell.freshJustNow": "刚刚",
   "shell.freshAgo": "{n}s 前",
   "shell.freshUpdated": "更新于 {rel}",
@@ -198,7 +218,7 @@ const zh: Dict = {
   "common.clear": "清空",
   "common.feed": "开盘动态",
   "common.waiting": "实时已开 — 打中前显示示意/历史行。",
-  "common.publicOnly": "不用装钱包。浏览器直连 BlockReq 公共 HTTPS/WSS（Free 3M）。",
+  "common.publicOnly": "不用装钱包。浏览器直连 BlockReq 公共 HTTPS/WSS。注册可得 Free 3M。",
   "common.settings": "高级（可选）",
   "common.copy": "复制",
   "common.terminal": "动态",
@@ -233,7 +253,7 @@ const zh: Dict = {
   "openlaunch.hero.listening": "在听那一枪。下方已有历史动静。",
   "openlaunch.hero.hit": "大事件卡压住舞台，下面是短列表。",
   "openlaunch.stripTitle": "OpenLaunch · 等那一枪",
-  "openlaunch.stripSub": "Base · Initialize + 锁仓 · 公共 Free 3M",
+  "openlaunch.stripSub": "Base · Initialize + 锁仓 · BlockReq 公共节点",
   "openlaunch.stageIdle": "已暂停实时",
   "openlaunch.stageConn": "正在连…",
   "openlaunch.stageListen": "在听那一枪",
@@ -266,7 +286,7 @@ const zh: Dict = {
   "demoHits.toggle": "示意 / 模拟打中",
 
   "endpoint.public": "正在使用的公共节点",
-  "endpoint.free3m": "Free 3M · 文档",
+  "endpoint.free3m": "注册可得 Free 3M · 文档",
   "endpoint.signup": "定价 / 注册 →",
   "endpoint.copied": "已复制",
   "endpoint.hint": "浏览器直连公共节点——Worker 不代理订阅。以后换成付费 Key 也不改这套听流。",
@@ -282,7 +302,7 @@ const zh: Dict = {
   "equifold.guide": "NEONCAT 头栏 + 三列市场报价已预填示意行。实时默认开。",
   "history.seedNote": "公共 eth_getLogs 返回前，显示示意数据行。",
   "history.rpcNote": "来自 BlockReq 公共 eth_getLogs（近期窗口）。",
-  "tool.publicFree": "BlockReq 公共节点 · Free 3M",
+  "tool.publicFree": "BlockReq 公共节点",
   "tool.guideLine": "浏览器直连 HTTPS/WSS · Worker 不代理",
   "tool.stepAnon": "左侧历史流 + 右侧上次打中已有料 · 随时暂停实时",
   "tool.stepOpen": "源条 + 历史已有料 · 实时默认开 · 随时暂停",
@@ -290,7 +310,7 @@ const zh: Dict = {
   "tool.watching": "正在监听",
   "tool.sourceReady": "HTTPS tip 已同步",
   "tool.sourceLoading": "拉取 tip…",
-  "tool.usePublic": "公共 · Free 3M",
+  "tool.usePublic": "公共节点",
   "history.title": "近期历史",
   "history.liveTitle": "实时流",
   "history.windowBadge": "最近 {n} 块",
@@ -336,6 +356,8 @@ export type DemoLayout =
 export const DEMO_CATALOG = [
   {
     slug: "anoncoin-rh-launch-listen",
+    blogSlug: "anoncoin-rh-launch-listen",
+    siteUrl: "https://blockreq.com/",
     titleKey: "anoncoin.title",
     blurbKey: "anoncoin.blurb",
     accent: "eth" as const,
@@ -355,6 +377,8 @@ export const DEMO_CATALOG = [
   },
   {
     slug: "openlaunch-base-eth-subscribe",
+    blogSlug: "openlaunch-base-eth-subscribe",
+    siteUrl: "https://blockreq.com/",
     titleKey: "openlaunch.title",
     blurbKey: "openlaunch.blurb",
     accent: "bnb" as const,
@@ -373,6 +397,8 @@ export const DEMO_CATALOG = [
   },
   {
     slug: "equifold-multi-market-listen",
+    blogSlug: "equifold-multi-market-listen",
+    siteUrl: "https://blockreq.com/",
     titleKey: "equifold.title",
     blurbKey: "equifold.blurb",
     accent: "sol" as const,
@@ -402,4 +428,14 @@ export type DemoSlug = (typeof DEMO_CATALOG)[number]["slug"];
 
 export function getDemo(slug: string) {
   return DEMO_CATALOG.find((d) => d.slug === slug);
+}
+
+export const SITE_URL = "https://blockreq.com/";
+
+export function demoBlogUrl(slug: string, locale: Locale) {
+  return `https://blockreq.com/blog/${locale}/${slug}`;
+}
+
+export function demoSiteUrl(demo?: { siteUrl?: string } | null) {
+  return demo?.siteUrl || SITE_URL;
 }
