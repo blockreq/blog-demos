@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import {
@@ -9,7 +9,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
+  ToggleGroup,
+  ToggleGroupItem,
   type ConnStatus,
 } from "@blockreq/ui";
 import {
@@ -19,7 +20,10 @@ import {
   unpadTopic,
   wordAddr,
 } from "@blockreq/rpc";
-import { ListenShell } from "../components/listen-shell";
+import { MonitorChrome } from "../components/monitor-chrome";
+import { EquiSplitLayout } from "../components/layouts/equi-split-layout";
+import type { FeedEvent } from "../components/feed-types";
+import { EndpointBar } from "../components/endpoint-bar";
 
 const ENDPOINTS = {
   base: PUBLIC_ENDPOINTS.base,
@@ -31,8 +35,8 @@ type EpKey = keyof typeof ENDPOINTS;
 const DEFAULT_TOPIC =
   "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
 const LS = "blockreq.equifold-mm.";
+const SLUG = "equifold-multi-market-listen";
 
-type FeedCard = { id: string; kind: string; tags: string[]; body: string };
 type MarketEntry = {
   market: string;
   quote: string;
@@ -40,8 +44,9 @@ type MarketEntry = {
   ts: number;
   index: number;
   block: number;
+  base: string;
 };
-type TokenRec = { markets: MarketEntry[]; firstAt: number; count: number };
+type TokenRec = { markets: MarketEntry[]; firstAt: number; count: number; base: string };
 
 function SettingsPanel({ open, children }: { open: boolean; children: ReactNode }) {
   if (!open) return null;
@@ -54,10 +59,10 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [topic0, setTopic0] = useState(DEFAULT_TOPIC);
   const [burstSec, setBurstSec] = useState("30");
   const [status, setStatus] = useState<ConnStatus>("idle");
-  const [cards, setCards] = useState<FeedCard[]>([]);
+  const [events, setEvents] = useState<FeedEvent[]>([]);
   const [hasHit, setHasHit] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [toastMeta, setToastMeta] = useState("BASE · … · JUST NOW");
+  const [focusToken, setFocusToken] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -68,11 +73,11 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const fields = useRef({ endpoint, factory, topic0, burstSec });
   fields.current = { endpoint, factory, topic0, burstSec };
 
-  const pushCard = useCallback((kind: string, tags: string[], body: string, meta?: string) => {
+  const pushEvent = useCallback((ev: Omit<FeedEvent, "id" | "at">) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setCards((prev) => [{ id, kind, tags, body }, ...prev].slice(0, 40));
+    const full: FeedEvent = { ...ev, id, at: Date.now() };
+    setEvents((prev) => [full, ...prev].slice(0, 80));
     setHasHit(true);
-    if (meta) setToastMeta(meta);
   }, []);
 
   useEffect(() => {
@@ -114,7 +119,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       const now = Date.now();
       let rec = marketsByToken.current.get(baseToken);
       if (!rec) {
-        rec = { markets: [], firstAt: now, count: 0 };
+        rec = { markets: [], firstAt: now, count: 0, base: baseToken };
         marketsByToken.current.set(baseToken, rec);
       }
       rec.count += 1;
@@ -126,7 +131,9 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         ts: now,
         index,
         block: bn,
+        base: baseToken,
       });
+      if (!focusToken) setFocusToken(baseToken);
       const burst = Number(fields.current.burstSec) || 30;
       const recent = rec.markets.filter((m) => now - m.ts <= burst * 1000);
       const tags: string[] = index === 1 ? ["FIRST"] : ["NEXT", `N=${index}`];
@@ -140,14 +147,18 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
             ? "又开一个"
             : "Next market";
       const epLabel = fields.current.endpoint === "rh" ? "RH" : "BASE";
-      pushCard(
+      pushEvent({
         kind,
         tags,
-        `${shortAddr(baseToken)} · ${shortAddr(quoteToken)} · ${shortAddr(market)} · #${bn}`,
-        `${epLabel} · ${shortAddr(market)} · JUST NOW`
-      );
+        title: shortAddr(market),
+        body: `${shortAddr(baseToken)} · ${shortAddr(quoteToken)} · #${bn}`,
+        address: market || undefined,
+        block: bn,
+        tx: String(r.transactionHash || "") || undefined,
+        chain: epLabel,
+      });
     },
-    [locale, pushCard]
+    [focusToken, locale, pushEvent]
   );
 
   const onLogMsg = useCallback(
@@ -224,18 +235,14 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     connect();
   }, [connect]);
 
-  const reset = () => {
+  const stop = () => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
     } catch {
       /* ignore */
     }
-    setHasHit(false);
-    setStatus("idle");
-    setCards([]);
-    seen.current.clear();
-    marketsByToken.current.clear();
+    setStatus("stopped");
   };
 
   useEffect(() => {
@@ -250,129 +257,119 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   }, []);
 
   const ep = ENDPOINTS[endpoint];
-  const heroKey =
-    status === "connecting"
-      ? "equifold.hero.connecting"
-      : hasHit
-        ? "equifold.hero.hit"
-        : status === "listening"
-          ? "equifold.hero.listening"
-          : "equifold.hero.idle";
+  const running = status === "connecting" || status === "listening";
+
+  const focusRec = focusToken ? marketsByToken.current.get(focusToken) : null;
+  const coinTitle = focusRec
+    ? shortAddr(focusRec.base)
+    : t(locale, "equifold.coinFallback");
+  const coinMeta = focusRec
+    ? `${shortAddr(focusRec.base)} · ${focusRec.count} markets · ${endpoint === "rh" ? "RH" : "Base"}`
+    : t(locale, "equifold.metaIdle");
+
+  const columns = useMemo(() => {
+    const first = events.filter((ev) => ev.tags.includes("FIRST"));
+    const next = events.filter((ev) => !ev.tags.includes("FIRST"));
+    return [
+      { id: "first", title: t(locale, "equifold.colFirst"), events: first },
+      { id: "next", title: t(locale, "equifold.colNext"), events: next },
+      { id: "all", title: t(locale, "equifold.colAll"), events: events },
+    ];
+  }, [events, locale]);
+
+  const chainControls = (
+    <ToggleGroup
+      type="single"
+      value={endpoint}
+      disabled={running}
+      onValueChange={(v) => {
+        if (v === "base" || v === "rh") {
+          setEndpoint(v);
+          if (wantRun.current) {
+            try {
+              wsRef.current?.close();
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      }}
+      variant="outline"
+      size="sm"
+    >
+      <ToggleGroupItem value="base">Base</ToggleGroupItem>
+      <ToggleGroupItem value="rh">RH</ToggleGroupItem>
+    </ToggleGroup>
+  );
+
+  const settings = (
+    <div className="space-y-3">
+      <EndpointBar locale={locale} wss={ep.wss} https={ep.https} chainLabel={ep.label} />
+      <button
+        type="button"
+        className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
+        onClick={() => setShowSettings((v) => !v)}
+      >
+        {t(locale, "common.settings")}
+      </button>
+      <SettingsPanel open={showSettings}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardDescription>
+              {locale === "zh"
+                ? "可切换 Base / Robinhood。一般不用改。"
+                : "Toggle Base / Robinhood. Leave factory empty for wide listen."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <label className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.06em] text-[var(--color-muted-foreground)]">
+              Burst (s)
+              <Input
+                className="h-11 w-24"
+                type="number"
+                min={1}
+                max={120}
+                value={burstSec}
+                onChange={(e) => setBurstSec(e.target.value)}
+              />
+            </label>
+            <div className="space-y-1.5">
+              <Label htmlFor="factory">Factory</Label>
+              <Input id="factory" placeholder="0x…" value={factory} onChange={(e) => setFactory(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="topic0">Market topic0</Label>
+              <Input id="topic0" value={topic0} onChange={(e) => setTopic0(e.target.value)} />
+            </div>
+          </CardContent>
+        </Card>
+      </SettingsPanel>
+    </div>
+  );
 
   return (
-    <ListenShell
-      locale={locale}
-      status={status}
-      hasHit={hasHit}
-      tag={t(locale, "equifold.tag")}
-      title={t(locale, "equifold.title")}
-      heroSub={t(locale, heroKey)}
-      toast={
-        hasHit ? { title: t(locale, "equifold.toast"), meta: toastMeta } : null
-      }
-      onStart={start}
-      onReset={reset}
-      settings={
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
-            onClick={() => setShowSettings((v) => !v)}
-          >
-            {t(locale, "common.settings")}
-          </button>
-          <SettingsPanel open={showSettings}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
-                <CardDescription>
-                  {locale === "zh"
-                    ? "可切换 Base / Robinhood。一般不用改。"
-                    : "Toggle Base / Robinhood. Leave factory empty for wide listen."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-4">
-                  <label className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.06em] text-[var(--color-muted-foreground)]">
-                    Chain
-                    <select
-                      className="h-11 border border-[var(--color-line)] bg-[#07070E] px-3 font-mono text-sm text-[var(--color-foreground)]"
-                      value={endpoint}
-                      disabled={status === "connecting" || status === "listening"}
-                      onChange={(e) => {
-                        setEndpoint(e.target.value as EpKey);
-                        if (wantRun.current) {
-                          try {
-                            wsRef.current?.close();
-                          } catch {
-                            /* ignore */
-                          }
-                        }
-                      }}
-                    >
-                      <option value="base">Base</option>
-                      <option value="rh">Robinhood</option>
-                    </select>
-                  </label>
-                  <label className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.06em] text-[var(--color-muted-foreground)]">
-                    Burst (s)
-                    <Input
-                      className="h-11 w-24"
-                      type="number"
-                      min={1}
-                      max={120}
-                      value={burstSec}
-                      onChange={(e) => setBurstSec(e.target.value)}
-                    />
-                  </label>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="factory">Factory</Label>
-                  <Input
-                    id="factory"
-                    placeholder="0x…"
-                    value={factory}
-                    onChange={(e) => setFactory(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="topic0">Market topic0</Label>
-                  <Input id="topic0" value={topic0} onChange={(e) => setTopic0(e.target.value)} />
-                </div>
-                <p className="font-mono text-[11px] text-[var(--color-muted-foreground)] break-all">
-                  {ep.wss} · {ep.chainIdHex}
-                </p>
-              </CardContent>
-            </Card>
-          </SettingsPanel>
-        </div>
-      }
-    >
-      {cards.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-            {t(locale, "common.feed")}
-          </h2>
-          <div className="max-h-64 space-y-2 overflow-auto border border-[var(--color-line)] bg-[#07070E] p-3">
-            {cards.map((c) => (
-              <div
-                key={c.id}
-                className="card-enter border border-[rgba(255,43,214,0.35)] bg-[rgba(8,8,14,0.95)] p-3 text-sm"
-              >
-                <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-[var(--color-neon-mag)]">{c.kind}</span>
-                  {c.tags.map((tag) => (
-                    <Badge key={tag}>{tag}</Badge>
-                  ))}
-                </div>
-                <div className="font-mono text-[14px] font-medium break-all text-[#D0D5E8]">
-                  {c.body}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-    </ListenShell>
+    <div className="flex min-h-screen flex-col pb-24" data-layout="equi">
+      <MonitorChrome
+        locale={locale}
+        title={t(locale, "equifold.title")}
+        tag={t(locale, "equifold.tag")}
+        status={status}
+        hasHit={hasHit}
+        slug={SLUG}
+      />
+      <EquiSplitLayout
+        locale={locale}
+        coinTitle={coinTitle}
+        coinMeta={coinMeta}
+        columns={columns}
+        onStart={start}
+        onStop={stop}
+        running={running}
+        connecting={status === "connecting"}
+        chainControls={chainControls}
+        settings={settings}
+      />
+    </div>
   );
 }
