@@ -1,0 +1,11 @@
+{
+  "name": "blockreq-blog-demos",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm --filter @blockreq/demos1 build",
+    "dev": "pnpm --filter @blockreq/demos1 dev",
+    "preview": "pnpm --filter @blockreq/demos1 preview",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

@@ -9,3 +9,8 @@ out/
 !.env.example
 .wrangler/
 .open-next/
+
+# demos1 / monorepo
+.turbo/
+*.tsbuildinfo
+apps/demos1/.wrangler/
