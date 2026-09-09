@@ -2,8 +2,8 @@
 # Create once (Boss / CI with CLOUDFLARE_API_TOKEN):
 #   npx wrangler pages project create anoncoin-rh-launch-listen --production-branch=main
 # Deploy from this directory after `npm run build`:
+# Note: do not put account_id here — Pages config rejects it; use CLOUDFLARE_ACCOUNT_ID env.
 #   npx wrangler pages deploy out --project-name=anoncoin-rh-launch-listen
-account_id = "ad9331a749fc4b76fe53d6f14fbc8471"
 name = "anoncoin-rh-launch-listen"
 compatibility_date = "2025-09-01"
 pages_build_output_dir = "out"
