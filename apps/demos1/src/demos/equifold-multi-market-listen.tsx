@@ -73,7 +73,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
 
-  const seedBundle = useMemo(() => buildEquiFixtures(locale), [locale]);
+  const seedBundle = useMemo(() => buildEquiFixtures(locale, "idle"), [locale]);
   const seedEvents = seedBundle.events;
   const epHttps = ENDPOINTS[endpoint].https;
   const history = useRecentHistory({
@@ -101,8 +101,9 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   }, []);
 
   const injectDemoHits = useCallback(() => {
-    const bundle = buildEquiFixtures(locale);
-    // Keep focusToken for live WS markets only — fixture path pins NEONCAT via fixtureCoin.
+    // Hit fixtures use FORKBEAM (not NEONCAT) so header visibly renames for 美工 idle→hit.
+    const bundle = buildEquiFixtures(locale, "hit");
+    // Keep focusToken for live WS markets only — fixture path sets header via fixtureCoin.
     setFixtureCoin({ label: bundle.coinLabel, addr: bundle.coinAddr });
     for (const ev of bundle.events) {
       setEvents((prev) => [ev, ...prev].slice(0, 80));
@@ -343,16 +344,21 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     </ToggleGroup>
   );
 
+  const tokenLabel = focusRec
+    ? shortAddr(focusRec.base)
+    : fixtureCoin
+      ? fixtureCoin.label
+      : "NEONCAT";
   const watchParams = [
     { label: "Endpoint", value: ep.label },
     { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听）" : "(wide)") },
     { label: "Topic0", value: shortAddr(topic0), mono: true },
     { label: "Burst", value: `${burstSec}s` },
-    { label: "Token", value: "NEONCAT" },
+    { label: "Token", value: tokenLabel },
   ];
   const sourceItems = [
     { k: locale === "zh" ? "源" : "SRC", v: "equifold.markets" },
-    { k: "TOKEN", v: "NEONCAT" },
+    { k: "TOKEN", v: tokenLabel },
     { k: "VENUES", v: "3 · demo" },
     { k: "CHAIN", v: ep.label },
     { k: "HTTPS", v: ep.https },

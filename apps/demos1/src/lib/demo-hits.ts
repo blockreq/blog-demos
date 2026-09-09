@@ -95,10 +95,21 @@ export type EquiFixtureBundle = {
   events: FeedEvent[];
 };
 
-export function buildEquiFixtures(locale: Locale): EquiFixtureBundle {
+/** Idle seed branding — pinned header/columns on first paint. */
+export const EQUI_IDLE_COIN_LABEL = "NEONCAT";
+export const EQUI_IDLE_COIN_SEED = "neoncatbasecoin0001";
+
+/** Simulated hit rename — must differ from idle so 美工 can demo idle→hit. */
+export const EQUI_HIT_COIN_LABEL = "FORKBEAM";
+export const EQUI_HIT_COIN_SEED = "forkbeambasecoin0001";
+
+export function buildEquiFixtures(
+  locale: Locale,
+  mode: "idle" | "hit" = "hit"
+): EquiFixtureBundle {
   const now = Date.now();
-  const coinAddr = fakeAddr("neoncatbasecoin0001");
-  const coinLabel = "NEONCAT";
+  const coinLabel = mode === "idle" ? EQUI_IDLE_COIN_LABEL : EQUI_HIT_COIN_LABEL;
+  const coinAddr = fakeAddr(mode === "idle" ? EQUI_IDLE_COIN_SEED : EQUI_HIT_COIN_SEED);
   const markets = [
     { tag: "FIRST" as const, quote: "WETH", idx: 1 },
     { tag: "NEXT" as const, quote: "USDC", idx: 2 },
