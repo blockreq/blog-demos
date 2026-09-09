@@ -28,6 +28,7 @@ import {
   Separator,
   ToggleGroup,
   ToggleGroupItem,
+  cn,
   type DemoTerminalLine,
 } from "@blockreq/ui";
 import { MonitorChrome } from "./components/monitor-chrome";
@@ -89,7 +90,7 @@ function IndexPage() {
         localeMode="catalog"
         onLocaleChange={setLocale}
       />
-      <div className="flex flex-1 flex-col gap-3 p-3">
+      <div className="demo-shell flex flex-1 flex-col gap-3 py-3">
         <div className="border border-[rgba(57,255,154,0.25)] bg-[rgba(57,255,154,0.06)] px-3 py-2 text-xs text-[#b7ffd8]">
           {t(locale, "index.radarBanner")}
         </div>
@@ -126,7 +127,7 @@ function IndexPage() {
             <div className="mb-1 inline-flex items-center gap-2 border border-[rgba(0,240,255,0.45)] bg-[rgba(0,240,255,0.08)] px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.12em] text-[var(--color-neon-cyan)]">
               {t(locale, "index.pill")}
             </div>
-            <h1 className="text-[clamp(22px,4vw,32px)] font-black tracking-tight">
+            <h1 className="type-display">
               {t(locale, "index.title")}
             </h1>
             <p className="mt-1 max-w-[60ch] text-sm text-[var(--color-muted-foreground)]">
@@ -144,18 +145,18 @@ function IndexPage() {
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-extrabold">{t(locale, "index.radarTitle")}</h2>
+          <h2 className="text-lg font-extrabold">{t(locale, "index.radarTitle")}</h2>
           <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
             {filtered.length}/{demos.length}
           </span>
         </div>
 
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((d) => (
-            <Card key={d.slug} className={ACCENT[d.accent]}>
+          {filtered.map((d, i) => (
+            <Card key={d.slug} className={cn(ACCENT[d.accent], i === 0 && "focus-card ring-1 ring-[rgba(0,240,255,0.25)]")}>
               <CardHeader className="space-y-2 p-4 pb-2">
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-[17px]">{t(locale, d.titleKey)}</CardTitle>
+                  <CardTitle className="text-[clamp(18px,2vw,22px)] font-black tracking-tight">{t(locale, d.titleKey)}</CardTitle>
                   <Badge variant="ok">{d.chainLabel}</Badge>
                 </div>
                 <div className="flex flex-wrap gap-1">

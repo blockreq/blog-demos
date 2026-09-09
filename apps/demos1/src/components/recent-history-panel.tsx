@@ -36,6 +36,7 @@ export function RecentHistoryPanel({
   dense,
   title,
   className,
+  flashNewest,
 }: {
   locale: Locale;
   history: HistoryState;
@@ -48,6 +49,8 @@ export function RecentHistoryPanel({
   dense?: boolean;
   title?: string;
   className?: string;
+  /** Neon flash only the newest live row on insert */
+  flashNewest?: boolean;
 }) {
   const usingLive = liveEvents.length > 0;
   const usingRpc = !usingLive && history.events.length > 0;
@@ -76,7 +79,7 @@ export function RecentHistoryPanel({
       )}
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] px-3 py-2">
-        <h3 className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+        <h3 className="font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
           {heading}
         </h3>
         {usingSeed ? <span className="demo-seed">{t(locale, "common.seedLabel")}</span> : null}
@@ -85,11 +88,9 @@ export function RecentHistoryPanel({
             {t(locale, "history.windowBadge").replace("{n}", String(history.windowBlocks || 900))}
           </Badge>
         ) : null}
-        {usingLive ? (
-          <Badge variant="live">LIVE</Badge>
-        ) : null}
+        {usingLive ? <Badge variant="live">LIVE</Badge> : null}
         {typeof history.toBlock === "number" && usingRpc ? (
-          <span className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
+          <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
             #{history.fromBlock}–#{history.toBlock}
           </span>
         ) : null}
@@ -100,16 +101,15 @@ export function RecentHistoryPanel({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[52px]">{t(locale, "history.colAge")}</TableHead>
+                <TableHead className="w-[56px]">{t(locale, "history.colAge")}</TableHead>
                 <TableHead>{t(locale, "history.colEvent")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
                 <TableHead className="text-right">{t(locale, "history.colTags")}</TableHead>
               </TableRow>
             </TableHeader>
           </Table>
-          {/* Secondary loading only — seeds usually already fill the panel */}
           <FeedSkeletonRows rows={dense ? 3 : 4} dense={dense} />
-          <p className="px-3 py-2 font-mono text-[10px] text-[var(--color-muted-foreground)]">
+          <p className="px-3 py-2 font-mono text-[11px] text-[var(--color-muted-foreground)]">
             {t(locale, "history.loading")}
           </p>
         </div>
@@ -118,7 +118,7 @@ export function RecentHistoryPanel({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[52px]">{t(locale, "history.colAge")}</TableHead>
+                <TableHead className="w-[56px]">{t(locale, "history.colAge")}</TableHead>
                 <TableHead>{t(locale, "history.colEvent")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
                 <TableHead className="text-right">{t(locale, "history.colTags")}</TableHead>
@@ -127,22 +127,22 @@ export function RecentHistoryPanel({
             <TableBody>
               <TableRow>
                 <TableCell colSpan={4} className="py-6 text-center">
-                  <p className="text-[15px] font-extrabold text-[var(--color-foreground)]">
+                  <p className="text-[16px] font-extrabold text-[var(--color-foreground)]">
                     {t(locale, "history.none")}
                   </p>
-                  <p className="mx-auto mt-1.5 max-w-[48ch] text-xs text-[var(--color-muted-foreground)]">
+                  <p className="mx-auto mt-1.5 max-w-[48ch] text-sm text-[var(--color-muted-foreground)]">
                     {history.reason || t(locale, "history.emptyFallback")}
                   </p>
                 </TableCell>
               </TableRow>
               <TableRow className="opacity-50">
-                <TableCell className="font-mono text-[10px] text-[var(--color-muted-foreground)]">—</TableCell>
+                <TableCell className="font-mono text-[11px] text-[var(--color-muted-foreground)]">—</TableCell>
                 <TableCell>
-                  <span className="text-xs text-[var(--color-muted-foreground)]">
+                  <span className="text-sm text-[var(--color-muted-foreground)]">
                     {t(locale, "history.placeholderHint")}
                   </span>
                 </TableCell>
-                <TableCell className="hidden font-mono text-[10px] text-[var(--color-muted-foreground)] sm:table-cell">
+                <TableCell className="hidden font-mono text-[11px] text-[var(--color-muted-foreground)] sm:table-cell">
                   #
                 </TableCell>
                 <TableCell className="text-right">
@@ -158,44 +158,58 @@ export function RecentHistoryPanel({
       ) : (
         <div className="flex-1 overflow-auto">
           {usingSeed ? (
-            <p className="border-b border-[var(--color-line)] px-3 py-1.5 text-[10px] text-[var(--color-muted-foreground)]">
+            <p className="border-b border-[var(--color-line)] px-3 py-1.5 text-[11px] text-[var(--color-muted-foreground)]">
               {t(locale, "history.seedNote")}
             </p>
           ) : usingRpc ? (
-            <p className="border-b border-[var(--color-line)] px-3 py-1.5 text-[10px] text-[var(--color-muted-foreground)]">
+            <p className="border-b border-[var(--color-line)] px-3 py-1.5 text-[11px] text-[var(--color-muted-foreground)]">
               {t(locale, "history.rpcNote")}
             </p>
           ) : null}
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[52px]">{t(locale, "history.colAge")}</TableHead>
+                <TableHead className="w-[56px]">{t(locale, "history.colAge")}</TableHead>
                 <TableHead>{t(locale, "history.colEvent")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
                 <TableHead className="text-right">{t(locale, "history.colTags")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.slice(0, 40).map((ev) => {
+              {rows.slice(0, 40).map((ev, idx) => {
                 const active = selectedId === ev.id;
                 const clickable = !!onSelect;
+                const newestFlash = flashNewest && usingLive && idx === 0;
                 return (
                   <TableRow
                     key={ev.id}
                     data-state={active ? "selected" : undefined}
-                    className={cn(clickable && "cursor-pointer", usingLive && "feed-row-flash")}
+                    className={cn(
+                      clickable && "cursor-pointer",
+                      active && "row-focus",
+                      newestFlash && "feed-row-flash is-insert"
+                    )}
                     onClick={clickable ? () => onSelect?.(ev.id) : undefined}
                   >
-                    <TableCell className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
+                    <TableCell className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
                       {usingLive || usingSeed ? ageLabel(ev.at) : `#${ev.block ?? "—"}`}
                     </TableCell>
                     <TableCell className="min-w-0">
-                      <div className="truncate text-[13px] font-extrabold">{ev.title || ev.kind}</div>
-                      <div className="mt-0.5 truncate font-mono text-[10px] text-[var(--color-muted-foreground)]">
-                        {ev.body}
-                      </div>
+                      <div className="type-body truncate text-[14px] font-extrabold">{ev.title || ev.kind}</div>
+                      <div className="mt-0.5 truncate type-meta">{ev.body}</div>
+                      {ev.metric ? (
+                        <div
+                          key={`${ev.id}-metric-${ev.metric}`}
+                          className="metric-tick mt-0.5 font-mono text-[13px] font-bold text-[var(--color-neon-cyan)]"
+                        >
+                          {ev.metric}
+                          {ev.metric2 ? (
+                            <span className="ml-2 text-[11px] text-[var(--color-muted-foreground)]">{ev.metric2}</span>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </TableCell>
-                    <TableCell className="hidden font-mono text-[11px] sm:table-cell">
+                    <TableCell className="hidden font-mono text-[12px] sm:table-cell">
                       {typeof ev.block === "number" ? `#${ev.block}` : "—"}
                     </TableCell>
                     <TableCell className="text-right">

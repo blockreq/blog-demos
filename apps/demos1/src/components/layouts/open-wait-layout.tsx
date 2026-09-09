@@ -12,7 +12,9 @@ import { RecentHistoryPanel } from "../recent-history-panel";
 import { LiveToggle } from "../live-toggle";
 import { SourceStrip, type SourceItem } from "../source-strip";
 import type { HistoryState } from "../../lib/recent-history";
+import { FreshnessChip } from "../monitor-chrome";
 
+/** Single-token / one-shot focus: big stage + price/trade metrics on hit. */
 export function OpenWaitLayout({
   locale,
   status,
@@ -66,7 +68,7 @@ export function OpenWaitLayout({
           : t(locale, "openlaunch.hero.idle");
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-[920px] flex-col gap-3 p-3">
+    <div className="demo-shell flex min-h-[calc(100vh-8rem)] flex-col gap-3">
       <ToolGuideBanner locale={locale} stepHint={t(locale, "openlaunch.guide")} />
       {banner}
       {endpointSlot}
@@ -83,12 +85,10 @@ export function OpenWaitLayout({
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-3">
         <div>
-          <p className="text-[15px] font-extrabold">{t(locale, "openlaunch.stripTitle")}</p>
-          <p className="mt-1 font-mono text-[11px] text-[var(--color-muted-foreground)]">
-            {t(locale, "openlaunch.stripSub")}
-          </p>
+          <p className="type-title">{t(locale, "openlaunch.stripTitle")}</p>
+          <p className="mt-1 type-meta">{t(locale, "openlaunch.stripSub")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <LiveToggle
@@ -100,52 +100,74 @@ export function OpenWaitLayout({
           />
           <Badge variant="ok">BASE</Badge>
           <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
+          <FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
         </div>
       </div>
 
       <div
         data-state={feel}
         className={cn(
-          "relative flex min-h-[180px] flex-col overflow-hidden border border-[var(--color-line)] bg-[linear-gradient(180deg,rgba(0,240,255,0.04),transparent_45%),var(--color-panel)]",
+          "focus-card live-surface relative flex min-h-[220px] flex-col overflow-hidden",
           feel === "connecting" && "border-[rgba(255,209,102,0.45)]",
           feel === "listening" && "border-[rgba(0,240,255,0.45)]",
           feel === "hit" && "border-[rgba(255,43,214,0.55)] hit-panel-flash",
           feel === "idle" && "grayscale-[0.15]"
         )}
+        data-hit={feel === "hit" ? "true" : undefined}
       >
         {feel !== "hit" ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-4 py-5 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
             <div
               aria-hidden
               className={cn(
-                "mb-3 h-12 w-12 rounded-full border-2 border-[rgba(0,240,255,0.35)] bg-[rgba(0,240,255,0.06)]",
+                "mb-3 h-14 w-14 rounded-full border-2 border-[rgba(0,240,255,0.35)] bg-[rgba(0,240,255,0.06)]",
                 feel === "connecting" && "border-[rgba(255,209,102,0.55)] bg-[rgba(255,209,102,0.1)] wait-ring-amber",
                 feel === "listening" && "wait-ring-live",
                 feel === "idle" && "opacity-40 grayscale"
               )}
             />
-            <p className="text-[24px] font-black tracking-tight">{stageTitle}</p>
-            <p className="mt-2 max-w-[42ch] text-sm text-[var(--color-muted-foreground)]">{stageSub}</p>
-            <div className="mt-3 flex flex-wrap justify-center gap-2 font-mono text-[10px] text-[var(--color-muted-foreground)]">
-              <span className="border border-[var(--color-line)] px-2 py-1">
+            <p className="type-display">{stageTitle}</p>
+            <p className="mt-2 max-w-[42ch] text-[15px] text-[var(--color-muted-foreground)]">{stageSub}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2 font-mono text-[11px] text-[var(--color-muted-foreground)]">
+              <span className="border border-[var(--color-line)] px-2.5 py-1.5">
                 <b className="text-[var(--color-neon-cyan)]">CHAIN</b> Base
               </span>
-              <span className="border border-[var(--color-line)] px-2 py-1">
+              <span className="border border-[var(--color-line)] px-2.5 py-1.5">
                 <b className="text-[var(--color-neon-cyan)]">METHOD</b> tx-listen
               </span>
-              <span className="border border-[var(--color-line)] px-2 py-1">
+              <span className="border border-[var(--color-line)] px-2.5 py-1.5">
                 <b className="text-[var(--color-neon-cyan)]">WINDOW</b> one-shot
               </span>
             </div>
           </div>
         ) : latest ? (
-          <div className="flex flex-1 items-center justify-center px-4 py-5">
-            <div className="w-full max-w-lg border border-[rgba(255,43,214,0.45)] bg-[rgba(8,8,14,0.95)] p-4 text-left shadow-[0_0_28px_rgba(255,43,214,0.25)]">
+          <div className="flex flex-1 items-center justify-center px-4 py-6">
+            <div className="w-full max-w-xl border border-[rgba(255,43,214,0.45)] bg-[rgba(8,8,14,0.95)] p-5 text-left shadow-[0_0_28px_rgba(255,43,214,0.25)]">
               <Badge variant="hit" className="mb-2">
                 {t(locale, "state.hit")}
               </Badge>
-              <div className="text-[20px] font-black">{latest.title || latest.kind}</div>
-              <div className="mt-1.5 font-mono text-xs text-[var(--color-muted-foreground)]">{latest.body}</div>
+              <div className="type-hit">{latest.title || latest.kind}</div>
+              <div className="mt-2 type-meta text-[13px]">{latest.body}</div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                <div className="border border-[rgba(0,240,255,0.3)] bg-[rgba(0,240,255,0.05)] px-3 py-3">
+                  <div className="type-metric-label">
+                    {latest.metricLabel || (locale === "zh" ? "价格" : "Price")}
+                  </div>
+                  <div key={`${latest.id}-px`} className="type-metric metric-tick mt-1">
+                    {latest.metric || "—"}
+                  </div>
+                </div>
+                <div className="border border-[rgba(255,43,214,0.3)] bg-[rgba(255,43,214,0.05)] px-3 py-3">
+                  <div className="type-metric-label">
+                    {latest.metric2Label || (locale === "zh" ? "成交额" : "Volume")}
+                  </div>
+                  <div key={`${latest.id}-vol`} className="type-metric metric-tick mt-1 !text-[var(--color-neon-mag)]">
+                    {latest.metric2 || (typeof latest.block === "number" ? `#${latest.block}` : "—")}
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-3 flex flex-wrap gap-1">
                 {latest.tags.map((tag) => (
                   <Badge key={tag}>{tag}</Badge>
@@ -168,6 +190,7 @@ export function OpenWaitLayout({
         seedEvents={seedEvents}
         listening={feel === "listening" || feel === "connecting"}
         dense
+        flashNewest
         title={t(locale, "openlaunch.recent")}
         className="min-h-[200px]"
       />

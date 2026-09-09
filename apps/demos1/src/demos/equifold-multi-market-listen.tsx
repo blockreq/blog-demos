@@ -65,6 +65,8 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [status, setStatus] = useState<ConnStatus>("idle");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [hasHit, setHasHit] = useState(false);
+  const [listeningSince, setListeningSince] = useState<number | null>(null);
+  const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [focusToken, setFocusToken] = useState<string | null>(null);
   const [fixtureCoin, setFixtureCoin] = useState<{ label: string; addr: string } | null>(null);
@@ -362,6 +364,18 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     { k: "HTTPS", v: ep.https },
   ];
 
+  useEffect(() => {
+    if (status === "listening" || status === "hit") {
+      setListeningSince((prev) => prev ?? Date.now());
+    } else if (status === "idle" || status === "stopped" || status === "error") {
+      setListeningSince(null);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (events[0]?.at) setLastPulseAt(events[0].at);
+  }, [events]);
+
   const settings = (
     <div className="space-y-3">
       <button
@@ -419,9 +433,14 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     </div>
   );
 
+  const lastUpdateAt =
+    lastPulseAt || events[0]?.at || listeningSince || seedEvents[0]?.at || null;
+
+
   return (
     <div className="flex min-h-screen flex-col pb-24" data-layout="equi">
       <MonitorChrome
+        lastUpdateAt={lastUpdateAt}
         locale={locale}
         title={t(locale, "equifold.title")}
         tag={t(locale, "equifold.tag")}
@@ -430,6 +449,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         slug={SLUG}
       />
       <EquiSplitLayout
+        lastUpdateAt={lastUpdateAt}
         locale={locale}
         coinTitle={coinTitle}
         coinMeta={coinMeta}

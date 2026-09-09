@@ -10,4 +10,10 @@ export type FeedEvent = {
   tx?: string;
   chain?: string;
   at: number;
+  /** Large focus metric (price, LP, volume, trade size). */
+  metric?: string;
+  metricLabel?: string;
+  /** Secondary metric for diffs / volume. */
+  metric2?: string;
+  metric2Label?: string;
 };

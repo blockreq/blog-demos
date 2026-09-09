@@ -65,6 +65,8 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
+  const [listeningSince, setListeningSince] = useState<number | null>(null);
+  const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
@@ -330,6 +332,18 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     { k: "HTTPS", v: EP.https },
   ];
 
+  useEffect(() => {
+    if (status === "listening" || status === "hit") {
+      setListeningSince((prev) => prev ?? Date.now());
+    } else if (status === "idle" || status === "stopped" || status === "error") {
+      setListeningSince(null);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (events[0]?.at) setLastPulseAt(events[0].at);
+  }, [events]);
+
   const settings = (
     <div className="space-y-3">
       <button
@@ -401,9 +415,14 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     </div>
   );
 
+  const lastUpdateAt =
+    lastPulseAt || events[0]?.at || listeningSince || seedEvents[0]?.at || null;
+
+
   return (
     <div className="flex min-h-screen flex-col pb-24" data-layout="anon">
       <MonitorChrome
+        lastUpdateAt={lastUpdateAt}
         locale={locale}
         title={t(locale, "anoncoin.title")}
         tag={t(locale, "anoncoin.tag")}
