@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
@@ -11,17 +11,60 @@ import {
   cn,
 } from "@blockreq/ui";
 import { toFeelState } from "../lib/ui-state";
+import {
+  freshnessKind,
+  relativeFreshLabel,
+  updatedFreshLabel,
+  type FreshnessKind,
+} from "../lib/freshness";
 
-export function LivePill({ live, locale }: { live: boolean; locale: Locale }) {
+function liveVariant(kind: FreshnessKind): "live" | "warn" | "offline" {
+  if (kind === "fresh") return "live";
+  if (kind === "warming") return "warn";
+  return "offline";
+}
+
+export function LivePill({
+  live,
+  locale,
+  connecting,
+  lastUpdateAt,
+}: {
+  live: boolean;
+  locale: Locale;
+  connecting?: boolean;
+  lastUpdateAt?: number | null;
+}) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!live && !connecting) return;
+    const id = window.setInterval(() => tick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [live, connecting]);
+
+  const kind = freshnessKind({ live, connecting, lastUpdateAt });
+  const label =
+    kind === "offline"
+      ? t(locale, "shell.offline")
+      : kind === "stale"
+        ? t(locale, "shell.stale")
+        : kind === "warming" && connecting
+          ? t(locale, "state.connecting")
+          : t(locale, "shell.live");
+
   return (
-    <Badge variant={live ? "live" : "offline"} className="gap-2">
+    <Badge
+      variant={liveVariant(kind)}
+      className={cn("gap-2", kind === "fresh" && "live-pill-pulse")}
+      title={lastUpdateAt ? updatedFreshLabel(locale, lastUpdateAt) : undefined}
+    >
       <span
         className={cn(
           "h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]",
-          live && "dot-pulse"
+          (kind === "fresh" || kind === "warming") && "dot-pulse"
         )}
       />
-      {live ? t(locale, "shell.live") : t(locale, "shell.offline")}
+      {label}
     </Badge>
   );
 }
@@ -80,6 +123,47 @@ export function LocaleToggle({
   );
 }
 
+export function FreshnessChip({
+  locale,
+  at,
+  live,
+  className,
+}: {
+  locale: Locale;
+  at?: number | null;
+  live?: boolean;
+  className?: string;
+}) {
+  const [, tick] = useState(0);
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    const id = window.setInterval(() => tick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  useEffect(() => {
+    if (!at) return;
+    setFlash(true);
+    const id = window.setTimeout(() => setFlash(false), 900);
+    return () => window.clearTimeout(id);
+  }, [at]);
+  if (!at) return null;
+  const rel = relativeFreshLabel(locale, at);
+  return (
+    <span
+      className={cn(
+        "freshness-stamp",
+        flash && "flash refresh-flash",
+        className
+      )}
+      data-live={live ? "true" : undefined}
+      title={new Date(at).toISOString()}
+    >
+      <span>{t(locale, "shell.freshStamp")}</span>
+      <span className={cn("age-live", rel.just && "just")}>{rel.text}</span>
+    </span>
+  );
+}
+
 export function MonitorChrome({
   locale,
   title,
@@ -90,6 +174,7 @@ export function MonitorChrome({
   trailing,
   localeMode = "links",
   onLocaleChange,
+  lastUpdateAt,
 }: {
   locale: Locale;
   title: string;
@@ -100,9 +185,12 @@ export function MonitorChrome({
   trailing?: ReactNode;
   localeMode?: "links" | "catalog";
   onLocaleChange?: (locale: Locale) => void;
+  /** Epoch ms of last live event / heartbeat — drives LIVE freshness + 「刚刚」. */
+  lastUpdateAt?: number | null;
 }) {
   const feel = toFeelState(status, !!hasHit);
   const live = feel === "listening" || feel === "hit";
+  const connecting = feel === "connecting";
   const statusKey =
     feel === "idle"
       ? "state.idle"
@@ -125,15 +213,16 @@ export function MonitorChrome({
         ) : (
           <span className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,#fff,#00F0FF_40%,#FF2BD6_75%)] shadow-[0_0_12px_rgba(0,240,255,0.55)]" />
         )}
-        <strong className="truncate text-sm font-black tracking-tight">{title}</strong>
+        <strong className="truncate text-base font-black tracking-tight sm:text-[17px]">{title}</strong>
         {tag ? (
           <span className="hidden font-mono text-[10px] font-bold tracking-[0.08em] text-[var(--color-muted-foreground)] sm:inline">
             {tag}
           </span>
         ) : null}
       </div>
-      <LivePill live={live} locale={locale} />
+      <LivePill live={live} locale={locale} connecting={connecting} lastUpdateAt={lastUpdateAt} />
       <StatusPill status={feel} label={t(locale, statusKey)} />
+      <FreshnessChip locale={locale} at={lastUpdateAt} live={live || connecting} className="hidden sm:inline" />
       <Badge variant="secondary">{t(locale, "shell.demoData")}</Badge>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         {trailing}

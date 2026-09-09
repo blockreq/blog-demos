@@ -44,6 +44,7 @@ export function buildAnonFixtures(locale: Locale, n = 4): FeedEvent[] {
   const syms = ["GHOSTX", "VOIDPEPE", "NEONANON", "SHADOW"];
   return Array.from({ length: n }, (_, i) => {
     const addr = fakeAddr(`anon${i}${syms[i % syms.length]}`);
+    const lp = (12_400 + i * 860).toLocaleString();
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
@@ -55,6 +56,8 @@ export function buildAnonFixtures(locale: Locale, n = 4): FeedEvent[] {
       tx: fakeAddr(`txanon${i}`),
       chain: "RH",
       at: now - i * 1400,
+      metric: `$${lp}`,
+      metricLabel: "LP",
     };
   });
 }
@@ -65,6 +68,8 @@ export function buildOpenFixtures(locale: Locale, n = 3): FeedEvent[] {
   const names = ["PIXELMOON", "BASEBEAM", "OPENSHOT"];
   return Array.from({ length: n }, (_, i) => {
     const addr = fakeAddr(`open${i}${names[i % names.length]}`);
+    const px = (0.00084 * (i + 1)).toFixed(5);
+    const vol = (18_200 + i * 4_100).toLocaleString();
     return {
       id: rid(),
       kind,
@@ -76,6 +81,10 @@ export function buildOpenFixtures(locale: Locale, n = 3): FeedEvent[] {
       tx: fakeAddr(`txopen${i}`),
       chain: "BASE",
       at: now - i * 2200,
+      metric: `$${px}`,
+      metricLabel: locale === "zh" ? "价格" : "Price",
+      metric2: `$${vol}`,
+      metric2Label: locale === "zh" ? "成交额" : "Volume",
     };
   });
 }
@@ -109,6 +118,7 @@ export function buildEquiFixtures(locale: Locale): EquiFixtureBundle {
     const tags =
       m.tag === "FIRST" ? ["FIRST", "DEMO"] : ["NEXT", `N=${m.idx}`, "DEMO", ...(m.idx >= 3 ? ["BURST"] : [])];
     const px = (0.00012 * (i + 1)).toFixed(5);
+    const vol = (42_000 / (i + 1)).toFixed(0);
     return {
       id: rid(),
       kind,
@@ -120,6 +130,10 @@ export function buildEquiFixtures(locale: Locale): EquiFixtureBundle {
       tx: fakeAddr(`txequi${i}`),
       chain: "BASE",
       at: now - i * 900,
+      metric: `$${px}`,
+      metricLabel: locale === "zh" ? "价格" : "Price",
+      metric2: `$${Number(vol).toLocaleString()}`,
+      metric2Label: locale === "zh" ? "量" : "Vol",
     };
   });
   return { coinLabel, coinAddr, events };
