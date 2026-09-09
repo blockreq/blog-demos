@@ -31,6 +31,8 @@ Slugs: `anoncoin-rh-launch-listen`, `openlaunch-base-eth-subscribe`, `equifold-m
 
 Default **off**. Enable with `?demoHits=1` on any slug URL, Advanced → “Demo / fixture hits”, or catalog `demoHits: true`. When active, a **DEMO · SIMULATED** banner + Inject button push fixture rows (flash / large hit card / multi-market columns). Live browser listen remains the default path.
 
+**Equifold idle→hit rename:** idle header stays **NEONCAT**; with `?demoHits=1` enabled, Inject fires fixture hits that switch the header to **FORKBEAM** (not NEONCAT) so 美工 can demo the rename.
+
 ## Browser-only RPC
 
 All subscribe / WSS traffic originates in the visitor browser to BlockReq public endpoints. This Worker never proxies RPC.
