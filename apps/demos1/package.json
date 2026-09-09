@@ -17,6 +17,7 @@
     "@blockreq/ui": "workspace:*",
     "@tanstack/react-query": "^5.80.7",
     "@tanstack/react-router": "^1.121.2",
+    "lucide-react": "^1.43.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "viem": "^2.31.0"

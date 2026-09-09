@@ -9,11 +9,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
   type ConnStatus,
 } from "@blockreq/ui";
 import { PUBLIC_ENDPOINTS, isAddr, shortAddr, unpadTopic } from "@blockreq/rpc";
-import { ListenShell } from "../components/listen-shell";
+import { MonitorChrome } from "../components/monitor-chrome";
+import { OpenWaitLayout } from "../components/layouts/open-wait-layout";
+import type { FeedEvent } from "../components/feed-types";
+import { EndpointBar } from "../components/endpoint-bar";
 
 const EP = PUBLIC_ENDPOINTS.base;
 const WSS = EP.wss;
@@ -25,8 +27,8 @@ const DEFAULT_LOCK =
   "0xe9f76a8d85d1454b2ecdbf900a15a31155a945b0e7bf889f718773bf90a4c196";
 const DEFAULT_PM = "0x498581ff718922c3f8e6a244956af099b2652b2b";
 const LS = "blockreq.openlaunch-base.";
+const SLUG = "openlaunch-base-eth-subscribe";
 
-type FeedCard = { id: string; kind: string; tags: string[]; body: string };
 type TxRec = {
   init: { poolId: string; currency0: string; currency1: string; address: string } | null;
   lock: { address: string; tokenish: string } | null;
@@ -47,10 +49,9 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const [subLock, setSubLock] = useState(true);
   const [cluster, setCluster] = useState(true);
   const [status, setStatus] = useState<ConnStatus>("idle");
-  const [cards, setCards] = useState<FeedCard[]>([]);
+  const [events, setEvents] = useState<FeedEvent[]>([]);
   const [hasHit, setHasHit] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [toastMeta, setToastMeta] = useState("BASE · … · JUST NOW");
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -77,11 +78,11 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     cluster,
   };
 
-  const pushCard = useCallback((kind: string, tags: string[], body: string, meta?: string) => {
+  const pushEvent = useCallback((ev: Omit<FeedEvent, "id" | "at">) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setCards((prev) => [{ id, kind, tags, body }, ...prev].slice(0, 40));
+    const full: FeedEvent = { ...ev, id, at: Date.now() };
+    setEvents((prev) => [full, ...prev].slice(0, 40));
     setHasHit(true);
-    if (meta) setToastMeta(meta);
   }, []);
 
   useEffect(() => {
@@ -133,14 +134,18 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       if (!rec || !rec.init || !rec.lock || rec.clustered) return;
       rec.clustered = true;
       const i = rec.init;
-      pushCard(
-        locale === "zh" ? "一笔开盘" : "One-shot open",
-        ["ONE-TX"],
-        `${shortAddr(tx)} · ${shortAddr(i.currency0)} / ${shortAddr(i.currency1)} · #${bn}`,
-        `BASE · ${shortAddr(tx)} · JUST NOW`
-      );
+      pushEvent({
+        kind: locale === "zh" ? "一笔开盘" : "One-shot open",
+        tags: ["ONE-TX"],
+        title: shortAddr(tx),
+        body: `${shortAddr(i.currency0)} / ${shortAddr(i.currency1)} · #${bn}`,
+        address: tx,
+        block: bn,
+        tx,
+        chain: "BASE",
+      });
     },
-    [locale, pushCard]
+    [locale, pushEvent]
   );
 
   const onInitialize = useCallback(
@@ -158,15 +163,19 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         currency1,
         address: String(r.address || "").toLowerCase(),
       };
-      pushCard(
-        locale === "zh" ? "池子开了" : "Pool open",
-        ["BASE"],
-        `${shortAddr(poolId)} · ${shortAddr(currency0)} / ${shortAddr(currency1)} · #${bn}`,
-        `BASE · ${shortAddr(poolId)} · JUST NOW`
-      );
+      pushEvent({
+        kind: locale === "zh" ? "池子开了" : "Pool open",
+        tags: ["BASE"],
+        title: shortAddr(poolId),
+        body: `${shortAddr(currency0)} / ${shortAddr(currency1)} · #${bn}`,
+        address: poolId || undefined,
+        block: bn,
+        tx: tx || undefined,
+        chain: "BASE",
+      });
       maybeCluster(tx, bn);
     },
-    [locale, maybeCluster, pushCard]
+    [locale, maybeCluster, pushEvent]
   );
 
   const onLock = useCallback(
@@ -180,15 +189,19 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         address: String(r.address || "").toLowerCase(),
         tokenish,
       };
-      pushCard(
-        locale === "zh" ? "锁仓/开盘" : "Lock / launch",
-        ["LOCK"],
-        `${shortAddr(String(r.address || ""))} · ${shortAddr(tokenish || "?")} · #${bn}`,
-        `BASE · ${shortAddr(tx)} · JUST NOW`
-      );
+      pushEvent({
+        kind: locale === "zh" ? "锁仓/开盘" : "Lock / launch",
+        tags: ["LOCK"],
+        title: shortAddr(String(r.address || "")),
+        body: `${shortAddr(tokenish || "?")} · #${bn}`,
+        address: String(r.address || "") || undefined,
+        block: bn,
+        tx: tx || undefined,
+        chain: "BASE",
+      });
       maybeCluster(tx, bn);
     },
-    [locale, maybeCluster, pushCard]
+    [locale, maybeCluster, pushEvent]
   );
 
   const onLogMsg = useCallback(
@@ -274,18 +287,14 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     connect();
   }, [connect]);
 
-  const reset = () => {
+  const stop = () => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
     } catch {
       /* ignore */
     }
-    setHasHit(false);
-    setStatus("idle");
-    setCards([]);
-    seen.current.clear();
-    byTx.current.clear();
+    setStatus("stopped");
   };
 
   useEffect(() => {
@@ -299,138 +308,93 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     };
   }, []);
 
-  const heroKey =
-    status === "connecting"
-      ? "openlaunch.hero.connecting"
-      : hasHit
-        ? "openlaunch.hero.hit"
-        : status === "listening"
-          ? "openlaunch.hero.listening"
-          : "openlaunch.hero.idle";
+  const running = status === "connecting" || status === "listening";
+  const settings = (
+    <div className="space-y-3">
+      <EndpointBar locale={locale} wss={WSS} https={HTTPS} chainLabel={EP.label} />
+      <button
+        type="button"
+        className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
+        onClick={() => setShowSettings((v) => !v)}
+      >
+        {t(locale, "common.settings")}
+      </button>
+      <SettingsPanel open={showSettings}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardDescription>
+              {locale === "zh"
+                ? "一般不用改。粘贴工厂地址可更安静。"
+                : "Leave empty for the default wide listen."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="pm">Pool manager</Label>
+              <Input id="pm" value={poolManager} onChange={(e) => setPoolManager(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="factory">Factory (optional)</Label>
+              <Input
+                id="factory"
+                placeholder="0x…"
+                value={factory}
+                onChange={(e) => setFactory(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={subInit} onChange={(e) => setSubInit(e.target.checked)} className="h-4 w-4" />
+                Pool open
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={subLock} onChange={(e) => setSubLock(e.target.checked)} className="h-4 w-4" />
+                Lock / launch
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={cluster} onChange={(e) => setCluster(e.target.checked)} className="h-4 w-4" />
+                Same-tx pair
+              </label>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ti">Open topic0</Label>
+              <Input id="ti" value={topicInit} onChange={(e) => setTopicInit(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tl">Lock topic0</Label>
+              <Input id="tl" value={topicLock} onChange={(e) => setTopicLock(e.target.value)} />
+            </div>
+            <p className="break-all font-mono text-[11px] text-[var(--color-muted-foreground)]">
+              {WSS} · {HTTPS} · {CHAIN_ID}
+            </p>
+          </CardContent>
+        </Card>
+      </SettingsPanel>
+    </div>
+  );
 
   return (
-    <ListenShell
-      locale={locale}
-      status={status}
-      hasHit={hasHit}
-      tag={t(locale, "openlaunch.tag")}
-      title={t(locale, "openlaunch.title")}
-      heroSub={t(locale, heroKey)}
-      toast={
-        hasHit
-          ? { title: t(locale, "openlaunch.toast"), meta: toastMeta }
-          : null
-      }
-      onStart={start}
-      onReset={reset}
-      settings={
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
-            onClick={() => setShowSettings((v) => !v)}
-          >
-            {t(locale, "common.settings")}
-          </button>
-          <SettingsPanel open={showSettings}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
-                <CardDescription>
-                  {locale === "zh"
-                    ? "一般不用改。粘贴工厂地址可更安静。"
-                    : "Leave empty for the default wide listen."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="pm">Pool manager</Label>
-                  <Input
-                    id="pm"
-                    value={poolManager}
-                    onChange={(e) => setPoolManager(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="factory">Factory (optional)</Label>
-                  <Input
-                    id="factory"
-                    placeholder="0x…"
-                    value={factory}
-                    onChange={(e) => setFactory(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={subInit}
-                      onChange={(e) => setSubInit(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Pool open
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={subLock}
-                      onChange={(e) => setSubLock(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Lock / launch
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={cluster}
-                      onChange={(e) => setCluster(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Same-tx pair
-                  </label>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="ti">Open topic0</Label>
-                  <Input id="ti" value={topicInit} onChange={(e) => setTopicInit(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="tl">Lock topic0</Label>
-                  <Input id="tl" value={topicLock} onChange={(e) => setTopicLock(e.target.value)} />
-                </div>
-                <p className="font-mono text-[11px] text-[var(--color-muted-foreground)] break-all">
-                  {WSS} · {HTTPS} · {CHAIN_ID}
-                </p>
-              </CardContent>
-            </Card>
-          </SettingsPanel>
-        </div>
-      }
-    >
-      {cards.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-            {t(locale, "common.feed")}
-          </h2>
-          <div className="max-h-64 space-y-2 overflow-auto border border-[var(--color-line)] bg-[#07070E] p-3">
-            {cards.map((c) => (
-              <div
-                key={c.id}
-                className="card-enter border border-[rgba(255,43,214,0.35)] bg-[rgba(8,8,14,0.95)] p-3 text-sm"
-              >
-                <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-[var(--color-neon-mag)]">{c.kind}</span>
-                  {c.tags.map((tag) => (
-                    <Badge key={tag}>{tag}</Badge>
-                  ))}
-                </div>
-                <div className="font-mono text-[14px] font-medium break-all text-[#D0D5E8]">
-                  {c.body}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-    </ListenShell>
+    <div className="flex min-h-screen flex-col pb-24" data-layout="open">
+      <MonitorChrome
+        locale={locale}
+        title={t(locale, "openlaunch.title")}
+        tag={t(locale, "openlaunch.tag")}
+        status={status}
+        hasHit={hasHit}
+        slug={SLUG}
+      />
+      <OpenWaitLayout
+        locale={locale}
+        status={status}
+        hasHit={hasHit}
+        events={events}
+        onStart={start}
+        onStop={stop}
+        running={running}
+        connecting={status === "connecting"}
+        settings={settings}
+      />
+    </div>
   );
 }

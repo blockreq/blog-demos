@@ -43,104 +43,48 @@ body {
   background-image:
     linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-    radial-gradient(1000px 500px at 10% -10%, rgba(162, 60, 249, 0.18), transparent 55%),
-    radial-gradient(800px 400px at 90% 0%, rgba(0, 240, 255, 0.12), transparent 50%);
+    radial-gradient(1000px 500px at 10% -10%, rgba(162, 60, 249, 0.14), transparent 55%),
+    radial-gradient(800px 400px at 90% 0%, rgba(0, 240, 255, 0.1), transparent 50%);
   background-size: 48px 48px, 48px 48px, auto, auto;
   background-attachment: fixed;
 }
 
-@keyframes card-enter {
-  0% { opacity: 0; transform: translateY(16px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
 @keyframes soft-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(1.4); }
 }
-/* Connecting = amber pulse (not cyan/magenta-primary) */
-@keyframes amber-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.55), 0 0 28px rgba(255, 209, 102, 0.38);
-  }
-  50% {
-    transform: scale(1.07);
-    box-shadow: 0 0 0 18px rgba(255, 209, 102, 0), 0 0 48px rgba(255, 209, 102, 0.55);
-  }
+@keyframes card-enter {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
-@keyframes listen-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(57, 255, 154, 0.5), 0 0 30px rgba(0, 240, 255, 0.3);
-  }
-  50% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 20px rgba(57, 255, 154, 0), 0 0 40px rgba(0, 240, 255, 0.45);
-  }
+@keyframes feed-flash {
+  0% { background: rgba(0, 240, 255, 0.18); }
+  100% { background: transparent; }
 }
-@keyframes hit-burst {
-  0% { transform: scale(0.65); filter: brightness(2.2); }
-  100% { transform: scale(1); filter: brightness(1); }
+@keyframes hit-panel-flash {
+  0% { box-shadow: 0 0 0 0 rgba(255, 43, 214, 0.45); }
+  100% { box-shadow: 0 0 0 16px rgba(255, 43, 214, 0); }
 }
-@keyframes stage-sweep {
-  to { transform: rotate(360deg); }
+@keyframes wait-ring-live {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.45), 0 0 24px rgba(0, 240, 255, 0.25); }
+  50% { box-shadow: 0 0 0 14px rgba(0, 240, 255, 0), 0 0 36px rgba(0, 240, 255, 0.4); }
 }
-/* Slower toast enter — less instant flash; stays solid once in */
-@keyframes toast-in {
-  from { transform: translateY(110%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes wait-ring-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.5), 0 0 22px rgba(255, 209, 102, 0.3); }
+  50% { box-shadow: 0 0 0 14px rgba(255, 209, 102, 0), 0 0 36px rgba(255, 209, 102, 0.45); }
 }
 @keyframes neon-line {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 0.9; }
 }
 
-.card-enter { animation: card-enter 0.65s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
 .dot-pulse { animation: soft-pulse 1s ease-in-out infinite; }
-/* Idle = dead gray (quieter than listening/connecting) */
-.orb-idle {
-  filter: grayscale(0.92) brightness(0.36) contrast(0.9);
-  box-shadow: 0 0 0 1px #1A1A24;
-  background: radial-gradient(circle at 35% 30%, #9A9AA8, #4A4A58 40%, #050508 78%) !important;
-}
-/* Connecting = amber pulse, never cyan/magenta-primary */
-.orb-connecting {
-  animation: amber-pulse 1s ease-in-out infinite;
-  background: radial-gradient(circle at 35% 30%, #fff8e8, #ffd166 28%, #e8940a 58%, #050508 78%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.7), 0 0 40px rgba(255, 209, 102, 0.4);
-  filter: none;
-}
-.orb-listening { animation: listen-pulse 1.4s ease-in-out infinite; }
-.orb-hit {
-  animation: hit-burst 0.65s ease-out;
-  box-shadow: 0 0 0 1px rgba(255, 43, 214, 0.7), 0 0 50px rgba(255, 43, 214, 0.55);
-}
-.stage-sweep::before {
-  content: "";
-  position: absolute;
-  inset: -40% -20%;
-  background: conic-gradient(from 0deg, transparent, rgba(0, 240, 255, 0.08), transparent 30%);
-  animation: stage-sweep 6s linear infinite;
-  opacity: 0.5;
-}
-.toast-in { animation: toast-in 0.7s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
-.scanlines {
-  position: relative;
-}
-.scanlines::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 2px,
-    rgba(0, 0, 0, 0.18) 3px
-  );
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-}
+.card-enter { animation: card-enter 0.45s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+.feed-row-flash { animation: feed-flash 0.9s ease-out; }
+.hit-panel-flash { animation: hit-panel-flash 1.1s ease-out; }
+.wait-ring-live { animation: wait-ring-live 1.4s ease-in-out infinite; }
+.wait-ring-amber { animation: wait-ring-amber 1s ease-in-out infinite; }
+
 .panel-neon {
   position: relative;
   background: linear-gradient(180deg, rgba(18, 18, 28, 0.95), rgba(10, 10, 16, 0.98));
@@ -163,14 +107,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orb-connecting,
-  .orb-listening,
-  .orb-hit,
   .dot-pulse,
-  .stage-sweep::before,
-  .panel-neon::before,
-  .toast-in,
-  .card-enter {
+  .card-enter,
+  .feed-row-flash,
+  .hit-panel-flash,
+  .wait-ring-live,
+  .wait-ring-amber,
+  .panel-neon::before {
     animation: none !important;
   }
 }

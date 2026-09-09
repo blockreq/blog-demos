@@ -9,7 +9,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
   type ConnStatus,
 } from "@blockreq/ui";
 import {
@@ -20,7 +19,10 @@ import {
   wordAddr,
   wordU256,
 } from "@blockreq/rpc";
-import { ListenShell } from "../components/listen-shell";
+import { MonitorChrome } from "../components/monitor-chrome";
+import { AnonStreamLayout } from "../components/layouts/anon-stream-layout";
+import type { FeedEvent } from "../components/feed-types";
+import { EndpointBar } from "../components/endpoint-bar";
 
 const EP = PUBLIC_ENDPOINTS.robinhood;
 const WSS = EP.wss;
@@ -30,8 +32,8 @@ const MINT =
 const DEFAULT_PAIR_TOPIC =
   "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
 const LS = "blockreq.anoncoin-rh.";
+const SLUG = "anoncoin-rh-launch-listen";
 
-type FeedCard = { id: string; kind: string; tags: string[]; body: string };
 type PairRec = {
   token0: string;
   token1: string;
@@ -56,10 +58,10 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const [onlyQuote, setOnlyQuote] = useState(false);
   const [minLiq, setMinLiq] = useState("0");
   const [status, setStatus] = useState<ConnStatus>("idle");
-  const [cards, setCards] = useState<FeedCard[]>([]);
+  const [events, setEvents] = useState<FeedEvent[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [toastMeta, setToastMeta] = useState("RH · … · JUST NOW");
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -70,11 +72,12 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const fields = useRef({ factory, quote, topicPair, subPair, subMint, onlyQuote, minLiq });
   fields.current = { factory, quote, topicPair, subPair, subMint, onlyQuote, minLiq };
 
-  const pushCard = useCallback((kind: string, tags: string[], body: string, meta?: string) => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setCards((prev) => [{ id, kind, tags, body }, ...prev].slice(0, 40));
+  const pushEvent = useCallback((ev: Omit<FeedEvent, "id" | "at"> & { id?: string; at?: number }) => {
+    const id = ev.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const full: FeedEvent = { ...ev, id, at: ev.at || Date.now() };
+    setEvents((prev) => [full, ...prev].slice(0, 80));
+    setSelectedId(id);
     setHasHit(true);
-    if (meta) setToastMeta(meta);
   }, []);
 
   useEffect(() => {
@@ -131,14 +134,18 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
         firstLp: false,
       };
       if (pair) pairs.current.set(pair.toLowerCase(), rec);
-      pushCard(
-        locale === "zh" ? "新开盘" : "New launch",
+      pushEvent({
+        kind: locale === "zh" ? "新开盘" : "New launch",
         tags,
-        `${shortAddr(pair)} · ${shortAddr(baseSide || "?")} · #${bn}`,
-        `RH · ${shortAddr(pair)} · JUST NOW`
-      );
+        title: shortAddr(pair),
+        body: `${shortAddr(baseSide || "?")} · #${bn}`,
+        address: pair || undefined,
+        block: bn,
+        tx: String(r.transactionHash || "") || undefined,
+        chain: "RH",
+      });
     },
-    [locale, pushCard]
+    [locale, pushEvent]
   );
 
   const onMint = useCallback(
@@ -152,14 +159,18 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       if (minRaw > 0n && a0 + a1 < minRaw) return;
       known.firstLp = true;
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
-      pushCard(
-        locale === "zh" ? "LP 到位" : "LP ready",
-        ["LP"],
-        `${shortAddr(pool)} · #${bn}`,
-        `RH · ${shortAddr(pool)} · JUST NOW`
-      );
+      pushEvent({
+        kind: locale === "zh" ? "LP 到位" : "LP ready",
+        tags: ["LP"],
+        title: shortAddr(pool),
+        body: `#${bn}`,
+        address: pool,
+        block: bn,
+        tx: String(r.transactionHash || "") || undefined,
+        chain: "RH",
+      });
     },
-    [locale, pushCard]
+    [locale, pushEvent]
   );
 
   const onLog = useCallback(
@@ -248,18 +259,14 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     connect();
   }, [connect]);
 
-  const reset = () => {
+  const stop = () => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
     } catch {
       /* ignore */
     }
-    setHasHit(false);
-    setStatus("idle");
-    setCards([]);
-    seen.current.clear();
-    pairs.current.clear();
+    setStatus("stopped");
   };
 
   useEffect(() => {
@@ -273,150 +280,88 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     };
   }, []);
 
-  const heroKey =
-    status === "connecting"
-      ? "anoncoin.hero.connecting"
-      : hasHit
-        ? "anoncoin.hero.hit"
-        : status === "listening"
-          ? "anoncoin.hero.listening"
-          : "anoncoin.hero.idle";
+  const running = status === "connecting" || status === "listening";
+  const settings = (
+    <div className="space-y-3">
+      <EndpointBar locale={locale} wss={WSS} https={EP.https} chainLabel={EP.label} />
+      <button
+        type="button"
+        className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
+        onClick={() => setShowSettings((v) => !v)}
+      >
+        {t(locale, "common.settings")}
+      </button>
+      <SettingsPanel open={showSettings}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardDescription>
+              {locale === "zh"
+                ? "一般不用改。粘贴工厂地址可更安静。"
+                : "Leave empty for the default wide listen."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="factory">Factory</Label>
+              <Input id="factory" placeholder="0x…" value={factory} onChange={(e) => setFactory(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="quote">Quote token</Label>
+              <Input id="quote" placeholder="0x…" value={quote} onChange={(e) => setQuote(e.target.value)} />
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={subPair} onChange={(e) => setSubPair(e.target.checked)} className="h-4 w-4" />
+                Pair open
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={subMint} onChange={(e) => setSubMint(e.target.checked)} className="h-4 w-4" />
+                LP ready
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={onlyQuote} onChange={(e) => setOnlyQuote(e.target.checked)} className="h-4 w-4" />
+                Quote only
+              </label>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="topic">Topic0</Label>
+              <Input id="topic" value={topicPair} onChange={(e) => setTopicPair(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="minLiq">Min LP (×1e18)</Label>
+              <Input id="minLiq" type="number" min={0} step="0.01" value={minLiq} onChange={(e) => setMinLiq(e.target.value)} />
+            </div>
+            <p className="break-all font-mono text-[11px] text-[var(--color-muted-foreground)]">
+              {WSS} · {CHAIN_ID}
+            </p>
+          </CardContent>
+        </Card>
+      </SettingsPanel>
+    </div>
+  );
 
   return (
-    <ListenShell
-      locale={locale}
-      status={status}
-      hasHit={hasHit}
-      tag={t(locale, "anoncoin.tag")}
-      title={t(locale, "anoncoin.title")}
-      heroSub={t(locale, heroKey)}
-      toast={
-        hasHit
-          ? { title: t(locale, "anoncoin.toast"), meta: toastMeta }
-          : null
-      }
-      onStart={start}
-      onReset={reset}
-      settings={
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
-            onClick={() => setShowSettings((v) => !v)}
-          >
-            {t(locale, "common.settings")}
-          </button>
-          <SettingsPanel open={showSettings}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
-                <CardDescription>
-                  {locale === "zh"
-                    ? "一般不用改。粘贴工厂地址可更安静。"
-                    : "Leave empty for the default wide listen."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="factory">Factory</Label>
-                  <Input
-                    id="factory"
-                    placeholder="0x…"
-                    value={factory}
-                    onChange={(e) => setFactory(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="quote">Quote token</Label>
-                  <Input
-                    id="quote"
-                    placeholder="0x…"
-                    value={quote}
-                    onChange={(e) => setQuote(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={subPair}
-                      onChange={(e) => setSubPair(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Pair open
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={subMint}
-                      onChange={(e) => setSubMint(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    LP ready
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={onlyQuote}
-                      onChange={(e) => setOnlyQuote(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Quote only
-                  </label>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="topic">Topic0</Label>
-                  <Input
-                    id="topic"
-                    value={topicPair}
-                    onChange={(e) => setTopicPair(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="minLiq">Min LP (×1e18)</Label>
-                  <Input
-                    id="minLiq"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={minLiq}
-                    onChange={(e) => setMinLiq(e.target.value)}
-                  />
-                </div>
-                <p className="font-mono text-[11px] text-[var(--color-muted-foreground)] break-all">
-                  {WSS} · {CHAIN_ID}
-                </p>
-              </CardContent>
-            </Card>
-          </SettingsPanel>
-        </div>
-      }
-    >
-      {cards.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-            {t(locale, "common.feed")}
-          </h2>
-          <div className="max-h-64 space-y-2 overflow-auto border border-[var(--color-line)] bg-[#07070E] p-3">
-            {cards.map((c) => (
-              <div
-                key={c.id}
-                className="card-enter border border-[rgba(255,43,214,0.35)] bg-[rgba(8,8,14,0.95)] p-3 text-sm"
-              >
-                <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-[var(--color-neon-mag)]">{c.kind}</span>
-                  {c.tags.map((tag) => (
-                    <Badge key={tag}>{tag}</Badge>
-                  ))}
-                </div>
-                <div className="font-mono text-[14px] font-medium break-all text-[#D0D5E8]">
-                  {c.body}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-    </ListenShell>
+    <div className="flex min-h-screen flex-col pb-24" data-layout="anon">
+      <MonitorChrome
+        locale={locale}
+        title={t(locale, "anoncoin.title")}
+        tag={t(locale, "anoncoin.tag")}
+        status={status}
+        hasHit={hasHit}
+        slug={SLUG}
+      />
+      <AnonStreamLayout
+        locale={locale}
+        events={events}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onStart={start}
+        onStop={stop}
+        running={running}
+        connecting={status === "connecting"}
+        settings={settings}
+      />
+    </div>
   );
 }
