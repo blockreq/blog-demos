@@ -1,8 +1,9 @@
 /** Freshness bands for LIVE pill + 「刚刚 / Ns 前」 labels. */
 export type FreshnessKind = "fresh" | "warming" | "stale" | "offline";
 
-export const FRESH_MS = 12_000;
-export const WARM_MS = 30_000;
+/** Visual warn when lastUpdate drifts past ~6s; STALE after ~10s. */
+export const FRESH_MS = 6_000;
+export const WARM_MS = 10_000;
 
 export function ageMs(at: number | null | undefined, now = Date.now()) {
   if (!at || at <= 0) return Number.POSITIVE_INFINITY;

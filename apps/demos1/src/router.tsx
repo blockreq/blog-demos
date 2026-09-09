@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 import {
   DEMO_CATALOG,
+  demoBlogUrl,
+  demoSiteUrl,
   getDemo,
   isLocale,
   publishedDemos,
@@ -89,6 +91,7 @@ function IndexPage() {
         status="idle"
         localeMode="catalog"
         onLocaleChange={setLocale}
+        siteUrl="https://blockreq.com/"
       />
       <div className="demo-shell flex flex-1 flex-col gap-3 py-3">
         <div className="border border-[rgba(57,255,154,0.25)] bg-[rgba(57,255,154,0.06)] px-3 py-2 text-xs text-[#b7ffd8]">
@@ -134,14 +137,19 @@ function IndexPage() {
               {t(locale, "index.subtitle")}
             </p>
           </div>
-          <a
-            href="https://docs.blockreq.com/build/public-endpoints/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-xs font-bold text-[var(--color-neon-cyan)] hover:underline"
-          >
-            {t(locale, "endpoint.free3m")}
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="https://blockreq.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-9 items-center border border-[rgba(57,255,154,0.45)] bg-[rgba(57,255,154,0.08)] px-3 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-ok)] hover:brightness-110"
+            >
+              {t(locale, "index.site")}
+            </a>
+            <span className="font-mono text-[11px] font-bold text-[var(--color-muted-foreground)]">
+              {t(locale, "shell.quotaAfter")}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-2">
@@ -176,12 +184,20 @@ function IndexPage() {
                   {t(locale, "index.open")}
                 </Link>
                 <a
-                  href={d.stackblitz}
+                  href={demoBlogUrl(d.blogSlug, locale)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-10 items-center border border-[var(--color-line)] bg-[var(--color-panel)] px-3 font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
+                  className="inline-flex min-h-10 items-center border border-[var(--color-line)] bg-[var(--color-panel)] px-3 font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-foreground)] hover:border-[rgba(0,240,255,0.35)]"
                 >
-                  StackBlitz
+                  {t(locale, "index.docs")}
+                </a>
+                <a
+                  href={demoSiteUrl(d)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-10 items-center border border-[rgba(57,255,154,0.4)] bg-[rgba(57,255,154,0.06)] px-3 font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-ok)] hover:brightness-110"
+                >
+                  {t(locale, "index.site")}
                 </a>
               </CardContent>
             </Card>
@@ -216,7 +232,8 @@ function DemoPage() {
   }
   const locale = localeParam;
   const meta = getDemo(slug)!;
-  const blogUrl = locale === "zh" ? meta.blogZh : meta.blogEn;
+  const blogUrl = demoBlogUrl(meta.blogSlug, locale);
+  const siteUrl = demoSiteUrl(meta);
 
   return (
     <>
@@ -227,9 +244,11 @@ function DemoPage() {
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
+        siteUrl={siteUrl}
         readLabel={t(locale, "shell.readGuide")}
+        siteLabel={t(locale, "shell.site")}
         pricingLabel={t(locale, "shell.pricing")}
-        freeLabel={t(locale, "endpoint.free3m")}
+        quotaLabel={t(locale, "shell.quotaAfter")}
       />
     </>
   );

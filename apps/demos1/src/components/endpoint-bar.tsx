@@ -55,7 +55,7 @@ export function EndpointBar({
           rel="noopener noreferrer"
           className="font-mono text-[11px] font-bold text-[var(--color-neon-cyan)] underline-offset-2 hover:underline"
         >
-          {t(locale, "endpoint.free3m")}
+          {t(locale, "shell.quotaAfter")}
         </a>
         <a
           href={PRICING}
