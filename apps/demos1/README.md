@@ -2,6 +2,14 @@
 
 Vite + TanStack Router SPA under base path `/demos1/`, served by Cloudflare Worker `blockreq-demos1` (static assets + CSP).
 
+## Feel
+
+Shell matches the locked cyberpunk baseline (`demos1-feel-baseline`): near-black `#050508`, panels `#0D0D14`, neon cyan/magenta, hard edges / clipped CTA, four loud states (idle → connecting → listening → hit). ETH/Sol/BNB are secondary accents only. Solana public RPC is not marketed.
+
+## Catalog
+
+`DEMO_CATALOG` in `@blockreq/i18n` (also re-exported from `src/catalog.ts`) drives `/demos1/` with slug, en+zh titles/blurbs, and entry paths for the three live demos.
+
 ## Routes
 
 - `/demos1/`
@@ -12,7 +20,7 @@ Slugs: `anoncoin-rh-launch-listen`, `openlaunch-base-eth-subscribe`, `equifold-m
 
 ## Browser-only RPC
 
-All `eth_subscribe` / WSS traffic originates in the visitor browser to BlockReq public endpoints. This Worker never proxies RPC.
+All subscribe / WSS traffic originates in the visitor browser to BlockReq public endpoints. This Worker never proxies RPC.
 
 ## Worker path mapping
 
@@ -26,25 +34,10 @@ pnpm --filter @blockreq/demos1 build
 pnpm --filter @blockreq/demos1 wrangler:dev
 ```
 
-## Verify (after deploy)
+## Deploy
+
+Boss must run:
 
 ```bash
-# HTML shell
-curl -sI https://blockreq.com/demos1/ | head -n 5
-# Expect: 200, content-type: text/html
-
-# JS/CSS must NOT be text/html (the SPA-fallback bug)
-JS=$(curl -sL https://blockreq.com/demos1/ | rg -o '/demos1/assets/[^"]+\.js' | head -1)
-CSS=$(curl -sL https://blockreq.com/demos1/ | rg -o '/demos1/assets/[^"]+\.css' | head -1)
-curl -sI "https://blockreq.com$JS" | rg -i 'HTTP/|content-type'
-curl -sI "https://blockreq.com$CSS" | rg -i 'HTTP/|content-type'
-# Expect: 200 + application/javascript (or text/javascript) / text/css
-
-# SPA client route still returns the shell
-curl -sI https://blockreq.com/demos1/anoncoin-rh-launch-listen/en/ | rg -i 'HTTP/|content-type'
-# Expect: 200 text/html
-
-# Bare prefix redirect
-curl -sI https://blockreq.com/demos1 | rg -i 'HTTP/|location'
-# Expect: 308 → /demos1/
+gh workflow run demos1.yml -R blockreq/blog-demos -f deploy=true
 ```
