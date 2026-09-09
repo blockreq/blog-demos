@@ -1,0 +1,8 @@
+# Cloudflare Pages project for openlaunch-base-eth-subscribe
+# Create once (Boss / CI with CLOUDFLARE_API_TOKEN):
+#   npx wrangler pages project create openlaunch-base-eth-subscribe --production-branch=main
+# Deploy from this directory after `npm run build`:
+#   npx wrangler pages deploy out --project-name=openlaunch-base-eth-subscribe
+name = "openlaunch-base-eth-subscribe"
+compatibility_date = "2025-09-01"
+pages_build_output_dir = "out"
