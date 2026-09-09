@@ -28,3 +28,11 @@ Visitors connect from the browser to public WSS/HTTPS (`*.blockreq.com`). The Wo
 ## Pages pilot cleanup
 
 Removed: `apps/anoncoin-rh-launch-listen`, `apps/openlaunch-base-eth-subscribe`, `.github/workflows/deploy-hosted-demos.yml`. StackBlitz examples under `examples/` remain.
+
+## Asset path strip (Worker)
+
+`dist/` is flat; public URLs are under `/demos1/`. `src/worker.ts` strips `/demos1` before `ASSETS.fetch`. After merging Worker changes, re-deploy:
+
+```bash
+gh workflow run demos1.yml -R blockreq/blog-demos -f deploy=true
+```
