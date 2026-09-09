@@ -25,6 +25,10 @@ Cloudflare may briefly serve a cached older `index.html` after deploy — hard-r
 
 Slugs: `anoncoin-rh-launch-listen`, `openlaunch-base-eth-subscribe`, `equifold-multi-market-listen`.
 
+## Demo / fixture hits (美工)
+
+Default **off**. Enable with `?demoHits=1` on any slug URL, Advanced → “Demo / fixture hits”, or catalog `demoHits: true`. When active, a **DEMO · SIMULATED** banner + Inject button push fixture rows (flash / large hit card / multi-market columns). Live browser listen remains the default path.
+
 ## Browser-only RPC
 
 All subscribe / WSS traffic originates in the visitor browser to BlockReq public endpoints. This Worker never proxies RPC.

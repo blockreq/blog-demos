@@ -3,6 +3,7 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Button, ScrollArea, Separator, cn } from "@blockreq/ui";
 import type { FeedEvent } from "../feed-types";
+import { FeedEmpty } from "../feed-empty";
 
 export type EquiMarketColumn = {
   id: string;
@@ -21,6 +22,7 @@ export function EquiSplitLayout({
   connecting,
   chainControls,
   settings,
+  banner,
 }: {
   locale: Locale;
   coinTitle: string;
@@ -32,9 +34,13 @@ export function EquiSplitLayout({
   connecting: boolean;
   chainControls?: ReactNode;
   settings?: ReactNode;
+  banner?: ReactNode;
 }) {
+  const listening = running && !connecting;
+
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-3 p-3">
+      {banner}
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5">
         <div className="min-w-0">
           <p className="truncate text-[22px] font-black tracking-tight">{coinTitle}</p>
@@ -59,7 +65,7 @@ export function EquiSplitLayout({
         {columns.map((col) => (
           <section
             key={col.id}
-            className="flex min-h-[320px] flex-col border border-[var(--color-line)] bg-[var(--color-panel)]"
+            className="flex min-h-[280px] flex-col border border-[var(--color-line)] bg-[var(--color-panel)]"
           >
             <div className="flex items-center justify-between border-b border-[var(--color-line)] px-3 py-2">
               <h3 className="text-sm font-extrabold text-[var(--color-neon-cyan)]">{col.title}</h3>
@@ -68,9 +74,14 @@ export function EquiSplitLayout({
             <ScrollArea className="flex-1">
               <div>
                 {col.events.length === 0 ? (
-                  <p className="px-3 py-4 text-sm text-[var(--color-muted-foreground)]">
-                    {t(locale, "equifold.emptyCol")}
-                  </p>
+                  <FeedEmpty
+                    locale={locale}
+                    listening={listening || connecting}
+                    rows={4}
+                    dense
+                    caption={t(locale, "equifold.emptyCol")}
+                    className="min-h-[200px]"
+                  />
                 ) : (
                   col.events.map((ev) => (
                     <div
