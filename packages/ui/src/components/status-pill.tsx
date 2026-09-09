@@ -4,12 +4,12 @@ import { cn } from "../utils";
 export type ConnStatus = "idle" | "connecting" | "listening" | "hit" | "error" | "stopped";
 
 const STYLES: Record<ConnStatus, string> = {
-  idle: "text-[#7A8098] border-[#2A2A3A] bg-[#0C0C14]",
+  idle: "text-[#5C6178] border-[#1E1E28] bg-[#0A0A10]",
   connecting: "text-[var(--color-warn)] border-[rgba(255,209,102,0.55)] bg-[rgba(255,209,102,0.08)]",
   listening: "text-[var(--color-ok)] border-[rgba(57,255,154,0.55)] bg-[rgba(57,255,154,0.08)]",
   hit: "text-white border-[rgba(255,43,214,0.8)] bg-[linear-gradient(90deg,rgba(85,124,242,0.35),rgba(255,43,214,0.45))] shadow-[0_0_22px_rgba(255,43,214,0.35)]",
   error: "text-[#FF8FAB] border-[rgba(255,43,214,0.45)] bg-[rgba(255,43,214,0.08)]",
-  stopped: "text-[#7A8098] border-[#2A2A3A] bg-[#0C0C14]",
+  stopped: "text-[#5C6178] border-[#1E1E28] bg-[#0A0A10]",
 };
 
 const LABELS: Record<ConnStatus, string> = {

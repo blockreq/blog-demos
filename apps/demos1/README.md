@@ -6,6 +6,13 @@ Vite + TanStack Router SPA under base path `/demos1/`, served by Cloudflare Work
 
 Shell matches the locked cyberpunk baseline (`demos1-feel-baseline`): near-black `#050508`, panels `#0D0D14`, neon cyan/magenta, hard edges / clipped CTA, four loud states (idle → connecting → listening → hit). ETH/Sol/BNB are secondary accents only. Solana public RPC is not marketed.
 
+
+## First paint / cache
+
+`index.html` embeds critical inline styles (`html,body,#root` → `#050508` / `#F2F4FF`) so the first paint is cyber-black, not a white FOUC flash before CSS/JS. Vite keeps those inline styles in the built HTML; hashed assets bump on each build.
+
+Cloudflare may briefly serve a cached older `index.html` after deploy — hard-refresh or wait for edge TTL if you still see a white flash.
+
 ## Catalog
 
 `DEMO_CATALOG` in `@blockreq/i18n` (also re-exported from `src/catalog.ts`) drives `/demos1/` with slug, en+zh titles/blurbs, and entry paths for the three live demos.
