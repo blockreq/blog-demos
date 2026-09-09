@@ -1,0 +1,85 @@
+name: Deploy hosted demo apps (CF Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - ".github/workflows/deploy-hosted-demos.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hosted-demos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & deploy ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: anoncoin-rh-launch-listen
+            blog_url: https://blockreq.com/blog/en/anoncoin-rh-launch-listen
+          - app: openlaunch-base-eth-subscribe
+            blog_url: https://blockreq.com/blog/en/openlaunch-base-eth-subscribe
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+
+      - name: Install
+        working-directory: apps/${{ matrix.app }}
+        run: npm ci
+
+      - name: Ensure Pages project exists
+        working-directory: apps/${{ matrix.app }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if npx wrangler pages project list 2>/dev/null | grep -q "${{ matrix.app }}"; then
+            echo "Pages project ${{ matrix.app }} already exists"
+          else
+            echo "Creating Pages project ${{ matrix.app }}"
+            npx wrangler pages project create "${{ matrix.app }}" --production-branch=main
+          fi
+
+      - name: Build static export
+        working-directory: apps/${{ matrix.app }}
+        env:
+          NEXT_PUBLIC_BLOG_URL: ${{ matrix.blog_url }}
+          NEXT_PUBLIC_SIGNUP_URL: https://blockreq.com/pricing
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        working-directory: apps/${{ matrix.app }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx wrangler pages deploy out \
+            --project-name="${{ matrix.app }}" \
+            --branch=main \
+            --commit-dirty=true 2>&1 | tee /tmp/pages-deploy.log
+          URL=$(grep -oE 'https://[^ ]+\.pages\.dev' /tmp/pages-deploy.log | head -1 || true)
+          echo "url=${URL:-https://${{ matrix.app }}.pages.dev}" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        run: |
+          echo "### ${{ matrix.app }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Blog: ${{ matrix.blog_url }}" >> "$GITHUB_STEP_SUMMARY"

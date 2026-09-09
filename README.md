@@ -61,6 +61,28 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 - examples/openlaunch-base-eth-subscribe
 - examples/equifold-multi-market-listen
 
+
+
+## Hosted Next.js demos (Cloudflare Pages)
+
+iframe-friendly App Router demos with big beginner UI + local enter/highlight/pulse motion.
+
+| App | Source | Expected Pages URL | Blog deep-link (`NEXT_PUBLIC_BLOG_URL`) |
+| --- | --- | --- | --- |
+| Anoncoin RH launch listen | `apps/anoncoin-rh-launch-listen` | https://anoncoin-rh-launch-listen.pages.dev | https://blockreq.com/blog/en/anoncoin-rh-launch-listen |
+| OpenLaunch Base eth_subscribe | `apps/openlaunch-base-eth-subscribe` | https://openlaunch-base-eth-subscribe.pages.dev | https://blockreq.com/blog/en/openlaunch-base-eth-subscribe |
+
+StackBlitz twins stay under `examples/` (unchanged).
+
+Deploy (CI on `main`, or locally):
+
+```bash
+cd apps/anoncoin-rh-launch-listen && npm ci && npm run pages:deploy
+cd apps/openlaunch-base-eth-subscribe && npm ci && npm run pages:deploy
+```
+
+Requires org secret `CLOUDFLARE_API_TOKEN` + repo secret `CF_ACCOUNT_ID`.
+
 ## License
 
 MIT
