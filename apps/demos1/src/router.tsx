@@ -172,7 +172,7 @@ function IndexPage() {
                   params={{ slug: d.slug, locale }}
                   className="inline-flex min-h-10 flex-1 items-center justify-center border border-[rgba(0,240,255,0.55)] bg-[rgba(0,240,255,0.12)] px-4 text-sm font-bold text-[var(--color-neon-cyan)] hover:brightness-110"
                 >
-                  {t(locale, "common.start")}
+                  {t(locale, "index.open")}
                 </Link>
                 <a
                   href={d.stackblitz}

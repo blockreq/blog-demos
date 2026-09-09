@@ -1,9 +1,14 @@
 import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
-import { Badge, Button, ScrollArea, Separator, cn } from "@blockreq/ui";
+import { Badge, ScrollArea, Separator, cn } from "@blockreq/ui";
 import type { FeedEvent } from "../feed-types";
-import { FeedEmpty } from "../feed-empty";
+import { ToolGuideBanner } from "../tool-guide";
+import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
+import { RecentHistoryPanel } from "../recent-history-panel";
+import { LiveToggle } from "../live-toggle";
+import { SourceStrip, type SourceItem } from "../source-strip";
+import type { HistoryState } from "../../lib/recent-history";
 
 export type EquiMarketColumn = {
   id: string;
@@ -16,50 +21,87 @@ export function EquiSplitLayout({
   coinTitle,
   coinMeta,
   columns,
-  onStart,
-  onStop,
+  seedEvents,
+  onPause,
+  onResume,
   running,
   connecting,
   chainControls,
   settings,
   banner,
+  history,
+  watchParams,
+  sourceItems,
+  endpointSlot,
 }: {
   locale: Locale;
   coinTitle: string;
   coinMeta: string;
   columns: EquiMarketColumn[];
-  onStart: () => void;
-  onStop: () => void;
+  seedEvents: FeedEvent[];
+  onPause: () => void;
+  onResume: () => void;
   running: boolean;
   connecting: boolean;
   chainControls?: ReactNode;
   settings?: ReactNode;
   banner?: ReactNode;
+  history: HistoryState;
+  watchParams: WatchParam[];
+  sourceItems: SourceItem[];
+  endpointSlot?: ReactNode;
 }) {
   const listening = running && !connecting;
+  const hasAnyLive = columns.some((c) => c.events.length > 0);
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-3 p-3">
+      <ToolGuideBanner locale={locale} stepHint={t(locale, "equifold.guide")} />
       {banner}
+      {endpointSlot}
+      <SourceStrip items={sourceItems} />
+      <WatchTargetPanel
+        locale={locale}
+        watching={t(locale, "equifold.watching")}
+        chainLabel={locale === "zh" ? "多市场" : "Multi"}
+        params={watchParams}
+        sourceStatus={
+          history.status === "loading"
+            ? t(locale, "tool.sourceLoading")
+            : t(locale, "tool.sourceReady")
+        }
+        trailing={chainControls}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5">
         <div className="min-w-0">
           <p className="truncate text-[22px] font-black tracking-tight">{coinTitle}</p>
           <p className="mt-1 truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">{coinMeta}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {!running ? (
-            <Button size="sm" onClick={onStart} disabled={connecting} className="min-h-10 w-auto clip-cta">
-              {connecting ? t(locale, "common.starting") : t(locale, "common.start")}
-            </Button>
-          ) : (
-            <Button size="sm" variant="secondary" onClick={onStop} className="min-h-10 w-auto">
-              {t(locale, "common.stop")}
-            </Button>
-          )}
+          <LiveToggle
+            locale={locale}
+            live={running}
+            connecting={connecting}
+            onPause={onPause}
+            onResume={onResume}
+          />
           <Badge>{t(locale, "equifold.badge")}</Badge>
-          {chainControls}
+          <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
         </div>
       </div>
+
+      {!hasAnyLive ? (
+        <RecentHistoryPanel
+          locale={locale}
+          history={history}
+          liveEvents={[]}
+          seedEvents={seedEvents}
+          listening={listening || connecting}
+          dense
+          className="min-h-[160px]"
+        />
+      ) : null}
 
       <div className="grid flex-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
         {columns.map((col) => (
@@ -69,25 +111,29 @@ export function EquiSplitLayout({
           >
             <div className="flex items-center justify-between border-b border-[var(--color-line)] px-3 py-2">
               <h3 className="text-sm font-extrabold text-[var(--color-neon-cyan)]">{col.title}</h3>
-              <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">{col.events.length}</span>
+              <div className="flex items-center gap-2">
+                {col.events.some((e) => e.tags.includes("DEMO")) ? (
+                  <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
+                ) : null}
+                <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
+                  {col.events.length}
+                </span>
+              </div>
             </div>
             <ScrollArea className="flex-1">
               <div>
                 {col.events.length === 0 ? (
-                  <FeedEmpty
-                    locale={locale}
-                    listening={listening || connecting}
-                    rows={4}
-                    dense
-                    caption={t(locale, "equifold.emptyCol")}
-                    className="min-h-[200px]"
-                  />
+                  <div className="px-3 py-6 text-center text-xs text-[var(--color-muted-foreground)]">
+                    {t(locale, "history.none")}
+                    <p className="mt-1">{history.reason || t(locale, "equifold.emptyCol")}</p>
+                  </div>
                 ) : (
                   col.events.map((ev) => (
                     <div
                       key={ev.id}
                       className={cn(
-                        "grid grid-cols-[1fr_auto] gap-1.5 border-b border-[rgba(30,30,46,0.85)] px-2.5 py-2 feed-row-flash"
+                        "grid grid-cols-[1fr_auto] gap-1.5 border-b border-[rgba(30,30,46,0.85)] px-2.5 py-2",
+                        !ev.tags.includes("DEMO") && "feed-row-flash"
                       )}
                     >
                       <div className="min-w-0">
@@ -103,7 +149,9 @@ export function EquiSplitLayout({
                           </Badge>
                         ))}
                         {typeof ev.block === "number" ? (
-                          <span className="font-mono text-[10px] text-[var(--color-muted-foreground)]">#{ev.block}</span>
+                          <span className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
+                            #{ev.block}
+                          </span>
                         ) : null}
                       </div>
                     </div>

@@ -95,6 +95,7 @@ export function buildEquiFixtures(locale: Locale): EquiFixtureBundle {
     { tag: "NEXT" as const, quote: "USDC", idx: 2 },
     { tag: "NEXT" as const, quote: "cbBTC", idx: 3 },
   ];
+  const venues = ["UniV2", "Sushi", "BaseSwap"];
   const events: FeedEvent[] = markets.map((m, i) => {
     const market = fakeAddr(`eqmkt${i}${m.quote}`);
     const kind =
@@ -107,12 +108,13 @@ export function buildEquiFixtures(locale: Locale): EquiFixtureBundle {
           : "Next market";
     const tags =
       m.tag === "FIRST" ? ["FIRST", "DEMO"] : ["NEXT", `N=${m.idx}`, "DEMO", ...(m.idx >= 3 ? ["BURST"] : [])];
+    const px = (0.00012 * (i + 1)).toFixed(5);
     return {
       id: rid(),
       kind,
       tags,
-      title: short(market),
-      body: `${short(coinAddr)} · ${m.quote} · #${28_910_000 + i * 3}`,
+      title: `${coinLabel} / ${m.quote}`,
+      body: `${venues[i % venues.length]} · $${px} · ${short(market)} · #${28_910_000 + i * 3}`,
       address: market,
       block: 28_910_000 + i * 3,
       tx: fakeAddr(`txequi${i}`),

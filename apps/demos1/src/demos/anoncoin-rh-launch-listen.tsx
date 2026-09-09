@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import {
@@ -25,6 +25,7 @@ import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildAnonFixtures, useDemoHits } from "../lib/demo-hits";
+import { mapPairCreatedLogs, useRecentHistory } from "../lib/recent-history";
 import { getDemo } from "../catalog";
 
 const EP = PUBLIC_ENDPOINTS.robinhood;
@@ -67,6 +68,15 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const [showSettings, setShowSettings] = useState(false);
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+
+  const seedEvents = useMemo(() => buildAnonFixtures(locale, 6), [locale]);
+  const history = useRecentHistory({
+    locale,
+    https: EP.https,
+    address: factory.trim() || undefined,
+    topics: [topicPair],
+    map: (logs) => mapPairCreatedLogs(logs, locale, "RH"),
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -262,18 +272,17 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     };
   }, [onLog, subscribeAll]);
 
-  const start = useCallback(() => {
+  const resume = useCallback(() => {
     const q = fields.current.quote.trim();
     if (fields.current.onlyQuote && !isAddr(q)) {
       setStatus("error");
       return;
     }
-    setHasHit(false);
     wantRun.current = true;
     connect();
   }, [connect]);
 
-  const stop = () => {
+  const pause = useCallback(() => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
@@ -281,9 +290,11 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       /* ignore */
     }
     setStatus("stopped");
-  };
+  }, []);
 
+  // Live on by default at first paint
   useEffect(() => {
+    resume();
     return () => {
       wantRun.current = false;
       try {
@@ -292,12 +303,35 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
         /* ignore */
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Dense idle: pre-select first seed / history row for right panel
+  useEffect(() => {
+    if (selectedId) return;
+    const pool = events.length ? events : history.events.length ? history.events : seedEvents;
+    if (pool[0]) setSelectedId(pool[0].id);
+  }, [events, history.events, seedEvents, selectedId]);
+
   const running = status === "connecting" || status === "listening";
+  const watchParams = [
+    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听 · 未限定）" : "(wide · unset)") },
+    { label: "Topic0", value: topicPair, mono: true },
+    { label: "Mint", value: shortAddr(MINT), mono: true },
+    { label: "Quote", value: quote.trim() || (locale === "zh" ? "任意" : "any") },
+    { label: "Pair", value: subPair ? "on" : "off" },
+    { label: "LP", value: subMint ? "on" : "off" },
+  ];
+  const sourceItems = [
+    { k: locale === "zh" ? "源" : "SRC", v: "anoncoin.rh / stream" },
+    { k: "CHAIN", v: EP.label },
+    { k: "METHOD", v: "launch-watch" },
+    { k: "WSS", v: WSS },
+    { k: "HTTPS", v: EP.https },
+  ];
+
   const settings = (
     <div className="space-y-3">
-      <EndpointBar locale={locale} wss={WSS} https={EP.https} chainLabel={EP.label} />
       <button
         type="button"
         className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
@@ -380,12 +414,17 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       <AnonStreamLayout
         locale={locale}
         events={events}
+        seedEvents={seedEvents}
         selectedId={selectedId}
         onSelect={setSelectedId}
-        onStart={start}
-        onStop={stop}
+        onPause={pause}
+        onResume={resume}
         running={running}
         connecting={status === "connecting"}
+        history={history}
+        watchParams={watchParams}
+        sourceItems={sourceItems}
+        endpointSlot={<EndpointBar locale={locale} wss={WSS} https={EP.https} chainLabel={EP.label} />}
         settings={settings}
         banner={
           <DemoHitsBanner

@@ -26,6 +26,7 @@ import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildEquiFixtures, useDemoHits } from "../lib/demo-hits";
+import { mapPairCreatedLogs, useRecentHistory } from "../lib/recent-history";
 import { getDemo } from "../catalog";
 
 const ENDPOINTS = {
@@ -69,6 +70,17 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [fixtureCoin, setFixtureCoin] = useState<{ label: string; addr: string } | null>(null);
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+
+  const seedBundle = useMemo(() => buildEquiFixtures(locale), [locale]);
+  const seedEvents = seedBundle.events;
+  const epHttps = ENDPOINTS[endpoint].https;
+  const history = useRecentHistory({
+    locale,
+    https: epHttps,
+    address: factory.trim() || undefined,
+    topics: [topic0],
+    map: (logs) => mapPairCreatedLogs(logs, locale, endpoint === "rh" ? "RH" : "BASE"),
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -245,13 +257,12 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     };
   }, [onLogMsg, subscribeAll]);
 
-  const start = useCallback(() => {
-    setHasHit(false);
+  const resume = useCallback(() => {
     wantRun.current = true;
     connect();
   }, [connect]);
 
-  const stop = () => {
+  const pause = useCallback(() => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
@@ -259,9 +270,10 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       /* ignore */
     }
     setStatus("stopped");
-  };
+  }, []);
 
   useEffect(() => {
+    resume();
     return () => {
       wantRun.current = false;
       try {
@@ -270,6 +282,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         /* ignore */
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const ep = ENDPOINTS[endpoint];
@@ -280,22 +293,34 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     ? shortAddr(focusRec.base)
     : fixtureCoin
       ? fixtureCoin.label
-      : t(locale, "equifold.coinFallback");
+      : seedBundle.coinLabel;
   const coinMeta = focusRec
     ? `${shortAddr(focusRec.base)} · ${focusRec.count} markets · ${endpoint === "rh" ? "RH" : "Base"}`
     : fixtureCoin
       ? `${shortAddr(fixtureCoin.addr)} · ${locale === "zh" ? "示意币 · 多市场分叉" : "demo coin · multi-market fork"}`
-      : t(locale, "equifold.metaIdle");
+      : `${shortAddr(seedBundle.coinAddr)} · ${t(locale, "equifold.metaIdle")}`;
 
   const columns = useMemo(() => {
-    const first = events.filter((ev) => ev.tags.includes("FIRST"));
-    const next = events.filter((ev) => !ev.tags.includes("FIRST"));
+    const pool =
+      events.length > 0
+        ? events
+        : history.events.length > 0
+          ? history.events.map((ev, i) =>
+              i === 0
+                ? { ...ev, tags: Array.from(new Set([...ev.tags, "FIRST"])) }
+                : { ...ev, tags: ev.tags.includes("FIRST") ? ev.tags : [...ev.tags, "NEXT"] }
+            )
+          : seedEvents;
+    const first = pool.filter((ev) => ev.tags.includes("FIRST"));
+    const next = pool.filter((ev) => !ev.tags.includes("FIRST"));
+    const colFirst = first.length ? first : pool.slice(0, 1);
+    const colNext = next.length ? next : pool.slice(1);
     return [
-      { id: "first", title: t(locale, "equifold.colFirst"), events: first },
-      { id: "next", title: t(locale, "equifold.colNext"), events: next },
-      { id: "all", title: t(locale, "equifold.colAll"), events: events },
+      { id: "first", title: t(locale, "equifold.colFirst"), events: colFirst },
+      { id: "next", title: t(locale, "equifold.colNext"), events: colNext },
+      { id: "all", title: t(locale, "equifold.colAll"), events: pool },
     ];
-  }, [events, locale]);
+  }, [events, history.events, seedEvents, locale]);
 
   const chainControls = (
     <ToggleGroup
@@ -322,9 +347,23 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     </ToggleGroup>
   );
 
+  const watchParams = [
+    { label: "Endpoint", value: ep.label },
+    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听）" : "(wide)") },
+    { label: "Topic0", value: shortAddr(topic0), mono: true },
+    { label: "Burst", value: `${burstSec}s` },
+    { label: "Token", value: "NEONCAT" },
+  ];
+  const sourceItems = [
+    { k: locale === "zh" ? "源" : "SRC", v: "equifold.markets" },
+    { k: "TOKEN", v: "NEONCAT" },
+    { k: "VENUES", v: "3 · demo" },
+    { k: "CHAIN", v: ep.label },
+    { k: "HTTPS", v: ep.https },
+  ];
+
   const settings = (
     <div className="space-y-3">
-      <EndpointBar locale={locale} wss={ep.wss} https={ep.https} chainLabel={ep.label} />
       <button
         type="button"
         className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
@@ -395,11 +434,16 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         coinTitle={coinTitle}
         coinMeta={coinMeta}
         columns={columns}
-        onStart={start}
-        onStop={stop}
+        seedEvents={seedEvents}
+        onPause={pause}
+        onResume={resume}
         running={running}
         connecting={status === "connecting"}
         chainControls={chainControls}
+        history={history}
+        watchParams={watchParams}
+        sourceItems={sourceItems}
+        endpointSlot={<EndpointBar locale={locale} wss={ep.wss} https={ep.https} chainLabel={ep.label} />}
         settings={settings}
         banner={
           <DemoHitsBanner

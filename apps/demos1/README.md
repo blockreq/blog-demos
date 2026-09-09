@@ -4,7 +4,9 @@ Vite + TanStack Router SPA under base path `/demos1/`, served by Cloudflare Work
 
 ## Feel
 
-Shell matches the locked cyberpunk baseline (`demos1-feel-baseline`): near-black `#050508`, panels `#0D0D14`, neon cyan/magenta, hard edges / clipped CTA, four loud states (idle → connecting → listening → hit). ETH/Sol/BNB are secondary accents only. Solana public RPC is not marketed.
+Shell matches the locked cyberpunk baseline (`demos1-feel-baseline`): near-black `#050508`, panels `#0D0D14`, neon cyan/magenta, hard edges, four states (paused/idle → connecting → listening → hit). ETH/Sol/BNB are secondary accents only. Solana public RPC is not marketed.
+
+**有料 idle (LOCKED):** first paint is dense — source meta + seeded/history rows (labeled 示意数据 / DEMO DATA). Ban CTA 「开始盯」/Start watching. Live on by default; primary control is quieter **暂停实时 / 恢复实时** (Pause live / Resume live). Real history via public `eth_getLogs` within the ~1024-block Free window when possible; else 「暂无记录」+ reason (seeds OK).
 
 
 ## First paint / cache
