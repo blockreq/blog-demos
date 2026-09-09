@@ -1,43 +1,54 @@
 import { cn } from "../utils";
 
-export type ConnStatus = "idle" | "connecting" | "listening" | "error" | "stopped";
+/** Connection + event UI states matching feel baseline. */
+export type ConnStatus = "idle" | "connecting" | "listening" | "hit" | "error" | "stopped";
 
 const STYLES: Record<ConnStatus, string> = {
-  idle: "bg-slate-100 text-slate-700 border-slate-200",
-  connecting: "bg-amber-50 text-amber-900 border-amber-300",
-  listening: "bg-emerald-50 text-emerald-900 border-emerald-300 ring-pulse",
-  error: "bg-red-50 text-red-900 border-red-300",
-  stopped: "bg-slate-100 text-slate-600 border-slate-200",
+  idle: "text-[#7A8098] border-[#2A2A3A] bg-[#0C0C14]",
+  connecting: "text-[var(--color-warn)] border-[rgba(255,209,102,0.55)] bg-[rgba(255,209,102,0.08)]",
+  listening: "text-[var(--color-ok)] border-[rgba(57,255,154,0.55)] bg-[rgba(57,255,154,0.08)]",
+  hit: "text-white border-[rgba(255,43,214,0.8)] bg-[linear-gradient(90deg,rgba(85,124,242,0.35),rgba(255,43,214,0.45))] shadow-[0_0_22px_rgba(255,43,214,0.35)]",
+  error: "text-[#FF8FAB] border-[rgba(255,43,214,0.45)] bg-[rgba(255,43,214,0.08)]",
+  stopped: "text-[#7A8098] border-[#2A2A3A] bg-[#0C0C14]",
 };
 
 const LABELS: Record<ConnStatus, string> = {
-  idle: "Idle — press Start",
-  connecting: "Connecting…",
-  listening: "Listening live",
+  idle: "Not connected",
+  connecting: "Connecting",
+  listening: "Listening",
+  hit: "Got one!",
   error: "Error",
   stopped: "Stopped",
 };
 
-export function StatusPill({ status, detail }: { status: ConnStatus; detail?: string }) {
+export function StatusPill({
+  status,
+  detail,
+  label,
+}: {
+  status: ConnStatus;
+  detail?: string;
+  /** Override badge text (locale-aware). */
+  label?: string;
+}) {
+  const visual: ConnStatus =
+    status === "stopped" ? "idle" : status === "error" ? "error" : status;
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-3 rounded-full border-2 px-4 py-2.5 text-base font-semibold sm:text-lg",
-        STYLES[status]
+        "inline-flex items-center gap-2 border px-3 py-2 font-mono text-xs font-extrabold uppercase tracking-[0.04em]",
+        STYLES[visual]
       )}
       role="status"
       aria-live="polite"
     >
       <span
         className={cn(
-          "h-3 w-3 rounded-full",
-          status === "listening" && "bg-emerald-500 dot-pulse",
-          status === "connecting" && "bg-amber-500 dot-pulse",
-          status === "error" && "bg-red-500",
-          (status === "idle" || status === "stopped") && "bg-slate-400"
+          "h-2 w-2 rounded-full bg-current shadow-[0_0_10px_currentColor]",
+          (status === "connecting" || status === "listening") && "dot-pulse"
         )}
       />
-      <span>{detail || LABELS[status]}</span>
+      <span>{label || detail || LABELS[status]}</span>
     </div>
   );
 }

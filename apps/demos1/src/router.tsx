@@ -6,15 +6,21 @@ import {
   Link,
   redirect,
 } from "@tanstack/react-router";
-import { DEMO_META, getDemo, isLocale, t, type Locale } from "@blockreq/i18n";
+import { DEMO_CATALOG, getDemo, isLocale, t, type Locale } from "@blockreq/i18n";
 import { DemoCta } from "@blockreq/ui";
 import { AnoncoinDemo } from "./demos/anoncoin-rh-launch-listen";
 import { OpenLaunchDemo } from "./demos/openlaunch-base-eth-subscribe";
 import { EquifoldDemo } from "./demos/equifold-multi-market-listen";
 
+const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
+  eth: "border-[rgba(85,124,242,0.55)] shadow-[0_0_24px_rgba(85,124,242,0.12)]",
+  sol: "border-[rgba(162,60,249,0.55)] shadow-[0_0_24px_rgba(162,60,249,0.12)]",
+  bnb: "border-[rgba(241,185,44,0.55)] shadow-[0_0_24px_rgba(241,185,44,0.12)]",
+};
+
 function RootLayout() {
   return (
-    <div className="min-h-screen bg-white pb-28">
+    <div className="min-h-screen pb-28 text-[var(--color-foreground)]">
       <Outlet />
     </div>
   );
@@ -24,41 +30,53 @@ function IndexPage() {
   const locale: Locale = "en";
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-4 py-10">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+      <header className="space-y-3">
+        <div className="inline-flex items-center gap-2 border border-[rgba(0,240,255,0.45)] bg-[rgba(0,240,255,0.08)] px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.12em] text-[var(--color-neon-cyan)] shadow-[0_0_18px_rgba(0,240,255,0.15)]">
+          {t(locale, "index.pill")}
+        </div>
+        <h1 className="text-[clamp(28px,5vw,40px)] font-black leading-[1.12] tracking-[-0.02em] [text-shadow:0_0_24px_rgba(0,240,255,0.25)]">
           {t(locale, "index.title")}
         </h1>
-        <p className="text-base text-slate-600 sm:text-lg">{t(locale, "index.subtitle")}</p>
-        <p className="text-sm text-slate-500">{t(locale, "common.publicOnly")}</p>
+        <p className="max-w-[56ch] text-[15px] leading-relaxed text-[var(--color-muted-foreground)]">
+          {t(locale, "index.subtitle")}
+        </p>
+        <p className="font-mono text-xs text-[var(--color-muted-foreground)]">
+          {t(locale, "common.publicOnly")}
+        </p>
       </header>
-      <ul className="space-y-4">
-        {DEMO_META.map((d) => (
-          <li key={d.slug} className="rounded-2xl border-2 border-slate-200 p-5 shadow-sm">
-            <h2 className="text-xl font-bold">{t(locale, d.titleKey)}</h2>
-            <p className="mt-1 text-slate-600">{t(locale, d.blurbKey)}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                to="/$slug/$locale/"
-                params={{ slug: d.slug, locale: "en" }}
-                className="inline-flex h-11 items-center rounded-xl bg-blue-600 px-5 font-bold text-white hover:bg-blue-700"
-              >
-                EN
-              </Link>
-              <Link
-                to="/$slug/$locale/"
-                params={{ slug: d.slug, locale: "zh" }}
-                className="inline-flex h-11 items-center rounded-xl border-2 border-slate-200 px-5 font-bold text-slate-800 hover:bg-slate-50"
-              >
-                中文
-              </Link>
-              <a
-                href={d.stackblitz}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 items-center rounded-xl border-2 border-slate-200 px-5 font-bold text-slate-600 hover:bg-slate-50"
-              >
-                StackBlitz
-              </a>
+
+      <ul className="grid gap-4">
+        {DEMO_CATALOG.map((d) => (
+          <li key={d.slug} className={`panel-neon p-5 ${ACCENT[d.accent]}`}>
+            <div className="relative z-[1] space-y-3">
+              <h2 className="text-[22px] font-black tracking-tight">{t(locale, d.titleKey)}</h2>
+              <p className="text-sm leading-relaxed text-[var(--color-muted-foreground)]">
+                {t(locale, d.blurbKey)}
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Link
+                  to="/$slug/$locale/"
+                  params={{ slug: d.slug, locale: "en" }}
+                  className="inline-flex min-h-[44px] items-center border border-[rgba(0,240,255,0.55)] bg-[rgba(0,240,255,0.12)] px-5 font-bold text-[var(--color-neon-cyan)] hover:brightness-110"
+                >
+                  {t(locale, "index.openEn")}
+                </Link>
+                <Link
+                  to="/$slug/$locale/"
+                  params={{ slug: d.slug, locale: "zh" }}
+                  className="inline-flex min-h-[44px] items-center border border-[rgba(255,43,214,0.45)] bg-[rgba(255,43,214,0.1)] px-5 font-bold text-white hover:brightness-110"
+                >
+                  {t(locale, "index.openZh")}
+                </Link>
+                <a
+                  href={d.stackblitz}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-[44px] items-center border border-[var(--color-line)] bg-[var(--color-panel)] px-4 font-mono text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
+                >
+                  StackBlitz
+                </a>
+              </div>
             </div>
           </li>
         ))}
@@ -73,7 +91,7 @@ function DemoPage() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <p>Unknown demo or locale.</p>
-        <Link to="/" className="text-blue-600 underline">
+        <Link to="/" className="text-[var(--color-neon-cyan)] underline">
           Back
         </Link>
       </main>
@@ -85,31 +103,44 @@ function DemoPage() {
 
   return (
     <>
-      <div className="border-b bg-slate-50">
+      <div className="border-b border-[var(--color-line)] bg-[rgba(10,10,16,0.85)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3 text-sm">
-          <Link to="/" className="font-semibold text-blue-700 hover:underline">
+          <Link
+            to="/"
+            className="font-mono text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-neon-cyan)] hover:underline"
+          >
             ← {t(locale, "shell.back")}
           </Link>
-          <span className="text-slate-300">|</span>
-          <Link
-            to="/$slug/$locale/"
-            params={{ slug, locale: "en" }}
-            className={locale === "en" ? "font-bold" : "text-slate-600 hover:underline"}
-          >
-            EN
-          </Link>
-          <Link
-            to="/$slug/$locale/"
-            params={{ slug, locale: "zh" }}
-            className={locale === "zh" ? "font-bold" : "text-slate-600 hover:underline"}
-          >
-            中文
-          </Link>
+          <span className="text-[var(--color-line)]">|</span>
+          <div className="inline-flex border border-[var(--color-line)] bg-[var(--color-panel)] p-0.5">
+            <Link
+              to="/$slug/$locale/"
+              params={{ slug, locale: "en" }}
+              className={
+                locale === "en"
+                  ? "bg-[rgba(255,43,214,0.15)] px-3 py-1.5 font-mono text-xs font-extrabold text-white shadow-[inset_0_0_0_1px_rgba(255,43,214,0.6)]"
+                  : "px-3 py-1.5 font-mono text-xs font-bold text-[var(--color-muted-foreground)]"
+              }
+            >
+              EN
+            </Link>
+            <Link
+              to="/$slug/$locale/"
+              params={{ slug, locale: "zh" }}
+              className={
+                locale === "zh"
+                  ? "bg-[rgba(255,43,214,0.15)] px-3 py-1.5 font-mono text-xs font-extrabold text-white shadow-[inset_0_0_0_1px_rgba(255,43,214,0.6)]"
+                  : "px-3 py-1.5 font-mono text-xs font-bold text-[var(--color-muted-foreground)]"
+              }
+            >
+              中文
+            </Link>
+          </div>
           <a
             href={meta.stackblitz}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto text-slate-600 hover:underline"
+            className="ml-auto font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-muted-foreground)] hover:text-[var(--color-neon-cyan)]"
           >
             {t(locale, "shell.stackblitz")}
           </a>
@@ -120,7 +151,12 @@ function DemoPage() {
         {slug === "openlaunch-base-eth-subscribe" && <OpenLaunchDemo locale={locale} />}
         {slug === "equifold-multi-market-listen" && <EquifoldDemo locale={locale} />}
       </main>
-      <DemoCta title={t(locale, meta.titleKey)} blogUrl={blogUrl} />
+      <DemoCta
+        title={t(locale, meta.titleKey)}
+        blogUrl={blogUrl}
+        readLabel={t(locale, "shell.readGuide")}
+        pricingLabel={t(locale, "shell.pricing")}
+      />
     </>
   );
 }

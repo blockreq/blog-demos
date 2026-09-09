@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import {
-  Button,
   Input,
   Label,
   Card,
@@ -11,23 +10,19 @@ import {
   CardHeader,
   CardTitle,
   Badge,
-  StatusPill,
   type ConnStatus,
 } from "@blockreq/ui";
 import { PUBLIC_ENDPOINTS, isAddr, shortAddr, unpadTopic } from "@blockreq/rpc";
+import { ListenShell } from "../components/listen-shell";
 
-/** Base · public Free path. Host MUST be base-rpc.blockreq.com (NOT base-mainnet-rpc). */
 const EP = PUBLIC_ENDPOINTS.base;
 const WSS = EP.wss;
 const HTTPS = EP.https;
 const CHAIN_ID = EP.chainIdHex;
-/** Uniswap v4 Initialize topic0 (commonly cited). */
 const DEFAULT_INIT =
   "0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438";
-/** Placeholder LockLiquidity-ish topic — replace with real OpenLaunch event. */
 const DEFAULT_LOCK =
   "0xe9f76a8d85d1454b2ecdbf900a15a31155a945b0e7bf889f718773bf90a4c196";
-/** Commonly cited Base Uniswap v4 PoolManager — confirm against live docs. */
 const DEFAULT_PM = "0x498581ff718922c3f8e6a244956af099b2652b2b";
 const LS = "blockreq.openlaunch-base.";
 
@@ -38,18 +33,10 @@ type TxRec = {
   clustered?: boolean;
 };
 
-const DEMO_CARDS: Omit<FeedCard, "id">[] = [
-  {
-    kind: "pool Initialize",
-    tags: ["DEMO", "preview", "v4"],
-    body: "poolId=0xdemo… · 0xweth… / 0xmeme… · pm=0x4985… · #demo · local animation only",
-  },
-  {
-    kind: "一笔开盘",
-    tags: ["DEMO", "one-tx", "OpenLaunch?"],
-    body: "tx=0xdemo… · Initialize+lock cluster · preview for 15s screen recording",
-  },
-];
+function SettingsPanel({ open, children }: { open: boolean; children: ReactNode }) {
+  if (!open) return null;
+  return <div className="space-y-3">{children}</div>;
+}
 
 export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const [poolManager, setPoolManager] = useState(DEFAULT_PM);
@@ -60,10 +47,10 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const [subLock, setSubLock] = useState(true);
   const [cluster, setCluster] = useState(true);
   const [status, setStatus] = useState<ConnStatus>("idle");
-  const [statusDetail, setStatusDetail] = useState<string | undefined>();
   const [cards, setCards] = useState<FeedCard[]>([]);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [beat, setBeat] = useState(0);
+  const [hasHit, setHasHit] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [toastMeta, setToastMeta] = useState("BASE · … · JUST NOW");
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -71,22 +58,30 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const backoffMs = useRef(1000);
   const seen = useRef(new Set<string>());
   const byTx = useRef(new Map<string, TxRec>());
-  const started = useRef(false);
   const fields = useRef({
-    poolManager, factory, topicInit, topicLock, subInit, subLock, cluster,
+    poolManager,
+    factory,
+    topicInit,
+    topicLock,
+    subInit,
+    subLock,
+    cluster,
   });
   fields.current = {
-    poolManager, factory, topicInit, topicLock, subInit, subLock, cluster,
+    poolManager,
+    factory,
+    topicInit,
+    topicLock,
+    subInit,
+    subLock,
+    cluster,
   };
 
-  const log = useCallback((line: string) => {
-    const t = new Date().toISOString().slice(11, 19);
-    setLogs((prev) => [`[${t}] ${line}`, ...prev].slice(0, 200));
-  }, []);
-
-  const pushCard = useCallback((kind: string, tags: string[], body: string) => {
+  const pushCard = useCallback((kind: string, tags: string[], body: string, meta?: string) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setCards((prev) => [{ id, kind, tags, body }, ...prev].slice(0, 40));
+    setHasHit(true);
+    if (meta) setToastMeta(meta);
   }, []);
 
   useEffect(() => {
@@ -99,20 +94,10 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       if (fac != null) setFactory(fac);
       if (ti) setTopicInit(ti);
       if (tl) setTopicLock(tl);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
-
-  useEffect(() => {
-    const timers: number[] = [];
-    DEMO_CARDS.forEach((c, i) => {
-      timers.push(window.setTimeout(() => pushCard(c.kind, c.tags, c.body), 400 + i * 900));
-    });
-    const beatTimer = window.setInterval(() => setBeat((n) => n + 1), 1000);
-    return () => {
-      timers.forEach(clearTimeout);
-      clearInterval(beatTimer);
-    };
-  }, [pushCard]);
 
   const saveFields = () => {
     try {
@@ -120,7 +105,9 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       localStorage.setItem(LS + "factory", fields.current.factory.trim());
       localStorage.setItem(LS + "topicInit", fields.current.topicInit.trim());
       localStorage.setItem(LS + "topicLock", fields.current.topicLock.trim());
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const send = (method: string, params: unknown[]) => {
@@ -147,17 +134,13 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       rec.clustered = true;
       const i = rec.init;
       pushCard(
-        "一笔开盘",
-        ["one-tx", "Initialize+lock", "OpenLaunch?"],
-        `tx=${shortAddr(tx)} · c0=${shortAddr(i.currency0)} · c1=${shortAddr(
-          i.currency1
-        )} · poolId=${shortAddr(i.poolId)} · lock@${shortAddr(
-          rec.lock.address
-        )} · #${bn}`
+        locale === "zh" ? "一笔开盘" : "One-shot open",
+        ["ONE-TX"],
+        `${shortAddr(tx)} · ${shortAddr(i.currency0)} / ${shortAddr(i.currency1)} · #${bn}`,
+        `BASE · ${shortAddr(tx)} · JUST NOW`
       );
-      log(`one-tx cluster tx=${shortAddr(tx)} #${bn}`);
     },
-    [log, pushCard]
+    [locale, pushCard]
   );
 
   const onInitialize = useCallback(
@@ -176,16 +159,14 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         address: String(r.address || "").toLowerCase(),
       };
       pushCard(
-        "pool Initialize",
-        ["v4", "Initialize", "Base"],
-        `poolId=${shortAddr(poolId)} · ${shortAddr(currency0)} / ${shortAddr(
-          currency1
-        )} · pm=${shortAddr(String(r.address || ""))} · #${bn} · tx=${shortAddr(tx)}`
+        locale === "zh" ? "池子开了" : "Pool open",
+        ["BASE"],
+        `${shortAddr(poolId)} · ${shortAddr(currency0)} / ${shortAddr(currency1)} · #${bn}`,
+        `BASE · ${shortAddr(poolId)} · JUST NOW`
       );
-      log(`Initialize c0=${shortAddr(currency0)} c1=${shortAddr(currency1)} #${bn}`);
       maybeCluster(tx, bn);
     },
-    [log, maybeCluster, pushCard]
+    [locale, maybeCluster, pushCard]
   );
 
   const onLock = useCallback(
@@ -200,16 +181,14 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         tokenish,
       };
       pushCard(
-        "lock / launch",
-        ["lock", "permanent?", "placeholder-ABI"],
-        `addr=${shortAddr(String(r.address || ""))} · hint=${shortAddr(
-          tokenish || "?"
-        )} · #${bn} · tx=${shortAddr(tx)}`
+        locale === "zh" ? "锁仓/开盘" : "Lock / launch",
+        ["LOCK"],
+        `${shortAddr(String(r.address || ""))} · ${shortAddr(tokenish || "?")} · #${bn}`,
+        `BASE · ${shortAddr(tx)} · JUST NOW`
       );
-      log(`Lock/launch @${shortAddr(String(r.address || ""))} #${bn}`);
       maybeCluster(tx, bn);
     },
-    [log, maybeCluster, pushCard]
+    [locale, maybeCluster, pushCard]
   );
 
   const onLogMsg = useCallback(
@@ -230,35 +209,22 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     const fac = fields.current.factory.trim();
     const ti = fields.current.topicInit.trim().toLowerCase();
     const tl = fields.current.topicLock.trim().toLowerCase();
-
     if (fields.current.subInit) {
       const filt: { topics: string[]; address?: string } = { topics: [ti] };
       if (isAddr(pm)) filt.address = pm.toLowerCase();
       send("eth_subscribe", ["logs", filt]);
-      log(
-        `eth_subscribe Initialize${
-          isAddr(pm) ? " @ " + shortAddr(pm) : " (topic-wide)"
-        } · chainId=${CHAIN_ID}`
-      );
     }
     if (fields.current.subLock) {
       const filt: { topics: string[]; address?: string } = { topics: [tl] };
       if (isAddr(fac)) filt.address = fac.toLowerCase();
       send("eth_subscribe", ["logs", filt]);
-      log(
-        `eth_subscribe Lock/launch${
-          isAddr(fac) ? " @ " + shortAddr(fac) : " (topic-wide — noisy)"
-        }`
-      );
     }
     setStatus("listening");
-    setStatusDetail(`Listening · Base ${CHAIN_ID}`);
-  }, [log]);
+  }, []);
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    setStatusDetail("Connecting to public WSS…");
     const ws = new WebSocket(WSS);
     wsRef.current = ws;
     ws.onopen = () => {
@@ -272,15 +238,9 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") {
-        log("subscription id=" + msg.result);
-        return;
-      }
+      if (msg.id && msg.result && typeof msg.result === "string") return;
       if (msg.id && msg.error) {
-        const err = msg.error as { message?: string };
-        log("rpc error: " + (err.message || JSON.stringify(msg.error)));
         setStatus("error");
-        setStatusDetail(err.message || "RPC error");
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -292,193 +252,185 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     ws.onclose = () => {
       if (!wantRun.current) {
         setStatus("stopped");
-        setStatusDetail("Stopped");
         return;
       }
       setStatus("connecting");
-      setStatusDetail(`Reconnect in ${backoffMs.current}ms`);
       setTimeout(connect, backoffMs.current);
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
       setStatus("error");
-      setStatusDetail("WebSocket error — retrying…");
       try {
         ws.close();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
-  }, [log, onLogMsg, subscribeAll]);
+  }, [onLogMsg, subscribeAll]);
 
   const start = useCallback(() => {
+    setHasHit(false);
     wantRun.current = true;
     connect();
   }, [connect]);
 
-  const stop = () => {
+  const reset = () => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
-    } catch { /* ignore */ }
-    setStatus("stopped");
-    setStatusDetail("Stopped");
-  };
-
-  const clear = () => {
-    setLogs([]);
+    } catch {
+      /* ignore */
+    }
+    setHasHit(false);
+    setStatus("idle");
     setCards([]);
     seen.current.clear();
     byTx.current.clear();
   };
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    const t = window.setTimeout(() => start(), 700);
-    return () => clearTimeout(t);
-  }, [start]);
-
-  useEffect(() => {
     return () => {
       wantRun.current = false;
       try {
         wsRef.current?.close();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
   }, []);
 
-  const running = status === "connecting" || status === "listening";
+  const heroKey =
+    status === "connecting"
+      ? "openlaunch.hero.connecting"
+      : hasHit
+        ? "openlaunch.hero.hit"
+        : status === "listening"
+          ? "openlaunch.hero.listening"
+          : "openlaunch.hero.idle";
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-          {t(locale, "openlaunch.title")}
-        </h1>
-        <p className="text-base text-slate-600 sm:text-lg">
-          {t(locale, "openlaunch.blurb")}{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[0.95em]">eth_subscribe</code>
-        </p>
-        <p className="text-sm text-slate-500">{t(locale, "common.publicOnly")}</p>
-        <p className="font-mono text-sm text-slate-500 break-all">
-          {WSS} · HTTPS twin {HTTPS} · chainId {CHAIN_ID}
-        </p>
-        <div className="sweep-bar rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-900">
-          <span className="live-ticker">
-            Live feel · local enter/highlight/pulse · beat {beat}s · base-rpc (not base-mainnet-rpc) ·&nbsp;
-            Live feel · local enter/highlight/pulse · beat {beat}s · base-rpc (not base-mainnet-rpc) ·&nbsp;
-          </span>
+    <ListenShell
+      locale={locale}
+      status={status}
+      hasHit={hasHit}
+      tag={t(locale, "openlaunch.tag")}
+      title={t(locale, "openlaunch.title")}
+      heroSub={t(locale, heroKey)}
+      toast={
+        hasHit
+          ? { title: t(locale, "openlaunch.toast"), meta: toastMeta }
+          : null
+      }
+      onStart={start}
+      onReset={reset}
+      settings={
+        <div className="space-y-3">
+          <button
+            type="button"
+            className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
+            onClick={() => setShowSettings((v) => !v)}
+          >
+            {t(locale, "common.settings")}
+          </button>
+          <SettingsPanel open={showSettings}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+                <CardDescription>
+                  {locale === "zh"
+                    ? "一般不用改。粘贴工厂地址可更安静。"
+                    : "Leave empty for the default wide listen."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="pm">Pool manager</Label>
+                  <Input
+                    id="pm"
+                    value={poolManager}
+                    onChange={(e) => setPoolManager(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="factory">Factory (optional)</Label>
+                  <Input
+                    id="factory"
+                    placeholder="0x…"
+                    value={factory}
+                    onChange={(e) => setFactory(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={subInit}
+                      onChange={(e) => setSubInit(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Pool open
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={subLock}
+                      onChange={(e) => setSubLock(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Lock / launch
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={cluster}
+                      onChange={(e) => setCluster(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Same-tx pair
+                  </label>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ti">Open topic0</Label>
+                  <Input id="ti" value={topicInit} onChange={(e) => setTopicInit(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="tl">Lock topic0</Label>
+                  <Input id="tl" value={topicLock} onChange={(e) => setTopicLock(e.target.value)} />
+                </div>
+                <p className="font-mono text-[11px] text-[var(--color-muted-foreground)] break-all">
+                  {WSS} · {HTTPS} · {CHAIN_ID}
+                </p>
+              </CardContent>
+            </Card>
+          </SettingsPanel>
         </div>
-      </header>
-
-      <Card className="border-sky-200 bg-sky-50/60">
-        <CardHeader className="pb-2">
-          <CardTitle>Placeholder addresses / ABI</CardTitle>
-          <CardDescription className="text-sky-900/80">
-            Default PoolManager is the commonly cited Base Uniswap v4 address — confirm against live docs.
-            Paste real <code>OPENLAUNCH_FACTORY</code> + lock topic when known.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <pre className="overflow-x-auto rounded-xl border border-dashed border-slate-300 bg-white/80 p-4 text-xs text-slate-700 whitespace-pre-wrap sm:text-sm">
-{`// Placeholder ABI fragments — swap for live OpenLaunch / v4 when known
-// PoolManager (Uniswap v4):
-event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1,
-                 uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick);
-// topic0 = ${DEFAULT_INIT}
-// OpenLaunch factory / lock: replace LOCK_TOPIC0 with real lock / full-supply event
-// env stand-ins: OPENLAUNCH_FACTORY · POOL_MANAGER`}
-          </pre>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Settings</CardTitle>
-          <CardDescription>
-            Defaults connect to public WSS · leave factory empty for topic-wide lock (noisier).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="pm">POOL_MANAGER</Label>
-            <Input id="pm" value={poolManager} onChange={(e) => setPoolManager(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="factory">OPENLAUNCH_FACTORY (optional)</Label>
-            <Input
-              id="factory"
-              placeholder="0x… narrow lock / launch logs"
-              value={factory}
-              onChange={(e) => setFactory(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-5 text-base">
-            <label className="inline-flex items-center gap-2.5">
-              <input type="checkbox" checked={subInit} onChange={(e) => setSubInit(e.target.checked)} className="h-5 w-5" />
-              Initialize
-            </label>
-            <label className="inline-flex items-center gap-2.5">
-              <input type="checkbox" checked={subLock} onChange={(e) => setSubLock(e.target.checked)} className="h-5 w-5" />
-              Lock / launch topic
-            </label>
-            <label className="inline-flex items-center gap-2.5">
-              <input type="checkbox" checked={cluster} onChange={(e) => setCluster(e.target.checked)} className="h-5 w-5" />
-              same-tx cluster
-            </label>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="ti">Initialize topic0</Label>
-            <Input id="ti" value={topicInit} onChange={(e) => setTopicInit(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tl">Lock topic0 (placeholder)</Label>
-            <Input id="tl" value={topicLock} onChange={(e) => setTopicLock(e.target.value)} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Button size="lg" onClick={start} disabled={running}>
-          {t(locale, "common.start")}
-        </Button>
-        <Button size="lg" variant="secondary" onClick={stop} disabled={!running && status !== "error"}>
-          Stop
-        </Button>
-        <Button size="lg" variant="outline" onClick={clear}>
-          Clear
-        </Button>
-        <StatusPill status={status} detail={statusDetail} />
-      </div>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-800">{t(locale, "common.feed")}</h2>
-        <div className="max-h-[24rem] space-y-2.5 overflow-auto rounded-2xl border-2 bg-slate-950 p-4">
-          {cards.length === 0 && (
-            <p className="text-base text-slate-400">{t(locale, "common.waiting")}</p>
-          )}
-          {cards.map((c) => (
-            <div
-              key={c.id}
-              className="card-enter rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm text-slate-100"
-            >
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="text-base font-bold text-sky-400">{c.kind}</span>
-                {c.tags.map((t) => (
-                  <Badge key={t}>{t}</Badge>
-                ))}
+      }
+    >
+      {cards.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+            {t(locale, "common.feed")}
+          </h2>
+          <div className="max-h-64 space-y-2 overflow-auto border border-[var(--color-line)] bg-[#07070E] p-3">
+            {cards.map((c) => (
+              <div
+                key={c.id}
+                className="card-enter border border-[rgba(255,43,214,0.35)] bg-[rgba(8,8,14,0.95)] p-3 text-sm"
+              >
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-[var(--color-neon-mag)]">{c.kind}</span>
+                  {c.tags.map((tag) => (
+                    <Badge key={tag}>{tag}</Badge>
+                  ))}
+                </div>
+                <div className="font-mono text-[12px] break-all text-[var(--color-muted-foreground)]">
+                  {c.body}
+                </div>
               </div>
-              <div className="font-mono text-[13px] break-all leading-relaxed">{c.body}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-800">{t(locale, "common.log")}</h2>
-        <pre className="max-h-52 overflow-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-200 sm:text-sm">
-          {logs.length ? logs.join("\n") : "—"}
-        </pre>
-      </section>
-    </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </ListenShell>
   );
 }
