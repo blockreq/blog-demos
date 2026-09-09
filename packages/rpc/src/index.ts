@@ -177,3 +177,136 @@ export class BrowserPublicWs {
     };
   }
 }
+
+/** Public Free endpoints only serve recent blocks (~1024). Stay under that. */
+export const PUBLIC_GETLOGS_MAX_BLOCKS = 1024;
+/** Safe default window — tip can move between eth_blockNumber and eth_getLogs. */
+export const PUBLIC_GETLOGS_SAFE_WINDOW = 900;
+
+export type RecentLogsOk = {
+  ok: true;
+  logs: JsonRpcLog[];
+  fromBlock: number;
+  toBlock: number;
+  windowBlocks: number;
+};
+
+export type RecentLogsErr = {
+  ok: false;
+  error: string;
+  /** Machine-ish reason for UI empty-state copy */
+  reason: "window" | "rpc" | "empty" | "browser";
+};
+
+export type RecentLogsResult = RecentLogsOk | RecentLogsErr;
+
+async function jsonRpc<T>(
+  https: string,
+  method: string,
+  params: unknown[]
+): Promise<{ result?: T; error?: { message?: string; code?: number } }> {
+  const res = await fetch(https, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  if (!res.ok) {
+    return { error: { message: `HTTP ${res.status}`, code: res.status } };
+  }
+  return (await res.json()) as { result?: T; error?: { message?: string; code?: number } };
+}
+
+/**
+ * Browser-only eth_getLogs against BlockReq public HTTPS.
+ * Respects the public ~1024-block recent window (no Worker proxy).
+ */
+export async function fetchPublicRecentLogs(opts: {
+  https: string;
+  address?: string;
+  topics: (string | null | undefined)[];
+  /** Blocks to look back; clamped to PUBLIC_GETLOGS_SAFE_WINDOW */
+  windowBlocks?: number;
+  signal?: AbortSignal;
+}): Promise<RecentLogsResult> {
+  try {
+    assertBrowserOnly("fetchPublicRecentLogs");
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e), reason: "browser" };
+  }
+
+  const windowBlocks = Math.max(
+    1,
+    Math.min(opts.windowBlocks ?? PUBLIC_GETLOGS_SAFE_WINDOW, PUBLIC_GETLOGS_SAFE_WINDOW)
+  );
+
+  const tipRes = await jsonRpc<string>(opts.https, "eth_blockNumber", []);
+  if (opts.signal?.aborted) {
+    return { ok: false, error: "aborted", reason: "rpc" };
+  }
+  if (tipRes.error || !tipRes.result) {
+    return {
+      ok: false,
+      error: tipRes.error?.message || "eth_blockNumber failed",
+      reason: "rpc",
+    };
+  }
+
+  const toBlock = parseInt(tipRes.result, 16);
+  const fromBlock = Math.max(0, toBlock - windowBlocks);
+  const filter: {
+    fromBlock: string;
+    toBlock: string;
+    topics: (string | null)[];
+    address?: string;
+  } = {
+    fromBlock: "0x" + fromBlock.toString(16),
+    toBlock: "0x" + toBlock.toString(16),
+    topics: opts.topics.map((t) => (t ? t.toLowerCase() : null)),
+  };
+  if (opts.address && isAddress(opts.address, { strict: false })) {
+    filter.address = opts.address.toLowerCase();
+  }
+
+  const logsRes = await jsonRpc<JsonRpcLog[]>(opts.https, "eth_getLogs", [filter]);
+  if (opts.signal?.aborted) {
+    return { ok: false, error: "aborted", reason: "rpc" };
+  }
+  if (logsRes.error) {
+    const msg = logsRes.error.message || JSON.stringify(logsRes.error);
+    const reason = /1024|recent blocks|archive/i.test(msg) ? "window" : "rpc";
+    // One retry with a tighter window if tip raced past the public cap.
+    if (reason === "window" && windowBlocks > 512) {
+      return fetchPublicRecentLogs({ ...opts, windowBlocks: 512 });
+    }
+    return { ok: false, error: msg, reason };
+  }
+
+  const logs = Array.isArray(logsRes.result) ? logsRes.result : [];
+  if (logs.length === 0) {
+    return {
+      ok: true,
+      logs: [],
+      fromBlock,
+      toBlock,
+      windowBlocks,
+    };
+  }
+
+  // Newest first
+  const sorted = [...logs].sort((a, b) => {
+    const ba = a.blockNumber ? parseInt(String(a.blockNumber), 16) : 0;
+    const bb = b.blockNumber ? parseInt(String(b.blockNumber), 16) : 0;
+    if (bb !== ba) return bb - ba;
+    const la = typeof a.logIndex === "string" ? parseInt(a.logIndex, 16) : Number(a.logIndex || 0);
+    const lb = typeof b.logIndex === "string" ? parseInt(b.logIndex, 16) : Number(b.logIndex || 0);
+    return lb - la;
+  });
+
+  return {
+    ok: true,
+    logs: sorted,
+    fromBlock,
+    toBlock,
+    windowBlocks,
+  };
+}

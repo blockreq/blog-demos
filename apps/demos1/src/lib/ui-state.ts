@@ -5,9 +5,8 @@ export type FeelState = "idle" | "connecting" | "listening" | "hit";
 
 export function toFeelState(status: ConnStatus, hasHit: boolean): FeelState {
   if (status === "connecting") return "connecting";
-  if (status === "hit" || (hasHit && (status === "listening" || status === "idle"))) {
-    return "hit";
-  }
+  if (hasHit && (status === "listening" || status === "hit")) return "hit";
   if (status === "listening") return "listening";
+  // idle | stopped | error → paused/dead-gray
   return "idle";
 }

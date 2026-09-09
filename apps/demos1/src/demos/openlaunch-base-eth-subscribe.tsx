@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import {
@@ -18,6 +18,7 @@ import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildOpenFixtures, useDemoHits } from "../lib/demo-hits";
+import { mapInitializeLogs, useRecentHistory } from "../lib/recent-history";
 import { getDemo } from "../catalog";
 
 const EP = PUBLIC_ENDPOINTS.base;
@@ -57,6 +58,15 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const [showSettings, setShowSettings] = useState(false);
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+
+  const seedEvents = useMemo(() => buildOpenFixtures(locale, 5), [locale]);
+  const history = useRecentHistory({
+    locale,
+    https: HTTPS,
+    address: poolManager.trim() || undefined,
+    topics: [topicInit],
+    map: (logs) => mapInitializeLogs(logs, locale),
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -294,13 +304,12 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     };
   }, [onLogMsg, subscribeAll]);
 
-  const start = useCallback(() => {
-    setHasHit(false);
+  const resume = useCallback(() => {
     wantRun.current = true;
     connect();
   }, [connect]);
 
-  const stop = () => {
+  const pause = useCallback(() => {
     wantRun.current = false;
     try {
       wsRef.current?.close();
@@ -308,9 +317,10 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       /* ignore */
     }
     setStatus("stopped");
-  };
+  }, []);
 
   useEffect(() => {
+    resume();
     return () => {
       wantRun.current = false;
       try {
@@ -319,12 +329,27 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         /* ignore */
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const running = status === "connecting" || status === "listening";
+  const watchParams = [
+    { label: "PoolManager", value: shortAddr(poolManager) || poolManager, mono: true },
+    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（可选）" : "(optional)") },
+    { label: "Init topic", value: shortAddr(topicInit), mono: true },
+    { label: "Lock topic", value: shortAddr(topicLock), mono: true },
+    { label: "Cluster", value: cluster ? "same-tx" : "off" },
+  ];
+  const sourceItems = [
+    { k: locale === "zh" ? "源" : "SRC", v: "openlaunch.base" },
+    { k: "CHAIN", v: "Base" },
+    { k: "METHOD", v: "tx-listen" },
+    { k: "WINDOW", v: "one-shot" },
+    { k: "HTTPS", v: HTTPS },
+  ];
+
   const settings = (
     <div className="space-y-3">
-      <EndpointBar locale={locale} wss={WSS} https={HTTPS} chainLabel={EP.label} />
       <button
         type="button"
         className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
@@ -414,10 +439,15 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         status={status}
         hasHit={hasHit}
         events={events}
-        onStart={start}
-        onStop={stop}
+        seedEvents={seedEvents}
+        onPause={pause}
+        onResume={resume}
         running={running}
         connecting={status === "connecting"}
+        history={history}
+        watchParams={watchParams}
+        sourceItems={sourceItems}
+        endpointSlot={<EndpointBar locale={locale} wss={WSS} https={HTTPS} chainLabel={EP.label} />}
         settings={settings}
         banner={
           <DemoHitsBanner
