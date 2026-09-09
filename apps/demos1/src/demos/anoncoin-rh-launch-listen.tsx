@@ -409,7 +409,7 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
                     <Badge key={tag}>{tag}</Badge>
                   ))}
                 </div>
-                <div className="font-mono text-[12px] break-all text-[var(--color-muted-foreground)]">
+                <div className="font-mono text-[14px] font-medium break-all text-[#D0D5E8]">
                   {c.body}
                 </div>
               </div>

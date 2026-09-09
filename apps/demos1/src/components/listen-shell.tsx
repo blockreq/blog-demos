@@ -65,7 +65,7 @@ export function ListenShell({
     <div className="mx-auto flex w-full max-w-[420px] flex-col gap-4">
       <div
         className={cn(
-          "scanlines relative flex min-h-[560px] flex-col gap-4 overflow-hidden border border-[#222236] bg-[#05050A] p-5",
+          "scanlines relative flex min-h-[560px] flex-col gap-4 overflow-hidden border border-[#222236] bg-[#050508] p-5",
           `state-${feel}`
         )}
         data-state={feel}
@@ -100,9 +100,9 @@ export function ListenShell({
           </div>
 
           {feel === "hit" && toast && (
-            <div className="toast-in absolute bottom-3 left-3 right-3 z-[2] border border-[rgba(255,43,214,0.55)] bg-[rgba(8,8,14,0.92)] p-3 text-left shadow-[0_0_24px_rgba(255,43,214,0.25)]">
-              <strong className="mb-1 block text-[15px]">{toast.title}</strong>
-              <span className="font-mono text-xs text-[var(--color-muted-foreground)]">{toast.meta}</span>
+            <div className="toast-in absolute bottom-3 left-3 right-3 z-[2] border border-[rgba(255,43,214,0.7)] bg-[rgba(8,8,14,0.96)] p-3.5 text-left shadow-[0_0_28px_rgba(255,43,214,0.35)]">
+              <strong className="mb-1.5 block text-[16px] font-black tracking-tight">{toast.title}</strong>
+              <span className="font-mono text-[13px] font-semibold text-[#C8CDDF]">{toast.meta}</span>
             </div>
           )}
         </div>
