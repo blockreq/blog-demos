@@ -42,6 +42,13 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         run: npm ci
 
+      - name: Build static export
+        working-directory: apps/${{ matrix.app }}
+        env:
+          NEXT_PUBLIC_BLOG_URL: ${{ matrix.blog_url }}
+          NEXT_PUBLIC_SIGNUP_URL: https://blockreq.com/pricing
+        run: npm run build
+
       - name: Ensure Pages project exists
         working-directory: apps/${{ matrix.app }}
         env:
@@ -49,19 +56,36 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          if npx wrangler pages project list 2>/dev/null | grep -q "${{ matrix.app }}"; then
-            echo "Pages project ${{ matrix.app }} already exists"
-          else
-            echo "Creating Pages project ${{ matrix.app }}"
-            npx wrangler pages project create "${{ matrix.app }}" --production-branch=main
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN missing. Boss: copy the working token from blockreq/core (or create an API token with Account · Cloudflare Pages · Edit + Account Settings · Read) into org/repo secrets for blog-demos."
+            exit 1
           fi
-
-      - name: Build static export
-        working-directory: apps/${{ matrix.app }}
-        env:
-          NEXT_PUBLIC_BLOG_URL: ${{ matrix.blog_url }}
-          NEXT_PUBLIC_SIGNUP_URL: https://blockreq.com/pricing
-        run: npm run build
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::CF_ACCOUNT_ID missing (expected ad9331a749fc4b76fe53d6f14fbc8471)."
+            exit 1
+          fi
+          # Create is idempotent enough: ignore "already exists"
+          set +e
+          OUT=$(npx wrangler pages project create "${{ matrix.app }}" --production-branch=main 2>&1)
+          CODE=$?
+          set -e
+          echo "$OUT"
+          if [ "$CODE" -ne 0 ]; then
+            if echo "$OUT" | grep -qiE 'already exists|Project already exists'; then
+              echo "Project already exists — continuing"
+            elif echo "$OUT" | grep -qi 'Authentication error'; then
+              echo "::error::CF token lacks Pages permission (auth 10000). Boss steps:"
+              echo "1) Cloudflare Dashboard → Workers & Pages → Create application → Pages → Direct Upload"
+              echo "   Create projects: anoncoin-rh-launch-listen AND openlaunch-base-eth-subscribe (production branch main)"
+              echo "2) My Profile → API Tokens → Create Token with Account·Cloudflare Pages·Edit (+ Account Settings·Read)"
+              echo "3) Set org/repo secret CLOUDFLARE_API_TOKEN on blockreq (or repo secret on blog-demos) to that token"
+              echo "4) Ensure repo secret CF_ACCOUNT_ID=ad9331a749fc4b76fe53d6f14fbc8471"
+              echo "5) Re-run workflow: gh workflow run deploy-hosted-demos.yml -R blockreq/blog-demos"
+              exit 1
+            else
+              exit "$CODE"
+            fi
+          fi
 
       - name: Deploy to Cloudflare Pages
         id: deploy
@@ -71,10 +95,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          npx wrangler pages deploy out \
-            --project-name="${{ matrix.app }}" \
-            --branch=main \
-            --commit-dirty=true 2>&1 | tee /tmp/pages-deploy.log
+          npx wrangler pages deploy out             --project-name="${{ matrix.app }}"             --branch=main             --commit-dirty=true 2>&1 | tee /tmp/pages-deploy.log
           URL=$(grep -oE 'https://[^ ]+\.pages\.dev' /tmp/pages-deploy.log | head -1 || true)
           echo "url=${URL:-https://${{ matrix.app }}.pages.dev}" >> "$GITHUB_OUTPUT"
 

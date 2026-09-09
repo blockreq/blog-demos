@@ -3,6 +3,7 @@
 #   npx wrangler pages project create openlaunch-base-eth-subscribe --production-branch=main
 # Deploy from this directory after `npm run build`:
 #   npx wrangler pages deploy out --project-name=openlaunch-base-eth-subscribe
+account_id = "ad9331a749fc4b76fe53d6f14fbc8471"
 name = "openlaunch-base-eth-subscribe"
 compatibility_date = "2025-09-01"
 pages_build_output_dir = "out"
