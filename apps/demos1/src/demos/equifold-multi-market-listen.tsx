@@ -102,8 +102,8 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
 
   const injectDemoHits = useCallback(() => {
     const bundle = buildEquiFixtures(locale);
+    // Keep focusToken for live WS markets only — fixture path pins NEONCAT via fixtureCoin.
     setFixtureCoin({ label: bundle.coinLabel, addr: bundle.coinAddr });
-    setFocusToken(bundle.coinAddr);
     for (const ev of bundle.events) {
       setEvents((prev) => [ev, ...prev].slice(0, 80));
     }
@@ -290,29 +290,23 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const ep = ENDPOINTS[endpoint];
   const running = status === "connecting" || status === "listening";
 
+  // Idle / pre-hit: pin NEONCAT + demo meta. Live WS market → real coin; demoHits → fixture label.
   const focusRec = focusToken ? marketsByToken.current.get(focusToken) : null;
   const coinTitle = focusRec
     ? shortAddr(focusRec.base)
     : fixtureCoin
       ? fixtureCoin.label
-      : seedBundle.coinLabel;
+      : t(locale, "equifold.coinFallback");
   const coinMeta = focusRec
     ? `${shortAddr(focusRec.base)} · ${focusRec.count} markets · ${endpoint === "rh" ? "RH" : "Base"}`
     : fixtureCoin
       ? `${shortAddr(fixtureCoin.addr)} · ${locale === "zh" ? "示意币 · 多市场分叉" : "demo coin · multi-market fork"}`
-      : `${shortAddr(seedBundle.coinAddr)} · ${t(locale, "equifold.metaIdle")}`;
+      : t(locale, "equifold.metaIdle");
 
   const columns = useMemo(() => {
-    const pool =
-      events.length > 0
-        ? events
-        : history.events.length > 0
-          ? history.events.map((ev, i) =>
-              i === 0
-                ? { ...ev, tags: Array.from(new Set([...ev.tags, "FIRST"])) }
-                : { ...ev, tags: ev.tags.includes("FIRST") ? ev.tags : [...ev.tags, "NEXT"] }
-            )
-          : seedEvents;
+    // Keep NEONCAT seed columns until a real live (or injected) event exists.
+    // Public history stays in RecentHistoryPanel — do not displace idle demo branding.
+    const pool = events.length > 0 ? events : seedEvents;
     const first = pool.filter((ev) => ev.tags.includes("FIRST"));
     const next = pool.filter((ev) => !ev.tags.includes("FIRST"));
     const colFirst = first.length ? first : pool.slice(0, 1);
@@ -322,7 +316,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       { id: "next", title: t(locale, "equifold.colNext"), events: colNext },
       { id: "all", title: t(locale, "equifold.colAll"), events: pool },
     ];
-  }, [events, history.events, seedEvents, locale]);
+  }, [events, seedEvents, locale]);
 
   const chainControls = (
     <ToggleGroup
