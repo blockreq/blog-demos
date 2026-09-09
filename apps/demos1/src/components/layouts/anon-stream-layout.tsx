@@ -3,6 +3,7 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Button, ScrollArea, Separator, cn } from "@blockreq/ui";
 import type { FeedEvent } from "../feed-types";
+import { FeedEmpty } from "../feed-empty";
 
 function ageLabel(at: number) {
   const s = Math.max(0, Math.floor((Date.now() - at) / 1000));
@@ -21,6 +22,7 @@ export function AnonStreamLayout({
   connecting,
   settings,
   chainBadge = "RH",
+  banner,
 }: {
   locale: Locale;
   events: FeedEvent[];
@@ -32,11 +34,14 @@ export function AnonStreamLayout({
   connecting: boolean;
   settings?: ReactNode;
   chainBadge?: string;
+  banner?: ReactNode;
 }) {
   const selected = events.find((e) => e.id === selectedId) || events[0] || null;
+  const listening = running && !connecting;
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-3 p-3">
+      {banner}
       <div className="grid flex-1 gap-3 lg:grid-cols-[1.15fr_0.85fr]">
         <section className="flex min-h-0 flex-col">
           <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -55,7 +60,12 @@ export function AnonStreamLayout({
           <ScrollArea className="min-h-[280px] flex-1 border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div>
               {events.length === 0 ? (
-                <p className="p-4 text-sm text-[var(--color-muted-foreground)]">{t(locale, "common.waiting")}</p>
+                <FeedEmpty
+                  locale={locale}
+                  listening={listening || connecting}
+                  rows={6}
+                  caption={t(locale, "empty.waitingCaption")}
+                />
               ) : (
                 events.map((ev) => {
                   const active = selected?.id === ev.id;
@@ -101,11 +111,14 @@ export function AnonStreamLayout({
             )}
           >
             {!selected ? (
-              <div className="flex flex-1 flex-col items-center justify-center text-center text-[var(--color-muted-foreground)]">
-                <p className="text-[22px] font-black tracking-tight text-[var(--color-foreground)]">
-                  {t(locale, "anoncoin.emptyTitle")}
-                </p>
-                <p className="mt-2 text-sm">{t(locale, "anoncoin.emptySub")}</p>
+              <div className="flex flex-1 flex-col">
+                <div className="flex flex-1 flex-col items-center justify-center text-center text-[var(--color-muted-foreground)]">
+                  <p className="text-[22px] font-black tracking-tight text-[var(--color-foreground)]">
+                    {t(locale, "anoncoin.emptyTitle")}
+                  </p>
+                  <p className="mt-2 text-sm">{t(locale, "anoncoin.emptySub")}</p>
+                </div>
+                <FeedEmpty locale={locale} listening={listening || connecting} rows={3} dense className="min-h-0 border-t border-[var(--color-line)]" />
               </div>
             ) : (
               <>

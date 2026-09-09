@@ -16,6 +16,9 @@ import { MonitorChrome } from "../components/monitor-chrome";
 import { OpenWaitLayout } from "../components/layouts/open-wait-layout";
 import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
+import { DemoHitsBanner } from "../components/demo-hits-panel";
+import { buildOpenFixtures, useDemoHits } from "../lib/demo-hits";
+import { getDemo } from "../catalog";
 
 const EP = PUBLIC_ENDPOINTS.base;
 const WSS = EP.wss;
@@ -52,6 +55,8 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [hasHit, setHasHit] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -84,6 +89,14 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     setEvents((prev) => [full, ...prev].slice(0, 40));
     setHasHit(true);
   }, []);
+
+  const injectDemoHits = useCallback(() => {
+    const fixtures = buildOpenFixtures(locale, 3);
+    for (const ev of fixtures) {
+      setEvents((prev) => [ev, ...prev].slice(0, 40));
+    }
+    setHasHit(true);
+  }, [locale]);
 
   useEffect(() => {
     try {
@@ -368,6 +381,18 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
             <p className="break-all font-mono text-[11px] text-[var(--color-muted-foreground)]">
               {WSS} · {HTTPS} · {CHAIN_ID}
             </p>
+          
+            <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
+              <input
+                type="checkbox"
+                checked={demoHits}
+                onChange={(e) => setDemoHits(e.target.checked)}
+                className="h-4 w-4"
+              />
+              {t(locale, "demoHits.toggle")}
+              <span className="font-mono text-[10px] opacity-80">?demoHits=1</span>
+            </label>
+
           </CardContent>
         </Card>
       </SettingsPanel>
@@ -394,6 +419,14 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         running={running}
         connecting={status === "connecting"}
         settings={settings}
+        banner={
+          <DemoHitsBanner
+            locale={locale}
+            enabled={demoHits}
+            onToggle={setDemoHits}
+            onInject={demoHits ? injectDemoHits : undefined}
+          />
+        }
       />
     </div>
   );

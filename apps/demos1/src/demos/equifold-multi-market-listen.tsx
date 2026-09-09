@@ -24,6 +24,9 @@ import { MonitorChrome } from "../components/monitor-chrome";
 import { EquiSplitLayout } from "../components/layouts/equi-split-layout";
 import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
+import { DemoHitsBanner } from "../components/demo-hits-panel";
+import { buildEquiFixtures, useDemoHits } from "../lib/demo-hits";
+import { getDemo } from "../catalog";
 
 const ENDPOINTS = {
   base: PUBLIC_ENDPOINTS.base,
@@ -63,6 +66,9 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [hasHit, setHasHit] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [focusToken, setFocusToken] = useState<string | null>(null);
+  const [fixtureCoin, setFixtureCoin] = useState<{ label: string; addr: string } | null>(null);
+  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
 
   const wsRef = useRef<WebSocket | null>(null);
   const wantRun = useRef(false);
@@ -79,6 +85,16 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     setEvents((prev) => [full, ...prev].slice(0, 80));
     setHasHit(true);
   }, []);
+
+  const injectDemoHits = useCallback(() => {
+    const bundle = buildEquiFixtures(locale);
+    setFixtureCoin({ label: bundle.coinLabel, addr: bundle.coinAddr });
+    setFocusToken(bundle.coinAddr);
+    for (const ev of bundle.events) {
+      setEvents((prev) => [ev, ...prev].slice(0, 80));
+    }
+    setHasHit(true);
+  }, [locale]);
 
   useEffect(() => {
     try {
@@ -262,10 +278,14 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const focusRec = focusToken ? marketsByToken.current.get(focusToken) : null;
   const coinTitle = focusRec
     ? shortAddr(focusRec.base)
-    : t(locale, "equifold.coinFallback");
+    : fixtureCoin
+      ? fixtureCoin.label
+      : t(locale, "equifold.coinFallback");
   const coinMeta = focusRec
     ? `${shortAddr(focusRec.base)} · ${focusRec.count} markets · ${endpoint === "rh" ? "RH" : "Base"}`
-    : t(locale, "equifold.metaIdle");
+    : fixtureCoin
+      ? `${shortAddr(fixtureCoin.addr)} · ${locale === "zh" ? "示意币 · 多市场分叉" : "demo coin · multi-market fork"}`
+      : t(locale, "equifold.metaIdle");
 
   const columns = useMemo(() => {
     const first = events.filter((ev) => ev.tags.includes("FIRST"));
@@ -338,6 +358,18 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
               <Label htmlFor="factory">Factory</Label>
               <Input id="factory" placeholder="0x…" value={factory} onChange={(e) => setFactory(e.target.value)} />
             </div>
+
+            <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
+              <input
+                type="checkbox"
+                checked={demoHits}
+                onChange={(e) => setDemoHits(e.target.checked)}
+                className="h-4 w-4"
+              />
+              {t(locale, "demoHits.toggle")}
+              <span className="font-mono text-[10px] opacity-80">?demoHits=1</span>
+            </label>
+
             <div className="space-y-1.5">
               <Label htmlFor="topic0">Market topic0</Label>
               <Input id="topic0" value={topic0} onChange={(e) => setTopic0(e.target.value)} />
@@ -369,6 +401,14 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         connecting={status === "connecting"}
         chainControls={chainControls}
         settings={settings}
+        banner={
+          <DemoHitsBanner
+            locale={locale}
+            enabled={demoHits}
+            onToggle={setDemoHits}
+            onInject={demoHits ? injectDemoHits : undefined}
+          />
+        }
       />
     </div>
   );
