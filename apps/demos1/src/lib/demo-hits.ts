@@ -150,6 +150,60 @@ export function buildEquiFixtures(
   return { coinLabel, coinAddr, events };
 }
 
+
+export function buildStockFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["币股配对开盘", "首次 LP", "币股配对开盘", "配对资产", "开盘簇"]
+      : ["pair landed", "first LP", "pair landed", "paired asset", "paired open cluster"];
+  const syms = ["AAPL", "TSLA", "NVDA", "MSFT", "AMZN"];
+  return Array.from({ length: n }, (_, i) => {
+    const addr = fakeAddr(`stock${i}${syms[i % syms.length]}`);
+    const meme = fakeAddr(`meme${i}${syms[i % syms.length]}`);
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: i % 2 === 0 ? ["STOCK", "PAIR", "DEMO"] : ["LP", "STOCK", "DEMO"],
+      title: short(addr),
+      body: `${syms[i % syms.length]} ↔ ${short(meme)} · #${12_500_000 + i * 11}`,
+      address: addr,
+      block: 12_500_000 + i * 11,
+      tx: fakeAddr(`txstock${i}`),
+      chain: "RH",
+      at: now - i * 1600,
+      metric: syms[i % syms.length],
+      metricLabel: locale === "zh" ? "股票" : "Stock",
+    };
+  });
+}
+
+export function buildPonsFixtures(locale: Locale, n = 4): FeedEvent[] {
+  const now = Date.now();
+  const kind = locale === "zh" ? "Pons 发射" : "Pons launch";
+  const names = ["PONCAT", "CURVEPEPE", "GRADX", "LAUNCHY"];
+  return Array.from({ length: n }, (_, i) => {
+    const addr = fakeAddr(`pons${i}${names[i % names.length]}`);
+    const curve = fakeAddr(`curve${i}`);
+    return {
+      id: rid(),
+      kind: i === 1 && locale === "zh" ? "Pons 毕业" : i === 1 ? "Pons graduated" : kind,
+      tags: i === 1 ? ["GRAD", "PONS", "DEMO"] : ["NEW", "PONS", "DEMO"],
+      title: names[i % names.length],
+      body: `${short(addr)} · curve ${short(curve)} · #${12_600_000 + i * 13}`,
+      address: addr,
+      block: 12_600_000 + i * 13,
+      tx: fakeAddr(`txpons${i}`),
+      chain: "RH",
+      at: now - i * 2100,
+      metric: short(curve),
+      metricLabel: "curve",
+      metric2: `#${12_600_000 + i * 13}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
+
 function short(a: string) {
   if (!a || a.length < 10) return a || "—";
   return `${a.slice(0, 6)}…${a.slice(-4)}`;

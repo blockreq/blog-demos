@@ -33,7 +33,8 @@ export function assertBrowserOnly(label = "@blockreq/rpc") {
 
 export function shortAddr(a?: string | null) {
   if (!a || a.length < 10) return a || "?";
-  return a.slice(0, 8) + "…" + a.slice(-4);
+  // Feel baseline: 0xabc…def (3 + 3 after 0x)
+  return a.slice(0, 5) + "…" + a.slice(-3);
 }
 
 export function unpadTopic(topic?: string) {

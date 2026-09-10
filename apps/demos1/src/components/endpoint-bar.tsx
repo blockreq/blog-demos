@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
-import { Badge, Button, cn } from "@blockreq/ui";
+import { Badge, Button, Input, cn } from "@blockreq/ui";
 
 const DOCS = "https://docs.blockreq.com/build/public-endpoints/";
 const PRICING = "https://blockreq.com/pricing";
@@ -15,20 +15,42 @@ async function copyText(text: string) {
   }
 }
 
+/**
+ * Editable HTTPS + WSS endpoints (defaults from PUBLIC_ENDPOINTS).
+ * Parent owns persistence via useEditableEndpoints; Apply commits draft.
+ */
 export function EndpointBar({
   locale,
   wss,
   https,
   chainLabel,
   className,
+  editable = true,
+  draftWss,
+  draftHttps,
+  dirty,
+  onDraftWss,
+  onDraftHttps,
+  onApply,
+  onReset,
 }: {
   locale: Locale;
   wss: string;
   https: string;
   chainLabel: string;
   className?: string;
+  editable?: boolean;
+  draftWss?: string;
+  draftHttps?: string;
+  dirty?: boolean;
+  onDraftWss?: (v: string) => void;
+  onDraftHttps?: (v: string) => void;
+  onApply?: () => void;
+  onReset?: () => void;
 }) {
   const [copied, setCopied] = useState<"wss" | "https" | null>(null);
+  const showWss = editable && draftWss !== undefined ? draftWss : wss;
+  const showHttps = editable && draftHttps !== undefined ? draftHttps : https;
 
   const onCopy = async (which: "wss" | "https", value: string) => {
     const ok = await copyText(value);
@@ -77,14 +99,25 @@ export function EndpointBar({
               size="sm"
               variant="outline"
               className="min-h-8 px-2 text-[11px]"
-              onClick={() => onCopy("wss", wss)}
+              onClick={() => onCopy("wss", showWss)}
             >
               {copied === "wss" ? t(locale, "endpoint.copied") : t(locale, "common.copy")}
             </Button>
           </div>
-          <code className="block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]">
-            {wss}
-          </code>
+          {editable && onDraftWss ? (
+            <Input
+              value={showWss}
+              onChange={(e) => onDraftWss(e.target.value)}
+              spellCheck={false}
+              className="h-9 font-mono text-[11px]"
+              title={showWss}
+              aria-label="WSS endpoint"
+            />
+          ) : (
+            <code className="addr block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]" title={wss}>
+              {wss}
+            </code>
+          )}
         </div>
         <div className="min-w-0">
           <div className="mb-1 flex items-center justify-between gap-2">
@@ -96,16 +129,53 @@ export function EndpointBar({
               size="sm"
               variant="outline"
               className="min-h-8 px-2 text-[11px]"
-              onClick={() => onCopy("https", https)}
+              onClick={() => onCopy("https", showHttps)}
             >
               {copied === "https" ? t(locale, "endpoint.copied") : t(locale, "common.copy")}
             </Button>
           </div>
-          <code className="block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]">
-            {https}
-          </code>
+          {editable && onDraftHttps ? (
+            <Input
+              value={showHttps}
+              onChange={(e) => onDraftHttps(e.target.value)}
+              spellCheck={false}
+              className="h-9 font-mono text-[11px]"
+              title={showHttps}
+              aria-label="HTTPS endpoint"
+            />
+          ) : (
+            <code className="addr block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]" title={https}>
+              {https}
+            </code>
+          )}
         </div>
       </div>
+      {editable ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="min-h-8 px-3 text-[11px]"
+            disabled={!dirty}
+            onClick={() => onApply?.()}
+          >
+            {t(locale, "endpoint.apply")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="min-h-8 px-3 text-[11px]"
+            onClick={() => onReset?.()}
+          >
+            {t(locale, "endpoint.reset")}
+          </Button>
+          <span className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
+            {t(locale, "endpoint.editHint")}
+          </span>
+        </div>
+      ) : null}
       <p className="mt-2 text-[11px] leading-snug text-[var(--color-muted-foreground)]">
         {t(locale, "endpoint.hint")}
       </p>

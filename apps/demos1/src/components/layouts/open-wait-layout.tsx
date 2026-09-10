@@ -13,6 +13,7 @@ import { LiveToggle } from "../live-toggle";
 import { SourceStrip, type SourceItem } from "../source-strip";
 import type { HistoryState } from "../../lib/recent-history";
 import { FreshnessChip } from "../monitor-chrome";
+import { Addr } from "../addr";
 
 /** Single-token / one-shot focus: big stage + price/trade metrics on hit. */
 export function OpenWaitLayout({
@@ -31,6 +32,20 @@ export function OpenWaitLayout({
   watchParams,
   sourceItems,
   endpointSlot,
+  guide,
+  watching,
+  stripTitle,
+  stripSub,
+  stageIdle,
+  stageConn,
+  stageListen,
+  stageHit,
+  heroIdle,
+  heroConnecting,
+  heroListening,
+  heroHit,
+  recentTitle,
+  chainBadge = "BASE",
 }: {
   locale: Locale;
   status: ConnStatus;
@@ -47,36 +62,50 @@ export function OpenWaitLayout({
   watchParams: WatchParam[];
   sourceItems: SourceItem[];
   endpointSlot?: ReactNode;
+  guide?: string;
+  watching?: string;
+  stripTitle?: string;
+  stripSub?: string;
+  stageIdle?: string;
+  stageConn?: string;
+  stageListen?: string;
+  stageHit?: string;
+  heroIdle?: string;
+  heroConnecting?: string;
+  heroListening?: string;
+  heroHit?: string;
+  recentTitle?: string;
+  chainBadge?: string;
 }) {
   const feel = toFeelState(status, hasHit);
   const latest = events[0] || null;
   const stageTitle =
     feel === "connecting"
-      ? t(locale, "openlaunch.stageConn")
+      ? stageConn || t(locale, "openlaunch.stageConn")
       : feel === "hit"
-        ? t(locale, "openlaunch.stageHit")
+        ? stageHit || t(locale, "openlaunch.stageHit")
         : feel === "listening"
-          ? t(locale, "openlaunch.stageListen")
-          : t(locale, "openlaunch.stageIdle");
+          ? stageListen || t(locale, "openlaunch.stageListen")
+          : stageIdle || t(locale, "openlaunch.stageIdle");
   const stageSub =
     feel === "connecting"
-      ? t(locale, "openlaunch.hero.connecting")
+      ? heroConnecting || t(locale, "openlaunch.hero.connecting")
       : feel === "hit"
-        ? t(locale, "openlaunch.hero.hit")
+        ? heroHit || t(locale, "openlaunch.hero.hit")
         : feel === "listening"
-          ? t(locale, "openlaunch.hero.listening")
-          : t(locale, "openlaunch.hero.idle");
+          ? heroListening || t(locale, "openlaunch.hero.listening")
+          : heroIdle || t(locale, "openlaunch.hero.idle");
 
   return (
     <div className="demo-shell flex min-h-[calc(100vh-8rem)] flex-col gap-3">
-      <ToolGuideBanner locale={locale} stepHint={t(locale, "openlaunch.guide")} />
+      <ToolGuideBanner locale={locale} stepHint={guide || t(locale, "openlaunch.guide")} />
       {banner}
       {endpointSlot}
       <SourceStrip items={sourceItems} />
       <WatchTargetPanel
         locale={locale}
-        watching={t(locale, "openlaunch.watching")}
-        chainLabel="BASE"
+        watching={watching || t(locale, "openlaunch.watching")}
+        chainLabel={chainBadge}
         params={watchParams}
         sourceStatus={
           history.status === "loading"
@@ -87,8 +116,8 @@ export function OpenWaitLayout({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-3">
         <div>
-          <p className="type-title">{t(locale, "openlaunch.stripTitle")}</p>
-          <p className="mt-1 type-meta">{t(locale, "openlaunch.stripSub")}</p>
+          <p className="type-title">{stripTitle || t(locale, "openlaunch.stripTitle")}</p>
+          <p className="mt-1 type-meta">{stripSub || t(locale, "openlaunch.stripSub")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <LiveToggle
@@ -98,7 +127,7 @@ export function OpenWaitLayout({
             onPause={onPause}
             onResume={onResume}
           />
-          <Badge variant="ok">BASE</Badge>
+          <Badge variant="ok">{chainBadge}</Badge>
           <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
           <FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
         </div>
@@ -130,7 +159,7 @@ export function OpenWaitLayout({
             <p className="mt-2 max-w-[42ch] text-[15px] text-[var(--color-muted-foreground)]">{stageSub}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2 font-mono text-[11px] text-[var(--color-muted-foreground)]">
               <span className="border border-[var(--color-line)] px-2.5 py-1.5">
-                <b className="text-[var(--color-neon-cyan)]">CHAIN</b> Base
+                <b className="text-[var(--color-neon-cyan)]">CHAIN</b> {chainBadge}
               </span>
               <span className="border border-[var(--color-line)] px-2.5 py-1.5">
                 <b className="text-[var(--color-neon-cyan)]">METHOD</b> tx-listen
@@ -146,8 +175,13 @@ export function OpenWaitLayout({
               <Badge variant="hit" className="mb-2">
                 {t(locale, "state.hit")}
               </Badge>
-              <div className="type-hit">{latest.title || latest.kind}</div>
+              <div className="type-hit" title={latest.address || latest.title}>{latest.title || latest.kind}</div>
               <div className="mt-2 type-meta text-[13px]">{latest.body}</div>
+              {latest.address ? (
+                <div className="mt-2 font-mono text-[12px]">
+                  <Addr value={latest.address} />
+                </div>
+              ) : null}
 
               <div className="mt-4 grid grid-cols-2 gap-2.5">
                 <div className="border border-[rgba(0,240,255,0.3)] bg-[rgba(0,240,255,0.05)] px-3 py-3">
@@ -191,7 +225,7 @@ export function OpenWaitLayout({
         listening={feel === "listening" || feel === "connecting"}
         dense
         flashNewest
-        title={t(locale, "openlaunch.recent")}
+        title={recentTitle || t(locale, "openlaunch.recent")}
         className="min-h-[200px]"
       />
 

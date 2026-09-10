@@ -10,6 +10,7 @@ import { LiveToggle } from "../live-toggle";
 import { SourceStrip, type SourceItem } from "../source-strip";
 import type { HistoryState } from "../../lib/recent-history";
 import { FreshnessChip } from "../monitor-chrome";
+import { Addr } from "../addr";
 
 function ageLabel(at: number) {
   const s = Math.max(0, Math.floor((Date.now() - at) / 1000));
@@ -35,6 +36,12 @@ export function AnonStreamLayout({
   watchParams,
   sourceItems,
   endpointSlot,
+  guide,
+  watching,
+  hint,
+  emptyTitle,
+  emptySub,
+  latestLabel,
 }: {
   locale: Locale;
   events: FeedEvent[];
@@ -52,6 +59,12 @@ export function AnonStreamLayout({
   watchParams: WatchParam[];
   sourceItems: SourceItem[];
   endpointSlot?: ReactNode;
+  guide?: string;
+  watching?: string;
+  hint?: string;
+  emptyTitle?: string;
+  emptySub?: string;
+  latestLabel?: string;
 }) {
   const displayPool =
     events.length > 0 ? events : history.events.length > 0 ? history.events : seedEvents;
@@ -63,13 +76,13 @@ export function AnonStreamLayout({
 
   return (
     <div className="demo-shell flex min-h-[calc(100vh-8rem)] flex-col gap-3">
-      <ToolGuideBanner locale={locale} stepHint={t(locale, "anoncoin.guide")} />
+      <ToolGuideBanner locale={locale} stepHint={guide || t(locale, "anoncoin.guide")} />
       {banner}
       {endpointSlot}
       <SourceStrip items={sourceItems} />
       <WatchTargetPanel
         locale={locale}
-        watching={t(locale, "anoncoin.watching")}
+        watching={watching || t(locale, "anoncoin.watching")}
         chainLabel={chainBadge}
         params={watchParams}
         sourceStatus={
@@ -89,7 +102,7 @@ export function AnonStreamLayout({
         />
         <Badge variant="ok">{chainBadge}</Badge>
         <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
-        <span className="text-xs text-[var(--color-muted-foreground)]">{t(locale, "anoncoin.hint")}</span>
+        <span className="text-xs text-[var(--color-muted-foreground)]">{hint || t(locale, "anoncoin.hint")}</span>
         <span className="ml-auto font-mono text-[10px] text-[var(--color-neon-cyan)]">
           {t(locale, "tool.usePublic")}
         </span>
@@ -118,14 +131,14 @@ export function AnonStreamLayout({
           >
             {!selected ? (
               <div className="flex flex-1 flex-col items-center justify-center text-center text-[var(--color-muted-foreground)]">
-                <p className="type-title text-[var(--color-foreground)]">{t(locale, "anoncoin.emptyTitle")}</p>
-                <p className="mt-2 text-sm">{t(locale, "anoncoin.emptySub")}</p>
+                <p className="type-title text-[var(--color-foreground)]">{emptyTitle || t(locale, "anoncoin.emptyTitle")}</p>
+                <p className="mt-2 text-sm">{emptySub || t(locale, "anoncoin.emptySub")}</p>
               </div>
             ) : (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Badge variant={liveSelected ? "hit" : "secondary"}>
-                    {liveSelected ? t(locale, "anoncoin.latest") : t(locale, "common.lastHit")}
+                    {liveSelected ? (latestLabel || t(locale, "anoncoin.latest")) : t(locale, "common.lastHit")}
                   </Badge>
                   {!liveSelected ? <span className="demo-seed">{t(locale, "common.seedLabel")}</span> : null}
                   <FreshnessChip locale={locale} at={selected.at} live={liveSelected || listening} />
@@ -134,7 +147,7 @@ export function AnonStreamLayout({
                   </span>
                 </div>
 
-                <h2 className="type-hit">{selected.title || selected.kind}</h2>
+                <h2 className="type-hit" title={selected.address || selected.title}>{selected.title || selected.kind}</h2>
                 <p className="text-[15px] font-bold text-[var(--color-neon-mag)]">{selected.kind}</p>
 
                 {(selected.metric || typeof selected.block === "number") && (
@@ -158,13 +171,13 @@ export function AnonStreamLayout({
                   {selected.address ? (
                     <>
                       <span className="text-[var(--color-muted-foreground)]">Addr</span>
-                      <span className="break-all font-mono text-[12px]">{selected.address}</span>
+                      <Addr value={selected.address} className="break-all text-[12px]" />
                     </>
                   ) : null}
                   {selected.tx ? (
                     <>
                       <span className="text-[var(--color-muted-foreground)]">Tx</span>
-                      <span className="break-all font-mono text-[12px]">{selected.tx}</span>
+                      <Addr value={selected.tx} className="break-all text-[12px]" />
                     </>
                   ) : null}
                   <span className="text-[var(--color-muted-foreground)]">Meta</span>

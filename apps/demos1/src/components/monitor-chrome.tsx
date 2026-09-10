@@ -220,9 +220,37 @@ export function LocaleToggle({
   );
 }
 
+function AdSlots({ locale }: { locale: Locale }) {
+  return (
+    <>
+      <a
+        className="ad-banner"
+        href={SITE}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t(locale, "shell.adAria")}
+      >
+        <span className="ad-label">{t(locale, "shell.adLabel")}</span>
+        <span className="ad-creative">{t(locale, "shell.adCreative")}</span>
+      </a>
+      <a
+        className="ad-rail"
+        href={SITE}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t(locale, "shell.adAria")}
+      >
+        <span className="ad-label">{t(locale, "shell.adLabel")}</span>
+        <span className="ad-creative">{t(locale, "shell.adCreativeShort")}</span>
+      </a>
+    </>
+  );
+}
+
 /**
- * Locked product top bar (full-width) — match demos1-feel-baseline.
- * L→R: Back+title+DEMO DATA | LIVE+conn+fresh+stream+spark | PUBLIC·Free 3M+Sign up | Blog+Site | ZH/EN
+ * Locked product top bar — centered chrome (no back-to-catalog).
+ * Center: brand + LIVE/fresh + PUBLIC/Free3M + Blog/Site; right: ZH/EN.
+ * Ad banner + ≥1400px side rail under header (whole-block CTA → site).
  */
 export function MonitorChrome({
   locale,
@@ -265,88 +293,83 @@ export function MonitorChrome({
   }, [feel]);
 
   return (
-    <header
-      className={cn("topbar", streaming && "is-live")}
-      data-state={dataState}
-      aria-label="Product chrome"
-    >
-      {/* [nav + title + DEMO DATA] */}
-      <div className="tb-group tb-nav">
-        {slug ? (
-          <Link to="/" className="tb-back" title={t(locale, "shell.back")} aria-label={t(locale, "shell.back")}>
-            ‹
-          </Link>
-        ) : (
-          <span className="tb-mark" aria-hidden />
-        )}
-        <div className="tb-brand">
-          <strong className="tb-title">{title}</strong>
-          {tag ? <span className="tb-tag-muted">{tag}</span> : null}
+    <>
+      <header
+        className={cn("topbar", streaming && "is-live")}
+        data-state={dataState}
+        aria-label="Product chrome"
+      >
+        <div className="tb-side left" aria-hidden>
+          <span className="tb-mark" />
         </div>
-        <span className="tb-demo-tag">{t(locale, "shell.demoData")}</span>
-      </div>
 
-      <span className="tb-sep" aria-hidden />
+        <div className="tb-center">
+          <div className="tb-group tb-nav">
+            <div className="tb-brand">
+              <strong className="tb-title">{title}</strong>
+              {tag ? <span className="tb-tag-muted">{tag}</span> : null}
+            </div>
+            <span className="tb-demo-tag">{t(locale, "shell.demoData")}</span>
+          </div>
 
-      {/* [LIVE + conn + freshness + streaming + sparkline] */}
-      <div className="tb-group tb-live">
-        <LivePill live={live} locale={locale} connecting={connecting} lastUpdateAt={lastUpdateAt} />
-        <ConnState locale={locale} feel={feel} />
-        <FreshnessChip locale={locale} at={lastUpdateAt} live={streaming} />
-        <span className={cn("tb-stream", streaming && "on")}>
-          <span className="dot" />
-          <span>{t(locale, "shell.streaming")}</span>
-        </span>
-        <Sparkline live={streaming} tickAt={lastUpdateAt} />
-      </div>
+          <span className="tb-sep" aria-hidden />
 
-      <span className="tb-sep" aria-hidden />
+          <div className="tb-group tb-live">
+            <LivePill live={live} locale={locale} connecting={connecting} lastUpdateAt={lastUpdateAt} />
+            <ConnState locale={locale} feel={feel} />
+            <FreshnessChip locale={locale} at={lastUpdateAt} live={streaming} />
+            <span className={cn("tb-stream", streaming && "on")}>
+              <span className="dot" />
+              <span>{t(locale, "shell.streaming")}</span>
+            </span>
+            <Sparkline live={streaming} tickAt={lastUpdateAt} />
+          </div>
 
-      {/* [PUBLIC · Free 3M + Sign up] — Free 3M is post-signup quota; chip + CTA → pricing */}
-      <div className="tb-group tb-public">
-        <a
-          className="tb-public-chip"
-          href={PRICING}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={t(locale, "shell.quotaAfter")}
-        >
-          <span className="tag">{t(locale, "shell.publicTag")}</span>
-          <span aria-hidden>·</span>
-          <span>{t(locale, "shell.publicFree")}</span>
-        </a>
-        <a
-          className="tb-signup"
-          href={PRICING}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {t(locale, "shell.signup")}
-        </a>
-      </div>
+          <span className="tb-sep" aria-hidden />
 
-      <span className="tb-sep" aria-hidden />
+          <div className="tb-group tb-public">
+            <a
+              className="tb-public-chip"
+              href={PRICING}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={t(locale, "shell.quotaAfter")}
+            >
+              <span className="tag">{t(locale, "shell.publicTag")}</span>
+              <span aria-hidden>·</span>
+              <span>{t(locale, "shell.publicFree")}</span>
+            </a>
+            <a
+              className="tb-signup"
+              href={PRICING}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t(locale, "shell.signup")}
+            </a>
+          </div>
 
-      {/* [Blog · Site] */}
-      <div className="tb-group tb-links">
-        <a href={blogHref} target="_blank" rel="noopener noreferrer">
-          {t(locale, "shell.blog")}
-        </a>
-        <span className="dot-sep" aria-hidden>
-          ·
-        </span>
-        <a href={siteUrl} target="_blank" rel="noopener noreferrer">
-          {t(locale, "shell.site")}
-        </a>
-        {trailing}
-      </div>
+          <span className="tb-sep" aria-hidden />
 
-      <div className="tb-spacer" />
+          <div className="tb-group tb-links">
+            <a href={blogHref} target="_blank" rel="noopener noreferrer">
+              {t(locale, "shell.blog")}
+            </a>
+            <span className="dot-sep" aria-hidden>
+              ·
+            </span>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer">
+              {t(locale, "shell.site")}
+            </a>
+            {trailing}
+          </div>
+        </div>
 
-      {/* [ZH/EN] */}
-      <div className="tb-group">
-        <LocaleToggle locale={locale} slug={slug} mode={localeMode} onChange={onLocaleChange} />
-      </div>
-    </header>
+        <div className="tb-side right">
+          <LocaleToggle locale={locale} slug={slug} mode={localeMode} onChange={onLocaleChange} />
+        </div>
+      </header>
+      <AdSlots locale={locale} />
+    </>
   );
 }

@@ -23,7 +23,7 @@ import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
 import { useEditableEndpoints } from "../lib/endpoints";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
-import { buildAnonFixtures, useDemoHits } from "../lib/demo-hits";
+import { buildStockFixtures, useDemoHits } from "../lib/demo-hits";
 import { mapPairCreatedLogs, useRecentHistory } from "../lib/recent-history";
 import { getDemo } from "../catalog";
 import {
@@ -34,34 +34,59 @@ import {
 
 const MINT =
   "0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f";
-const DEFAULT_PAIR_TOPIC =
+const PAIR_CREATED =
   "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
-const LS = "blockreq.anoncoin-rh.";
-const SLUG = "anoncoin-rh-launch-listen";
+const LS = "blockreq.stock-pair-meme.";
+const STOCKS_LS = "blockreq.rh-stock-pairs.stocks";
+const SLUG = "stock-pair-meme-launch-listen";
 
 type PairRec = {
   token0: string;
   token1: string;
-  baseSide: string;
-  quote: string;
+  pairedAsset: string;
+  memeSide: string;
+  symbol: string;
   block: number;
   tx?: string;
   firstLp: boolean;
 };
+
+function parseStocks(text: string) {
+  const map = new Map<string, string>();
+  for (const line of text.split(/\r?\n/)) {
+    const raw = line.trim();
+    if (!raw || raw.startsWith("#")) continue;
+    const parts = raw.split(/\s+/);
+    let sym = "";
+    let addr = "";
+    if (parts.length === 1 && /^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+      addr = parts[0].toLowerCase();
+      sym = shortAddr(addr);
+    } else if (parts.length >= 2) {
+      if (/^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+        addr = parts[0].toLowerCase();
+        sym = parts[1];
+      } else if (/^0x[a-fA-F0-9]{40}$/.test(parts[1])) {
+        sym = parts[0];
+        addr = parts[1].toLowerCase();
+      }
+    }
+    if (addr) map.set(addr, sym || shortAddr(addr));
+  }
+  return map;
+}
 
 function SettingsPanel({ open, children }: { open: boolean; children: ReactNode }) {
   if (!open) return null;
   return <div className="space-y-3">{children}</div>;
 }
 
-export function AnoncoinDemo({ locale }: { locale: Locale }) {
+export function StockPairDemo({ locale }: { locale: Locale }) {
   const [factory, setFactory] = useState("");
-  const [quote, setQuote] = useState("");
-  const [topicPair, setTopicPair] = useState(DEFAULT_PAIR_TOPIC);
+  const [stocksText, setStocksText] = useState("AAPL 0x1111111111111111111111111111111111111111\nTSLA 0x2222222222222222222222222222222222222222");
   const [subPair, setSubPair] = useState(true);
   const [subMint, setSubMint] = useState(true);
-  const [onlyQuote, setOnlyQuote] = useState(false);
-  const [minLiq, setMinLiq] = useState("0");
+  const [onlyStock, setOnlyStock] = useState(true);
   const [status, setStatus] = useState<ConnStatus>("idle");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -75,12 +100,12 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const epRef = useRef(ep);
   epRef.current = ep;
 
-  const seedEvents = useMemo(() => buildAnonFixtures(locale, 6), [locale]);
+  const seedEvents = useMemo(() => buildStockFixtures(locale, 6), [locale]);
   const history = useRecentHistory({
     locale,
     https: ep.https,
     address: factory.trim() || undefined,
-    topics: [topicPair],
+    topics: [PAIR_CREATED],
     map: (logs) => mapPairCreatedLogs(logs, locale, "RH"),
   });
 
@@ -90,8 +115,9 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const backoffMs = useRef(1000);
   const seen = useRef(new Set<string>());
   const pairs = useRef(new Map<string, PairRec>());
-  const fields = useRef({ factory, quote, topicPair, subPair, subMint, onlyQuote, minLiq });
-  fields.current = { factory, quote, topicPair, subPair, subMint, onlyQuote, minLiq };
+  const stockMap = useRef(new Map<string, string>());
+  const fields = useRef({ factory, stocksText, subPair, subMint, onlyStock });
+  fields.current = { factory, stocksText, subPair, subMint, onlyStock };
 
   const pushEvent = useCallback((ev: Omit<FeedEvent, "id" | "at"> & { id?: string; at?: number }) => {
     const id = ev.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -102,7 +128,7 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   }, []);
 
   const injectDemoHits = useCallback(() => {
-    const fixtures = buildAnonFixtures(locale, 4);
+    const fixtures = buildStockFixtures(locale, 4);
     for (const ev of fixtures) {
       setEvents((prev) => [ev, ...prev].slice(0, 80));
     }
@@ -113,9 +139,8 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   useEffect(() => {
     try {
       setFactory(localStorage.getItem(LS + "factory") || "");
-      setQuote(localStorage.getItem(LS + "quote") || "");
-      const tp = localStorage.getItem(LS + "topicPair");
-      if (tp) setTopicPair(tp);
+      const raw = localStorage.getItem(STOCKS_LS) || localStorage.getItem(LS + "stocks");
+      if (raw) setStocksText(raw);
     } catch {
       /* ignore */
     }
@@ -124,8 +149,13 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const saveFields = () => {
     try {
       localStorage.setItem(LS + "factory", fields.current.factory.trim());
-      localStorage.setItem(LS + "quote", fields.current.quote.trim());
-      localStorage.setItem(LS + "topicPair", fields.current.topicPair.trim());
+      const map = parseStocks(fields.current.stocksText);
+      const lines: string[] = [];
+      for (const [a, s] of map) lines.push(`${s} ${a}`);
+      const normalized = lines.join("\n");
+      localStorage.setItem(STOCKS_LS, normalized);
+      localStorage.setItem(LS + "stocks", normalized);
+      stockMap.current = map;
     } catch {
       /* ignore */
     }
@@ -140,39 +170,46 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
 
   const onPairCreated = useCallback(
     (r: Record<string, unknown>) => {
-      const q = fields.current.quote.trim().toLowerCase();
       const topics = (r.topics as string[]) || [];
       const token0 = unpadTopic(topics[1]);
       const token1 = unpadTopic(topics[2]);
       const pair = wordAddr(r.data as string, 0);
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
-      const hit0 = !!q && token0 === q;
-      const hit1 = !!q && token1 === q;
-      const quoteHit = hit0 || hit1;
-      if (!quoteHit && fields.current.onlyQuote) return;
+      const s0 = stockMap.current.get(token0);
+      const s1 = stockMap.current.get(token1);
+      const hit = s0
+        ? { pairedAsset: token0, memeSide: token1, symbol: s0 }
+        : s1
+          ? { pairedAsset: token1, memeSide: token0, symbol: s1 }
+          : null;
+      if (!hit && fields.current.onlyStock) return;
 
-      const baseSide = hit0 ? token1 : hit1 ? token0 : "";
-      const tags = ["NEW", "ANON"];
-      if (quoteHit) tags.push("QUOTE");
+      const tags = ["NEW", "PAIR"];
+      if (hit) tags.push("STOCK", hit.symbol);
       const rec: PairRec = {
         token0,
         token1,
-        baseSide,
-        quote: quoteHit ? q : "",
+        pairedAsset: hit?.pairedAsset || "",
+        memeSide: hit?.memeSide || "",
+        symbol: hit?.symbol || "",
         block: bn,
         tx: String(r.transactionHash || ""),
         firstLp: false,
       };
       if (pair) pairs.current.set(pair.toLowerCase(), rec);
       pushEvent({
-        kind: locale === "zh" ? "新开盘" : "New launch",
+        kind: locale === "zh" ? "币股配对开盘" : "pair landed",
         tags,
         title: shortAddr(pair),
-        body: `${shortAddr(baseSide || "?")} · #${bn}`,
+        body: hit
+          ? `${hit.symbol} ↔ ${shortAddr(hit.memeSide)} · #${bn}`
+          : `${shortAddr(token0)} / ${shortAddr(token1)} · #${bn}`,
         address: pair || undefined,
         block: bn,
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
+        metric: hit?.symbol,
+        metricLabel: locale === "zh" ? "股票" : "Stock",
       });
     },
     [locale, pushEvent]
@@ -183,21 +220,26 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       const pool = String(r.address || "").toLowerCase();
       const known = pairs.current.get(pool);
       if (!known || known.firstLp) return;
+      if (fields.current.onlyStock && !known.symbol) return;
+      known.firstLp = true;
       const a0 = wordU256(r.data as string, 0);
       const a1 = wordU256(r.data as string, 1);
-      const minRaw = BigInt(Math.floor(Number(fields.current.minLiq || 0) * 1e18));
-      if (minRaw > 0n && a0 + a1 < minRaw) return;
-      known.firstLp = true;
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
+      const tags = ["LP", "STOCK"];
+      if (known.symbol) tags.push(known.symbol);
       pushEvent({
-        kind: locale === "zh" ? "LP 到位" : "LP ready",
-        tags: ["LP"],
+        kind: locale === "zh" ? "首次 LP" : "first LP",
+        tags,
         title: shortAddr(pool),
-        body: `#${bn}`,
+        body: known.symbol
+          ? `${known.symbol} · a0=${a0.toString()} a1=${a1.toString()} · #${bn}`
+          : `#${bn}`,
         address: pool,
         block: bn,
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
+        metric: known.symbol || undefined,
+        metricLabel: locale === "zh" ? "股票" : "Stock",
       });
     },
     [locale, pushEvent]
@@ -209,8 +251,7 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       if (seen.current.has(key)) return;
       seen.current.add(key);
       const t0 = String(((r.topics as string[]) || [])[0] || "").toLowerCase();
-      const topic = fields.current.topicPair.trim().toLowerCase();
-      if (t0 === topic) return onPairCreated(r);
+      if (t0 === PAIR_CREATED) return onPairCreated(r);
       if (t0 === MINT) return onMint(r);
     },
     [onMint, onPairCreated]
@@ -219,10 +260,9 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const subscribeAll = useCallback(() => {
     saveFields();
     const f = fields.current.factory.trim();
-    const topic = fields.current.topicPair.trim().toLowerCase();
     const factoryOk = isAddr(f);
     if (fields.current.subPair) {
-      const filt: { topics: string[]; address?: string } = { topics: [topic] };
+      const filt: { topics: string[]; address?: string } = { topics: [PAIR_CREATED] };
       if (factoryOk) filt.address = f.toLowerCase();
       send("eth_subscribe", ["logs", filt]);
     }
@@ -284,8 +324,8 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   }, [onLog, subscribeAll]);
 
   const resume = useCallback(() => {
-    const q = fields.current.quote.trim();
-    if (fields.current.onlyQuote && !isAddr(q)) {
+    stockMap.current = parseStocks(fields.current.stocksText);
+    if (fields.current.onlyStock && stockMap.current.size === 0) {
       setStatus("error");
       return;
     }
@@ -305,6 +345,7 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
 
   // Live on by default at first paint
   useEffect(() => {
+    stockMap.current = parseStocks(stocksText);
     resume();
     return () => {
       wantRun.current = false;
@@ -327,16 +368,15 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const running = status === "connecting" || status === "listening";
   const watchParams = [
     { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听 · 未限定）" : "(wide · unset)") },
-    { label: "Topic0", value: topicPair, mono: true },
-    { label: "Mint", value: shortAddr(MINT), mono: true },
-    { label: "Quote", value: quote.trim() || (locale === "zh" ? "任意" : "any") },
+    { label: "Stocks", value: String(stockMap.current.size || parseStocks(stocksText).size) },
     { label: "Pair", value: subPair ? "on" : "off" },
-    { label: "LP", value: subMint ? "on" : "off" },
+    { label: "Mint", value: subMint ? "on" : "off" },
+    { label: "Filter", value: onlyStock ? "stock-only" : "all" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "anoncoin.rh / stream" },
+    { k: locale === "zh" ? "源" : "SRC", v: "stock-pair.rh / stream" },
     { k: "CHAIN", v: ep.label },
-    { k: "METHOD", v: "launch-watch" },
+    { k: "METHOD", v: "stock-pair-watch" },
     { k: "WSS", v: ep.wss },
     { k: "HTTPS", v: ep.https },
   ];
@@ -369,43 +409,39 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
-            <CardDescription>
-              {locale === "zh"
-                ? "一般不用改。粘贴工厂地址可更安静。"
-                : "Leave empty for the default wide listen."}
-            </CardDescription>
+            <CardTitle>{t(locale, "stock.stocksLabel")}</CardTitle>
+            <CardDescription>{t(locale, "stock.stocksHint")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="stocks">{t(locale, "stock.stocksLabel")}</Label>
+              <textarea
+                id="stocks"
+                className="min-h-[96px] w-full rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]"
+                value={stocksText}
+                onChange={(e) => setStocksText(e.target.value)}
+                onBlur={saveFields}
+                spellCheck={false}
+              />
+              <p className="text-[11px] text-[var(--color-muted-foreground)]">{t(locale, "stock.stocksHint")}</p>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="factory">Factory</Label>
               <Input id="factory" placeholder="0x…" value={factory} onChange={(e) => setFactory(e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="quote">Quote token</Label>
-              <Input id="quote" placeholder="0x…" value={quote} onChange={(e) => setQuote(e.target.value)} />
-            </div>
             <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
               <label className="inline-flex items-center gap-2">
                 <input type="checkbox" checked={subPair} onChange={(e) => setSubPair(e.target.checked)} className="h-4 w-4" />
-                Pair open
+                PairCreated
               </label>
               <label className="inline-flex items-center gap-2">
                 <input type="checkbox" checked={subMint} onChange={(e) => setSubMint(e.target.checked)} className="h-4 w-4" />
-                LP ready
+                Mint (first LP)
               </label>
               <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={onlyQuote} onChange={(e) => setOnlyQuote(e.target.checked)} className="h-4 w-4" />
-                Quote only
+                <input type="checkbox" checked={onlyStock} onChange={(e) => setOnlyStock(e.target.checked)} className="h-4 w-4" />
+                stock-pair only
               </label>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="topic">Topic0</Label>
-              <Input id="topic" value={topicPair} onChange={(e) => setTopicPair(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="minLiq">Min LP (×1e18)</Label>
-              <Input id="minLiq" type="number" min={0} step="0.01" value={minLiq} onChange={(e) => setMinLiq(e.target.value)} />
             </div>
 
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
@@ -438,12 +474,12 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   });
 
   return (
-    <div className="flex min-h-screen flex-col pb-24" data-layout="anon">
+    <div className="flex min-h-screen flex-col pb-24" data-layout="launch-feed">
       <MonitorChrome
         lastUpdateAt={lastUpdateAt}
         locale={locale}
-        title={t(locale, "anoncoin.title")}
-        tag={t(locale, "anoncoin.tag")}
+        title={t(locale, "stock.title")}
+        tag={t(locale, "stock.tag")}
         status={status}
         hasHit={hasHit}
         slug={SLUG}
@@ -463,6 +499,12 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
         history={history}
         watchParams={watchParams}
         sourceItems={sourceItems}
+        guide={t(locale, "stock.guide")}
+        watching={t(locale, "stock.watching")}
+        hint={t(locale, "stock.hint")}
+        emptyTitle={t(locale, "stock.emptyTitle")}
+        emptySub={t(locale, "stock.emptySub")}
+        latestLabel={t(locale, "stock.latest")}
         endpointSlot={
           <EndpointBar
             locale={locale}

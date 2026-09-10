@@ -446,7 +446,8 @@ body {
 
 /* ===== LOCKED PRODUCT TOP BAR (demos1-feel-baseline) ===== */
 .topbar{
-  display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;gap:8px 12px;
   padding:7px 12px;background:linear-gradient(180deg,#0a0a12,#050508);
   border-bottom:1px solid var(--color-line);position:relative;z-index:5;
   overflow:hidden;width:100%;
@@ -470,6 +471,13 @@ body {
   0%{transform:translateX(-130%)}
   45%{transform:translateX(130%)}
   100%{transform:translateX(130%)}
+}
+.tb-side{display:flex;align-items:center;gap:8px;position:relative;z-index:1;min-width:0}
+.tb-side.left{justify-content:flex-start}
+.tb-side.right{justify-content:flex-end}
+.tb-center{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px 10px;flex-wrap:wrap;
+  position:relative;z-index:1;justify-self:center;max-width:100%;
 }
 .tb-group{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative;z-index:1}
 .tb-sep{
@@ -569,9 +577,12 @@ body {
   background:rgba(255,43,214,.15);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,43,214,.55);
 }
 @media(max-width:860px){
+  .topbar{grid-template-columns:1fr;justify-items:center}
+  .tb-side{display:none}
   .tb-sep{display:none}
   .tb-sparkline{display:none!important}
   .tb-conn{display:none}
+  .tb-center{justify-content:center}
 }
 @media (prefers-reduced-motion: reduce){
   .topbar::before{animation:none!important;opacity:0!important}
@@ -580,3 +591,54 @@ body {
   .tb-live-pill.on .dot{opacity:1;transform:scale(1.25);box-shadow:0 0 10px currentColor}
   .freshness-stamp.flash,.refresh-flash{animation:none!important;border-color:rgba(0,240,255,.85);color:var(--color-neon-cyan);background:rgba(0,240,255,.18)}
 }
+
+
+/* ===== AD / SPONSOR SLOTS — whole block CTA, no separate signup btn ===== */
+a.ad-banner,a.ad-rail{text-decoration:none;color:inherit;cursor:pointer}
+.ad-banner{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:10px 16px;min-height:44px;
+  background:linear-gradient(90deg,#F1B92C,#FFE08A 40%,#00F0FF);
+  border:0;border-bottom:2px solid rgba(255,43,214,.55);
+  box-shadow:0 0 28px rgba(241,185,44,.35),inset 0 0 0 1px rgba(255,255,255,.25);
+  position:relative;z-index:4;
+  transition:filter .15s ease,transform .12s ease;
+}
+.ad-banner:hover{filter:brightness(1.06)}
+.ad-banner:active{transform:scale(.997)}
+.ad-label{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:#061018;padding:2px 7px;border:1px solid rgba(6,16,24,.35);background:rgba(255,255,255,.35);white-space:nowrap;
+}
+.ad-creative{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;font-weight:900;letter-spacing:.02em;
+  color:#061018;text-shadow:none;padding:0;border:0;background:transparent;box-shadow:none;clip-path:none;
+}
+.ad-rail{
+  display:none;position:fixed;top:50%;right:10px;transform:translateY(-50%);
+  z-index:6;width:96px;padding:12px 8px;text-align:center;
+  border:2px solid rgba(241,185,44,.7);
+  background:linear-gradient(180deg,#F1B92C,#00F0FF);
+  box-shadow:0 0 24px rgba(241,185,44,.35);
+  transition:filter .15s ease;
+}
+.ad-rail:hover{filter:brightness(1.06)}
+.ad-rail .ad-label{display:block;margin:0 auto 8px;font-size:8px;letter-spacing:.08em;color:#061018;border-color:rgba(6,16,24,.35);background:rgba(255,255,255,.35)}
+.ad-rail .ad-creative{
+  display:block;padding:4px 2px;font-size:11px;line-height:1.35;letter-spacing:.02em;color:#061018;
+  writing-mode:horizontal-tb;clip-path:none;
+}
+@media(min-width:1400px){
+  .ad-rail{display:block}
+}
+@media(max-width:720px){
+  .ad-banner .ad-creative{font-size:12px}
+}
+
+/* address truncate + hover full */
+.addr{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;cursor:help;
+  border-bottom:1px dotted rgba(0,240,255,.4);
+  color:inherit;
+}
+.addr:hover{color:var(--color-neon-cyan);border-bottom-color:var(--color-neon-cyan)}
