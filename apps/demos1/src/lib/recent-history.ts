@@ -76,10 +76,11 @@ export function mapPairCreatedLogs(
   });
 }
 
-/** Map Uniswap v4 Initialize logs → OpenLaunch rows. */
+/** Map Uniswap v4 Initialize logs → OpenLaunch / RH direct rows. */
 export function mapInitializeLogs(
   logs: JsonRpcLog[],
   locale: Locale,
+  chain = "BASE",
   limit = 24
 ): FeedEvent[] {
   const now = Date.now();
@@ -92,13 +93,13 @@ export function mapInitializeLogs(
     return {
       id: logId(log, i),
       kind: locale === "zh" ? "历史池开" : "Recent pool open",
-      tags: ["HIST", "BASE"],
+      tags: ["HIST", "V4", chain],
       title: shortAddr(poolId || String(log.address || "")),
       body: `${shortAddr(currency0 || "?")} / ${shortAddr(currency1 || "?")} · #${block}`,
       address: poolId || String(log.address || "") || undefined,
       block,
       tx: log.transactionHash,
-      chain: "BASE",
+      chain,
       at: now - i * 400,
     };
   });

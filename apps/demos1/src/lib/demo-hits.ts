@@ -227,3 +227,60 @@ export function useDemoHits(opts?: { catalogFlag?: boolean }) {
 
   return { enabled, setEnabled };
 }
+
+export function buildRhV4DirectFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kind = locale === "zh" ? "V4 直开" : "V4 direct open";
+  const names = ["RHDIRECT", "POOLNOW", "NOBOND", "V4FLASH", "INITX"];
+  return Array.from({ length: n }, (_, i) => {
+    const poolId = fakeAddr(`rhv4${i}${names[i % names.length]}`);
+    const c0 = fakeAddr(`c0rh${i}`);
+    const c1 = fakeAddr(`c1rh${i}`);
+    return {
+      id: rid(),
+      kind: i === 2 && locale === "zh" ? "流动性到位" : i === 2 ? "Liquidity in" : kind,
+      tags: i === 2 ? ["LP", "V4", "DIRECT", "DEMO"] : ["NEW", "V4", "DIRECT", "DEMO"],
+      title: names[i % names.length],
+      body: `${short(c0)} / ${short(c1)} · pool ${short(poolId)} · #${12_700_000 + i * 19}`,
+      address: poolId,
+      block: 12_700_000 + i * 19,
+      tx: fakeAddr(`txrhv4${i}`),
+      chain: "RH",
+      at: now - i * 1800,
+      metric: short(poolId),
+      metricLabel: "poolId",
+      metric2: `#${12_700_000 + i * 19}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
+
+export function buildBaseSpikeFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["工厂开盘", "开盘尖刺", "工厂开盘", "早期换手密", "开盘尖刺"]
+      : ["Factory create", "Launch spike", "Factory create", "Early swap dens", "Launch spike"];
+  const names = ["SPIKEX", "BASEBURST", "DENSECAT", "OPENFAST", "TIPPY"];
+  return Array.from({ length: n }, (_, i) => {
+    const pair = fakeAddr(`spike${i}${names[i % names.length]}`);
+    const swaps = 4 + i * 3;
+    const spike = i % 2 === 1;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: spike ? ["SPIKE", "BASE", "DEMO"] : ["NEW", "BASE", "DEMO"],
+      title: names[i % names.length],
+      body: `${short(pair)} · swaps ${swaps}/window · #${28_920_000 + i * 7}`,
+      address: pair,
+      block: 28_920_000 + i * 7,
+      tx: fakeAddr(`txspike${i}`),
+      chain: "BASE",
+      at: now - i * 1500,
+      metric: String(swaps),
+      metricLabel: locale === "zh" ? "早期换手" : "Early swaps",
+      metric2: spike ? (locale === "zh" ? "尖刺" : "SPIKE") : (locale === "zh" ? "开盘" : "OPEN"),
+      metric2Label: locale === "zh" ? "信号" : "Signal",
+    };
+  });
+}
