@@ -41,6 +41,8 @@ import { StockPairDemo } from "./demos/stock-pair-meme-launch-listen";
 import { PonsLaunchpadDemo } from "./demos/pons-launchpad-listen";
 import { RhUniswapV4DirectDemo } from "./demos/rh-uniswap-v4-direct-launch-listen";
 import { BaseLaunchSpikeDemo } from "./demos/base-launch-spike-listen";
+import { RhBasketFactoryDemo } from "./demos/rh-basket-factory-listen";
+import { LongEcoLaunchDemo } from "./demos/long-eco-launch-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -249,6 +251,8 @@ function DemoPage() {
       {slug === "pons-launchpad-listen" && <PonsLaunchpadDemo locale={locale} />}
       {slug === "rh-uniswap-v4-direct-launch-listen" && <RhUniswapV4DirectDemo locale={locale} />}
       {slug === "base-launch-spike-listen" && <BaseLaunchSpikeDemo locale={locale} />}
+      {slug === "rh-basket-factory-listen" && <RhBasketFactoryDemo locale={locale} />}
+      {slug === "long-eco-launch-listen" && <LongEcoLaunchDemo locale={locale} />}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}

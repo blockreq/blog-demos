@@ -212,3 +212,33 @@ export function mapTokenLaunchedLogs(
     };
   });
 }
+
+/** Map BasketCreated logs → feed rows (RH basket factory). */
+export function mapBasketCreatedLogs(
+  logs: JsonRpcLog[],
+  locale: Locale,
+  chain = "RH",
+  limit = 24
+): FeedEvent[] {
+  const now = Date.now();
+  return logs.slice(0, limit).map((log, i) => {
+    const topics = log.topics || [];
+    const basket = unpadTopic(topics[1]);
+    const creator = unpadTopic(topics[2]);
+    const block = bn(log);
+    return {
+      id: logId(log, i),
+      kind: locale === "zh" ? "历史篮筐" : "Recent basket",
+      tags: ["HIST", "BASKET", chain],
+      title: shortAddr(basket),
+      body: `creator ${shortAddr(creator || "?")} · #${block}`,
+      address: basket || undefined,
+      block,
+      tx: log.transactionHash,
+      chain,
+      at: now - i * 400,
+      metric: shortAddr(basket),
+      metricLabel: "basket",
+    };
+  });
+}
