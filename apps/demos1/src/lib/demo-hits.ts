@@ -284,3 +284,63 @@ export function buildBaseSpikeFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+export function buildBasketFixtures(locale: Locale, n = 4): FeedEvent[] {
+  const now = Date.now();
+  const kind = locale === "zh" ? "篮筐创建" : "Basket created";
+  const baskets = [
+    { name: "Tech Trio", symbol: "TRIO", comps: "TSLA+AMZN+NFLX" },
+    { name: "Mega Cap", symbol: "MEGA", comps: "AAPL+MSFT+GOOG" },
+    { name: "AI Stack", symbol: "AISTK", comps: "NVDA+AMD+AVGO" },
+    { name: "Consumer", symbol: "CONS", comps: "COST+WMT+TGT" },
+  ];
+  return Array.from({ length: n }, (_, i) => {
+    const b = baskets[i % baskets.length];
+    const addr = fakeAddr(`basket${i}${b.symbol}`);
+    return {
+      id: rid(),
+      kind,
+      tags: ["NEW", "BASKET", "RH", "DEMO"],
+      title: `${b.symbol} · ${b.name}`,
+      body: `components ${b.comps} · ${short(addr)} · #${12_800_000 + i * 15}`,
+      address: addr,
+      block: 12_800_000 + i * 15,
+      tx: fakeAddr(`txbasket${i}`),
+      chain: "RH",
+      at: now - i * 1900,
+      metric: b.symbol,
+      metricLabel: locale === "zh" ? "符号" : "Symbol",
+      metric2: b.comps,
+      metric2Label: locale === "zh" ? "成分" : "Components",
+    };
+  });
+}
+
+export function buildLongEcoFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["生态配对开盘", "生态配对开盘", "首次 LP", "生态配对", "开盘簇"]
+      : ["eco pair landed", "eco pair landed", "first LP", "eco pair", "eco open cluster"];
+  const ecos = ["USDC", "WETH", "LONG", "RHUSD", "cbBTC"];
+  return Array.from({ length: n }, (_, i) => {
+    const eco = fakeAddr(`eco${i}${ecos[i % ecos.length]}`);
+    const meme = fakeAddr(`memeeeco${i}${ecos[i % ecos.length]}`);
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: i % 3 === 2 ? ["LP", "ECO", "DEMO"] : ["ECO", "PAIR", "DEMO"],
+      title: short(meme),
+      body: `${ecos[i % ecos.length]} ↔ ${short(meme)} · #${12_810_000 + i * 11}`,
+      address: meme,
+      block: 12_810_000 + i * 11,
+      tx: fakeAddr(`txeco${i}`),
+      chain: "RH",
+      at: now - i * 1700,
+      metric: ecos[i % ecos.length],
+      metricLabel: locale === "zh" ? "生态侧" : "ecoSide",
+      metric2: short(meme),
+      metric2Label: locale === "zh" ? "meme侧" : "memeSide",
+    };
+  });
+}
