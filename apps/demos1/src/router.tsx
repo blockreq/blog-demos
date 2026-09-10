@@ -39,6 +39,8 @@ import { OpenLaunchDemo } from "./demos/openlaunch-base-eth-subscribe";
 import { EquifoldDemo } from "./demos/equifold-multi-market-listen";
 import { StockPairDemo } from "./demos/stock-pair-meme-launch-listen";
 import { PonsLaunchpadDemo } from "./demos/pons-launchpad-listen";
+import { RhUniswapV4DirectDemo } from "./demos/rh-uniswap-v4-direct-launch-listen";
+import { BaseLaunchSpikeDemo } from "./demos/base-launch-spike-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -245,6 +247,8 @@ function DemoPage() {
       {slug === "equifold-multi-market-listen" && <EquifoldDemo locale={locale} />}
       {slug === "stock-pair-meme-launch-listen" && <StockPairDemo locale={locale} />}
       {slug === "pons-launchpad-listen" && <PonsLaunchpadDemo locale={locale} />}
+      {slug === "rh-uniswap-v4-direct-launch-listen" && <RhUniswapV4DirectDemo locale={locale} />}
+      {slug === "base-launch-spike-listen" && <BaseLaunchSpikeDemo locale={locale} />}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
