@@ -23,6 +23,7 @@ import { MonitorChrome } from "../components/monitor-chrome";
 import { EquiSplitLayout } from "../components/layouts/equi-split-layout";
 import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
+import { useEditableEndpoints } from "../lib/endpoints";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildEquiFixtures, useDemoHits } from "../lib/demo-hits";
 import { mapPairCreatedLogs, useRecentHistory } from "../lib/recent-history";
@@ -63,6 +64,10 @@ function SettingsPanel({ open, children }: { open: boolean; children: ReactNode 
 
 export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [endpoint, setEndpoint] = useState<EpKey>("base");
+  const rpcKey = endpoint === "rh" ? "robinhood" as const : "base" as const;
+  const editable = useEditableEndpoints(SLUG, rpcKey);
+  const epRef = useRef(editable);
+  epRef.current = editable;
   const [factory, setFactory] = useState("");
   const [topic0, setTopic0] = useState(DEFAULT_TOPIC);
   const [burstSec, setBurstSec] = useState("30");
@@ -79,7 +84,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
 
   const seedBundle = useMemo(() => buildEquiFixtures(locale, "idle"), [locale]);
   const seedEvents = seedBundle.events;
-  const epHttps = ENDPOINTS[endpoint].https;
+  const epHttps = editable.https;
   const history = useRecentHistory({
     locale,
     https: epHttps,
@@ -220,9 +225,8 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
-    const ep = ENDPOINTS[fields.current.endpoint];
     setStatus("connecting");
-    const ws = new WebSocket(ep.wss);
+    const ws = new WebSocket(epRef.current.wss);
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -297,7 +301,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const ep = ENDPOINTS[endpoint];
+  const ep = { ...ENDPOINTS[endpoint], https: editable.https, wss: editable.wss, label: editable.label };
   const running = status === "connecting" || status === "listening";
 
   // Idle / pre-hit: pin NEONCAT + demo meta. Live WS market → real coin; demoHits → fixture label.
@@ -386,7 +390,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   }, [events]);
 
   const runningLive = status === "connecting" || status === "listening" || status === "hit";
-  const { tipAt } = useTipHeartbeat({ https: ENDPOINTS[endpoint].https, enabled: runningLive });
+  const { tipAt } = useTipHeartbeat({ https: editable.https, enabled: runningLive });
 
 
   const settings = (
@@ -483,7 +487,33 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         history={history}
         watchParams={watchParams}
         sourceItems={sourceItems}
-        endpointSlot={<EndpointBar locale={locale} wss={ep.wss} https={ep.https} chainLabel={ep.label} />}
+        endpointSlot={
+          <EndpointBar
+            locale={locale}
+            wss={editable.wss}
+            https={editable.https}
+            chainLabel={editable.label}
+            draftWss={editable.draftWss}
+            draftHttps={editable.draftHttps}
+            dirty={editable.dirty}
+            onDraftWss={editable.setWss}
+            onDraftHttps={editable.setHttps}
+            onApply={() => {
+              editable.commit();
+              if (wantRun.current) {
+                try { wsRef.current?.close(); } catch { /* ignore */ }
+                connect();
+              }
+            }}
+            onReset={() => {
+              editable.reset();
+              if (wantRun.current) {
+                try { wsRef.current?.close(); } catch { /* ignore */ }
+                connect();
+              }
+            }}
+          />
+        }
         settings={settings}
         banner={
           <DemoHitsBanner

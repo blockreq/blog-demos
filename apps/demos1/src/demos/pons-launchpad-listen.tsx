@@ -10,21 +10,15 @@ import {
   CardTitle,
   type ConnStatus,
 } from "@blockreq/ui";
-import {
-  isAddr,
-  shortAddr,
-  unpadTopic,
-  wordAddr,
-  wordU256,
-} from "@blockreq/rpc";
+import { isAddr, shortAddr, unpadTopic, wordAddr, wordU256 } from "@blockreq/rpc";
 import { MonitorChrome } from "../components/monitor-chrome";
-import { AnonStreamLayout } from "../components/layouts/anon-stream-layout";
+import { OpenWaitLayout } from "../components/layouts/open-wait-layout";
 import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
-import { useEditableEndpoints } from "../lib/endpoints";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
-import { buildAnonFixtures, useDemoHits } from "../lib/demo-hits";
-import { mapPairCreatedLogs, useRecentHistory } from "../lib/recent-history";
+import { buildPonsFixtures, useDemoHits } from "../lib/demo-hits";
+import { mapTokenLaunchedLogs, useRecentHistory } from "../lib/recent-history";
+import { useEditableEndpoints } from "../lib/endpoints";
 import { getDemo } from "../catalog";
 import {
   isNewHeadsResult,
@@ -32,39 +26,25 @@ import {
   useTipHeartbeat,
 } from "../lib/live-pulse";
 
-const MINT =
-  "0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f";
-const DEFAULT_PAIR_TOPIC =
-  "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
-const LS = "blockreq.anoncoin-rh.";
-const SLUG = "anoncoin-rh-launch-listen";
-
-type PairRec = {
-  token0: string;
-  token1: string;
-  baseSide: string;
-  quote: string;
-  block: number;
-  tx?: string;
-  firstLp: boolean;
-};
+const DEFAULT_FACTORY = "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e";
+const TOKEN_LAUNCHED =
+  "0x8d4aad4953d0ca700d468f3753aa14432d1b35b43ec6409f051fb6aa43a89607";
+const POOL_GRADUATED =
+  "0x0a44ef75df69c534f43cd6c1aa3ef8983065fe5fe79ef9e79f6494e6f258c259";
+const LS = "blockreq.pons-launchpad.";
+const SLUG = "pons-launchpad-listen";
 
 function SettingsPanel({ open, children }: { open: boolean; children: ReactNode }) {
   if (!open) return null;
   return <div className="space-y-3">{children}</div>;
 }
 
-export function AnoncoinDemo({ locale }: { locale: Locale }) {
-  const [factory, setFactory] = useState("");
-  const [quote, setQuote] = useState("");
-  const [topicPair, setTopicPair] = useState(DEFAULT_PAIR_TOPIC);
-  const [subPair, setSubPair] = useState(true);
-  const [subMint, setSubMint] = useState(true);
-  const [onlyQuote, setOnlyQuote] = useState(false);
-  const [minLiq, setMinLiq] = useState("0");
+export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
+  const [factory, setFactory] = useState(DEFAULT_FACTORY);
+  const [subLaunch, setSubLaunch] = useState(true);
+  const [subGrad, setSubGrad] = useState(true);
   const [status, setStatus] = useState<ConnStatus>("idle");
   const [events, setEvents] = useState<FeedEvent[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
@@ -75,13 +55,13 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const epRef = useRef(ep);
   epRef.current = ep;
 
-  const seedEvents = useMemo(() => buildAnonFixtures(locale, 6), [locale]);
+  const seedEvents = useMemo(() => buildPonsFixtures(locale, 5), [locale]);
   const history = useRecentHistory({
     locale,
     https: ep.https,
-    address: factory.trim() || undefined,
-    topics: [topicPair],
-    map: (logs) => mapPairCreatedLogs(logs, locale, "RH"),
+    address: factory.trim() || DEFAULT_FACTORY,
+    topics: [TOKEN_LAUNCHED],
+    map: (logs) => mapTokenLaunchedLogs(logs, locale, "RH"),
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -89,33 +69,28 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const nextId = useRef(1);
   const backoffMs = useRef(1000);
   const seen = useRef(new Set<string>());
-  const pairs = useRef(new Map<string, PairRec>());
-  const fields = useRef({ factory, quote, topicPair, subPair, subMint, onlyQuote, minLiq });
-  fields.current = { factory, quote, topicPair, subPair, subMint, onlyQuote, minLiq };
+  const fields = useRef({ factory, subLaunch, subGrad });
+  fields.current = { factory, subLaunch, subGrad };
 
-  const pushEvent = useCallback((ev: Omit<FeedEvent, "id" | "at"> & { id?: string; at?: number }) => {
-    const id = ev.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const full: FeedEvent = { ...ev, id, at: ev.at || Date.now() };
-    setEvents((prev) => [full, ...prev].slice(0, 80));
-    setSelectedId(id);
+  const pushEvent = useCallback((ev: Omit<FeedEvent, "id" | "at">) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const full: FeedEvent = { ...ev, id, at: Date.now() };
+    setEvents((prev) => [full, ...prev].slice(0, 40));
     setHasHit(true);
   }, []);
 
   const injectDemoHits = useCallback(() => {
-    const fixtures = buildAnonFixtures(locale, 4);
-    for (const ev of fixtures) {
-      setEvents((prev) => [ev, ...prev].slice(0, 80));
-    }
-    if (fixtures[0]) setSelectedId(fixtures[0].id);
+    const fixtures = buildPonsFixtures(locale, 3);
+    for (const ev of fixtures) setEvents((prev) => [ev, ...prev].slice(0, 40));
     setHasHit(true);
   }, [locale]);
 
   useEffect(() => {
     try {
-      setFactory(localStorage.getItem(LS + "factory") || "");
-      setQuote(localStorage.getItem(LS + "quote") || "");
-      const tp = localStorage.getItem(LS + "topicPair");
-      if (tp) setTopicPair(tp);
+      const f = localStorage.getItem(LS + "factory");
+      if (f) setFactory(f);
+      const g = localStorage.getItem(LS + "subGrad");
+      if (g != null) setSubGrad(g === "1");
     } catch {
       /* ignore */
     }
@@ -123,9 +98,8 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
 
   const saveFields = () => {
     try {
-      localStorage.setItem(LS + "factory", fields.current.factory.trim());
-      localStorage.setItem(LS + "quote", fields.current.quote.trim());
-      localStorage.setItem(LS + "topicPair", fields.current.topicPair.trim());
+      localStorage.setItem(LS + "factory", fields.current.factory.trim() || DEFAULT_FACTORY);
+      localStorage.setItem(LS + "subGrad", fields.current.subGrad ? "1" : "0");
     } catch {
       /* ignore */
     }
@@ -138,66 +112,55 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
   };
 
-  const onPairCreated = useCallback(
+  const onTokenLaunched = useCallback(
     (r: Record<string, unknown>) => {
-      const q = fields.current.quote.trim().toLowerCase();
       const topics = (r.topics as string[]) || [];
-      const token0 = unpadTopic(topics[1]);
-      const token1 = unpadTopic(topics[2]);
-      const pair = wordAddr(r.data as string, 0);
+      const token = unpadTopic(topics[1]);
+      const curve = unpadTopic(topics[2]);
+      const deployer = unpadTopic(topics[3]);
+      const pairToken = wordAddr(r.data as string, 0);
+      const configId = wordU256(r.data as string, 1);
+      const threshold = wordU256(r.data as string, 2);
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
-      const hit0 = !!q && token0 === q;
-      const hit1 = !!q && token1 === q;
-      const quoteHit = hit0 || hit1;
-      if (!quoteHit && fields.current.onlyQuote) return;
-
-      const baseSide = hit0 ? token1 : hit1 ? token0 : "";
-      const tags = ["NEW", "ANON"];
-      if (quoteHit) tags.push("QUOTE");
-      const rec: PairRec = {
-        token0,
-        token1,
-        baseSide,
-        quote: quoteHit ? q : "",
-        block: bn,
-        tx: String(r.transactionHash || ""),
-        firstLp: false,
-      };
-      if (pair) pairs.current.set(pair.toLowerCase(), rec);
       pushEvent({
-        kind: locale === "zh" ? "新开盘" : "New launch",
-        tags,
-        title: shortAddr(pair),
-        body: `${shortAddr(baseSide || "?")} · #${bn}`,
-        address: pair || undefined,
+        kind: locale === "zh" ? "Pons 发射" : "Pons launch",
+        tags: ["NEW", "PONS", "RH"],
+        title: shortAddr(token),
+        body: `deployer ${shortAddr(deployer)} · curve ${shortAddr(curve)} · pair ${shortAddr(pairToken)} · cfg ${configId.toString()} · thr ${threshold.toString()} · #${bn}`,
+        address: token || undefined,
         block: bn,
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
+        metric: shortAddr(curve),
+        metricLabel: "curve",
+        metric2: `#${bn}`,
+        metric2Label: locale === "zh" ? "区块" : "Block",
       });
     },
     [locale, pushEvent]
   );
 
-  const onMint = useCallback(
+  const onGraduated = useCallback(
     (r: Record<string, unknown>) => {
-      const pool = String(r.address || "").toLowerCase();
-      const known = pairs.current.get(pool);
-      if (!known || known.firstLp) return;
-      const a0 = wordU256(r.data as string, 0);
-      const a1 = wordU256(r.data as string, 1);
-      const minRaw = BigInt(Math.floor(Number(fields.current.minLiq || 0) * 1e18));
-      if (minRaw > 0n && a0 + a1 < minRaw) return;
-      known.firstLp = true;
+      const topics = (r.topics as string[]) || [];
+      const token = unpadTopic(topics[1]);
+      const positionId = wordU256(r.data as string, 0);
+      const tokenAmt = wordU256(r.data as string, 1);
+      const pairAmt = wordU256(r.data as string, 2);
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       pushEvent({
-        kind: locale === "zh" ? "LP 到位" : "LP ready",
-        tags: ["LP"],
-        title: shortAddr(pool),
-        body: `#${bn}`,
-        address: pool,
+        kind: locale === "zh" ? "Pons 毕业" : "Pons graduated",
+        tags: ["GRAD", "PONS", "RH"],
+        title: shortAddr(token),
+        body: `pos ${positionId.toString()} · tokenAmt ${tokenAmt.toString()} · pairAmt ${pairAmt.toString()} · #${bn}`,
+        address: token || undefined,
         block: bn,
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
+        metric: shortAddr(token),
+        metricLabel: "token",
+        metric2: `#${bn}`,
+        metric2Label: locale === "zh" ? "区块" : "Block",
       });
     },
     [locale, pushEvent]
@@ -209,25 +172,24 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       if (seen.current.has(key)) return;
       seen.current.add(key);
       const t0 = String(((r.topics as string[]) || [])[0] || "").toLowerCase();
-      const topic = fields.current.topicPair.trim().toLowerCase();
-      if (t0 === topic) return onPairCreated(r);
-      if (t0 === MINT) return onMint(r);
+      if (t0 === TOKEN_LAUNCHED) return onTokenLaunched(r);
+      if (t0 === POOL_GRADUATED) return onGraduated(r);
     },
-    [onMint, onPairCreated]
+    [onGraduated, onTokenLaunched]
   );
 
   const subscribeAll = useCallback(() => {
     saveFields();
-    const f = fields.current.factory.trim();
-    const topic = fields.current.topicPair.trim().toLowerCase();
-    const factoryOk = isAddr(f);
-    if (fields.current.subPair) {
-      const filt: { topics: string[]; address?: string } = { topics: [topic] };
-      if (factoryOk) filt.address = f.toLowerCase();
-      send("eth_subscribe", ["logs", filt]);
+    const f = (fields.current.factory.trim() || DEFAULT_FACTORY).toLowerCase();
+    if (!isAddr(f)) {
+      setStatus("error");
+      return;
     }
-    if (fields.current.subMint) {
-      send("eth_subscribe", ["logs", { topics: [MINT] }]);
+    if (fields.current.subLaunch) {
+      send("eth_subscribe", ["logs", { address: f, topics: [TOKEN_LAUNCHED] }]);
+    }
+    if (fields.current.subGrad) {
+      send("eth_subscribe", ["logs", { address: f, topics: [POOL_GRADUATED] }]);
     }
     send("eth_subscribe", ["newHeads"]);
     setStatus("listening");
@@ -284,8 +246,8 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   }, [onLog, subscribeAll]);
 
   const resume = useCallback(() => {
-    const q = fields.current.quote.trim();
-    if (fields.current.onlyQuote && !isAddr(q)) {
+    const f = fields.current.factory.trim() || DEFAULT_FACTORY;
+    if (!isAddr(f)) {
       setStatus("error");
       return;
     }
@@ -303,7 +265,6 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     setStatus("stopped");
   }, []);
 
-  // Live on by default at first paint
   useEffect(() => {
     resume();
     return () => {
@@ -317,26 +278,17 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Dense idle: pre-select first seed / history row for right panel
-  useEffect(() => {
-    if (selectedId) return;
-    const pool = events.length ? events : history.events.length ? history.events : seedEvents;
-    if (pool[0]) setSelectedId(pool[0].id);
-  }, [events, history.events, seedEvents, selectedId]);
-
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听 · 未限定）" : "(wide · unset)") },
-    { label: "Topic0", value: topicPair, mono: true },
-    { label: "Mint", value: shortAddr(MINT), mono: true },
-    { label: "Quote", value: quote.trim() || (locale === "zh" ? "任意" : "any") },
-    { label: "Pair", value: subPair ? "on" : "off" },
-    { label: "LP", value: subMint ? "on" : "off" },
+    { label: t(locale, "pons.factoryLabel"), value: factory.trim() || DEFAULT_FACTORY, mono: true },
+    { label: "TokenLaunched", value: subLaunch ? "on" : "off" },
+    { label: "PoolGraduated", value: subGrad ? "on" : "off" },
+    { label: "Topic0", value: shortAddr(TOKEN_LAUNCHED), mono: true },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "anoncoin.rh / stream" },
+    { k: locale === "zh" ? "源" : "SRC", v: "pons.rh / launchpad" },
     { k: "CHAIN", v: ep.label },
-    { k: "METHOD", v: "launch-watch" },
+    { k: "METHOD", v: "pons-listen" },
     { k: "WSS", v: ep.wss },
     { k: "HTTPS", v: ep.https },
   ];
@@ -356,7 +308,6 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   const runningLive = status === "connecting" || status === "listening" || status === "hit";
   const { tipAt } = useTipHeartbeat({ https: ep.https, enabled: runningLive });
 
-
   const settings = (
     <div className="space-y-3">
       <button
@@ -369,56 +320,38 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardTitle>{t(locale, "pons.factoryLabel")}</CardTitle>
             <CardDescription>
               {locale === "zh"
-                ? "一般不用改。粘贴工厂地址可更安静。"
-                : "Leave empty for the default wide listen."}
+                ? "默认 Pons V2 工厂；可改。可选同时听 PoolGraduated。"
+                : "Default Pons V2 factory; editable. Optional PoolGraduated."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="factory">Factory</Label>
-              <Input id="factory" placeholder="0x…" value={factory} onChange={(e) => setFactory(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="quote">Quote token</Label>
-              <Input id="quote" placeholder="0x…" value={quote} onChange={(e) => setQuote(e.target.value)} />
+              <Label htmlFor="pons-factory">{t(locale, "pons.factoryLabel")}</Label>
+              <Input
+                id="pons-factory"
+                value={factory}
+                onChange={(e) => setFactory(e.target.value)}
+                onBlur={saveFields}
+                spellCheck={false}
+              />
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-[var(--color-muted-foreground)]">
               <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={subPair} onChange={(e) => setSubPair(e.target.checked)} className="h-4 w-4" />
-                Pair open
+                <input type="checkbox" checked={subLaunch} onChange={(e) => setSubLaunch(e.target.checked)} className="h-4 w-4" />
+                TokenLaunched
               </label>
               <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={subMint} onChange={(e) => setSubMint(e.target.checked)} className="h-4 w-4" />
-                LP ready
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={onlyQuote} onChange={(e) => setOnlyQuote(e.target.checked)} className="h-4 w-4" />
-                Quote only
+                <input type="checkbox" checked={subGrad} onChange={(e) => setSubGrad(e.target.checked)} className="h-4 w-4" />
+                {t(locale, "pons.gradOpt")}
               </label>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="topic">Topic0</Label>
-              <Input id="topic" value={topicPair} onChange={(e) => setTopicPair(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="minLiq">Min LP (×1e18)</Label>
-              <Input id="minLiq" type="number" min={0} step="0.01" value={minLiq} onChange={(e) => setMinLiq(e.target.value)} />
-            </div>
-
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
-              <input
-                type="checkbox"
-                checked={demoHits}
-                onChange={(e) => setDemoHits(e.target.checked)}
-                className="h-4 w-4"
-              />
+              <input type="checkbox" checked={demoHits} onChange={(e) => setDemoHits(e.target.checked)} className="h-4 w-4" />
               {t(locale, "demoHits.toggle")}
-              <span className="font-mono text-[10px] opacity-80">?demoHits=1</span>
             </label>
-
             <p className="break-all font-mono text-[11px] text-[var(--color-muted-foreground)]">
               {ep.wss} · {ep.chainIdHex}
             </p>
@@ -428,8 +361,6 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
     </div>
   );
 
-
-
   const lastUpdateAt = resolveLiveUpdateAt({
     lastPulseAt,
     tipAt,
@@ -438,24 +369,24 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
   });
 
   return (
-    <div className="flex min-h-screen flex-col pb-24" data-layout="anon">
+    <div className="flex min-h-screen flex-col pb-24" data-layout="single-focus">
       <MonitorChrome
         lastUpdateAt={lastUpdateAt}
         locale={locale}
-        title={t(locale, "anoncoin.title")}
-        tag={t(locale, "anoncoin.tag")}
+        title={t(locale, "pons.title")}
+        tag={t(locale, "pons.tag")}
         status={status}
         hasHit={hasHit}
         slug={SLUG}
         blogUrl={demoBlogUrl(SLUG, locale)}
         siteUrl={demoSiteUrl(getDemo(SLUG))}
       />
-      <AnonStreamLayout
+      <OpenWaitLayout
         locale={locale}
+        status={status}
+        hasHit={hasHit}
         events={events}
         seedEvents={seedEvents}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
         onPause={pause}
         onResume={resume}
         running={running}
@@ -463,6 +394,20 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
         history={history}
         watchParams={watchParams}
         sourceItems={sourceItems}
+        guide={t(locale, "pons.guide")}
+        watching={t(locale, "pons.watching")}
+        stripTitle={t(locale, "pons.stripTitle")}
+        stripSub={t(locale, "pons.stripSub")}
+        stageIdle={t(locale, "pons.stageIdle")}
+        stageConn={t(locale, "pons.stageConn")}
+        stageListen={t(locale, "pons.stageListen")}
+        stageHit={t(locale, "pons.stageHit")}
+        heroIdle={t(locale, "pons.hero.idle")}
+        heroConnecting={t(locale, "pons.hero.connecting")}
+        heroListening={t(locale, "pons.hero.listening")}
+        heroHit={t(locale, "pons.hero.hit")}
+        recentTitle={t(locale, "pons.recent")}
+        chainBadge="RH"
         endpointSlot={
           <EndpointBar
             locale={locale}

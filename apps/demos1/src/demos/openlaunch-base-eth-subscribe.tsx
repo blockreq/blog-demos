@@ -10,11 +10,12 @@ import {
   CardTitle,
   type ConnStatus,
 } from "@blockreq/ui";
-import { PUBLIC_ENDPOINTS, isAddr, shortAddr, unpadTopic } from "@blockreq/rpc";
+import { isAddr, shortAddr, unpadTopic } from "@blockreq/rpc";
 import { MonitorChrome } from "../components/monitor-chrome";
 import { OpenWaitLayout } from "../components/layouts/open-wait-layout";
 import type { FeedEvent } from "../components/feed-types";
 import { EndpointBar } from "../components/endpoint-bar";
+import { useEditableEndpoints } from "../lib/endpoints";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildOpenFixtures, useDemoHits } from "../lib/demo-hits";
 import { mapInitializeLogs, useRecentHistory } from "../lib/recent-history";
@@ -25,10 +26,6 @@ import {
   useTipHeartbeat,
 } from "../lib/live-pulse";
 
-const EP = PUBLIC_ENDPOINTS.base;
-const WSS = EP.wss;
-const HTTPS = EP.https;
-const CHAIN_ID = EP.chainIdHex;
 const DEFAULT_INIT =
   "0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438";
 const DEFAULT_LOCK =
@@ -64,11 +61,15 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const [showSettings, setShowSettings] = useState(false);
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const ep = useEditableEndpoints(SLUG, "base");
+  const epRef = useRef(ep);
+  epRef.current = ep;
+
 
   const seedEvents = useMemo(() => buildOpenFixtures(locale, 5), [locale]);
   const history = useRecentHistory({
     locale,
-    https: HTTPS,
+    https: ep.https,
     address: poolManager.trim() || undefined,
     topics: [topicInit],
     map: (logs) => mapInitializeLogs(logs, locale),
@@ -268,7 +269,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    const ws = new WebSocket(WSS);
+    const ws = new WebSocket(epRef.current.wss);
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -356,7 +357,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
     { k: "CHAIN", v: "Base" },
     { k: "METHOD", v: "tx-listen" },
     { k: "WINDOW", v: "one-shot" },
-    { k: "HTTPS", v: HTTPS },
+    { k: "HTTPS", v: ep.https },
   ];
 
   useEffect(() => {
@@ -372,7 +373,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   }, [events]);
 
   const runningLive = status === "connecting" || status === "listening" || status === "hit";
-  const { tipAt } = useTipHeartbeat({ https: HTTPS, enabled: runningLive });
+  const { tipAt } = useTipHeartbeat({ https: ep.https, enabled: runningLive });
 
 
   const settings = (
@@ -431,7 +432,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
               <Input id="tl" value={topicLock} onChange={(e) => setTopicLock(e.target.value)} />
             </div>
             <p className="break-all font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              {WSS} · {HTTPS} · {CHAIN_ID}
+              {ep.wss} · {ep.https} · {ep.chainIdHex}
             </p>
           
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
@@ -486,7 +487,33 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         history={history}
         watchParams={watchParams}
         sourceItems={sourceItems}
-        endpointSlot={<EndpointBar locale={locale} wss={WSS} https={HTTPS} chainLabel={EP.label} />}
+        endpointSlot={
+          <EndpointBar
+            locale={locale}
+            wss={ep.wss}
+            https={ep.https}
+            chainLabel={ep.label}
+            draftWss={ep.draftWss}
+            draftHttps={ep.draftHttps}
+            dirty={ep.dirty}
+            onDraftWss={ep.setWss}
+            onDraftHttps={ep.setHttps}
+            onApply={() => {
+              ep.commit();
+              if (wantRun.current) {
+                try { wsRef.current?.close(); } catch { /* ignore */ }
+                connect();
+              }
+            }}
+            onReset={() => {
+              ep.reset();
+              if (wantRun.current) {
+                try { wsRef.current?.close(); } catch { /* ignore */ }
+                connect();
+              }
+            }}
+          />
+        }
         settings={settings}
         banner={
           <DemoHitsBanner

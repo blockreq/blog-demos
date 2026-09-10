@@ -178,3 +178,36 @@ export function useRecentHistory(opts: {
 
   return state;
 }
+
+
+/** Map Pons TokenLaunched logs → feed rows. */
+export function mapTokenLaunchedLogs(
+  logs: JsonRpcLog[],
+  locale: Locale,
+  chain = "RH",
+  limit = 24
+): FeedEvent[] {
+  const now = Date.now();
+  return logs.slice(0, limit).map((log, i) => {
+    const topics = log.topics || [];
+    const token = unpadTopic(topics[1]);
+    const curve = unpadTopic(topics[2]);
+    const deployer = unpadTopic(topics[3]);
+    const pairToken = wordAddr(log.data, 0);
+    const block = bn(log);
+    return {
+      id: logId(log, i),
+      kind: locale === "zh" ? "Pons 发射" : "Pons launch",
+      tags: ["HIST", "PONS", chain],
+      title: shortAddr(token),
+      body: `${shortAddr(deployer || "?")} · curve ${shortAddr(curve || "?")} · #${block}`,
+      address: token || undefined,
+      block,
+      tx: log.transactionHash,
+      chain,
+      at: now - i * 400,
+      metric: pairToken ? shortAddr(pairToken) : undefined,
+      metricLabel: "pair",
+    };
+  });
+}

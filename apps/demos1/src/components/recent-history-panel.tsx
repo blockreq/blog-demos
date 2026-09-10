@@ -195,8 +195,8 @@ export function RecentHistoryPanel({
                       {usingLive || usingSeed ? ageLabel(ev.at) : `#${ev.block ?? "—"}`}
                     </TableCell>
                     <TableCell className="min-w-0">
-                      <div className="type-body truncate text-[14px] font-extrabold">{ev.title || ev.kind}</div>
-                      <div className="mt-0.5 truncate type-meta">{ev.body}</div>
+                      <div className="type-body truncate text-[14px] font-extrabold" title={ev.address || ev.title}>{ev.title || ev.kind}</div>
+                      <div className="mt-0.5 truncate type-meta" title={ev.tx || ev.body}>{ev.body}</div>
                       {ev.metric ? (
                         <div
                           key={`${ev.id}-metric-${ev.metric}`}

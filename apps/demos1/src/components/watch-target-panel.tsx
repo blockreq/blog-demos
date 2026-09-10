@@ -59,7 +59,8 @@ export function WatchTargetPanel({
             <dd
               className={cn(
                 "min-w-0 truncate text-[12px]",
-                p.mono !== false && "font-mono text-[#D0D5E8]"
+                p.mono !== false && "font-mono text-[#D0D5E8]",
+                (p.mono || p.value.startsWith("0x")) && "addr"
               )}
               title={p.value}
             >
