@@ -344,3 +344,89 @@ export function buildLongEcoFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+
+export function buildArcDay1Fixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["Factory PairCreated", "早期 Swap 密度", "Factory PairCreated", "早期 Swap 密度", "Factory PairCreated"]
+      : ["Factory PairCreated", "Early Swap density", "Factory PairCreated", "Early Swap density", "Factory PairCreated"];
+  const names = ["ARCPAD", "DAY1X", "OPENARC", "PAIRNOW", "DENSARC"];
+  return Array.from({ length: n }, (_, i) => {
+    const pair = fakeAddr(`arc${i}${names[i % names.length]}`);
+    const dens = i % 2 === 1;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: dens ? ["DENS", "ARC", "DEMO"] : ["NEW", "ARC", "DAY1", "DEMO"],
+      title: names[i % names.length],
+      body: `${short(pair)} · #${1_000_000 + i * 9}`,
+      address: pair,
+      block: 1_000_000 + i * 9,
+      tx: fakeAddr(`txarc${i}`),
+      chain: "ARC",
+      at: now - i * 1600,
+      metric: dens ? String(3 + i) : short(pair),
+      metricLabel: dens ? (locale === "zh" ? "早期换手" : "Early swaps") : "pair",
+      metric2: dens ? "DENS" : "OPEN",
+      metric2Label: locale === "zh" ? "信号" : "Signal",
+    };
+  });
+}
+
+export function buildBaseStockSwapFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kind = locale === "zh" ? "股币大单" : "Stock big print";
+  const syms = ["AAPL", "TSLA", "NVDA", "MSFT", "COIN"];
+  const venues = ["V2", "V3", "V2", "V3", "V2"];
+  return Array.from({ length: n }, (_, i) => {
+    const pool = fakeAddr(`bsswap${i}${syms[i % syms.length]}`);
+    const size = (250_000 + i * 80_000).toLocaleString();
+    return {
+      id: rid(),
+      kind,
+      tags: ["BIG", "BASE", venues[i % venues.length], syms[i % syms.length], "DEMO"],
+      title: `${syms[i % syms.length]} · ${venues[i % venues.length]}`,
+      body: `chain=base · venue=${venues[i % venues.length]} · print $${size} · pool ${short(pool)} · #${28_930_000 + i * 5}`,
+      address: pool,
+      block: 28_930_000 + i * 5,
+      tx: fakeAddr(`txbsswap${i}`),
+      chain: "BASE",
+      at: now - i * 1400,
+      metric: `$${size}`,
+      metricLabel: locale === "zh" ? "大单" : "Print",
+      metric2: venues[i % venues.length],
+      metric2Label: "venue",
+    };
+  });
+}
+
+export function buildAnyQuoteFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["任意报价 Initialize", "任意报价 PairCreated", "任意报价 Initialize", "任意报价 PairCreated", "任意报价 Initialize"]
+      : ["any-quote Initialize", "any-quote PairCreated", "any-quote Initialize", "any-quote PairCreated", "any-quote Initialize"];
+  const quotes = ["USDC", "WETH", "RHUSD", "cbBTC", "USDC"];
+  return Array.from({ length: n }, (_, i) => {
+    const launch = fakeAddr(`aqlaunch${i}${quotes[i % quotes.length]}`);
+    const quote = fakeAddr(`aqquote${i}${quotes[i % quotes.length]}`);
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: ["ANYQUOTE", "RH", quotes[i % quotes.length], "DEMO"],
+      title: short(launch),
+      body: `path=any-quote · quoteSide ${quotes[i % quotes.length]} ${short(quote)} · launchSide ${short(launch)} · #${12_820_000 + i * 13}`,
+      address: launch,
+      block: 12_820_000 + i * 13,
+      tx: fakeAddr(`txaq${i}`),
+      chain: "RH",
+      at: now - i * 1700,
+      metric: quotes[i % quotes.length],
+      metricLabel: locale === "zh" ? "报价侧" : "quoteSide",
+      metric2: short(launch),
+      metric2Label: locale === "zh" ? "发射侧" : "launchSide",
+    };
+  });
+}
