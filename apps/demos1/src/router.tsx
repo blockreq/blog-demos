@@ -50,6 +50,8 @@ import { PumpfunCustomPairsDemo } from "./demos/pumpfun-custom-pairs-listen";
 import { MonadO1LaunchpadDemo } from "./demos/monad-o1-launchpad-listen";
 import { SolanaChangelogSubscriptionFilterDemo } from "./demos/solana-changelog-subscription-filter";
 import { AnzaAgaveRpcCompatWatchDemo } from "./demos/anza-agave-rpc-compat-watch";
+import { BrewBnbDoublePairDemo } from "./demos/brew-bnb-double-pair-listen";
+import { ArbitrumRwaFlowDemo } from "./demos/arbitrum-rwa-flow-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -267,6 +269,8 @@ function DemoPage() {
       {slug === "monad-o1-launchpad-listen" && <MonadO1LaunchpadDemo locale={locale} />}
       {slug === "solana-changelog-subscription-filter" && <SolanaChangelogSubscriptionFilterDemo locale={locale} />}
       {slug === "anza-agave-rpc-compat-watch" && <AnzaAgaveRpcCompatWatchDemo locale={locale} />}
+      {slug === "brew-bnb-double-pair-listen" && <BrewBnbDoublePairDemo locale={locale} />}
+      {slug === "arbitrum-rwa-flow-listen" && <ArbitrumRwaFlowDemo locale={locale} />}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}

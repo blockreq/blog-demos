@@ -589,3 +589,73 @@ export function buildAgaveCompatFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+
+export function buildBrewDoublePairFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["双池进度", "双池齐听 twinReady", "双池进度", "双池齐听 twinReady", "双池进度"]
+      : ["Twin progress", "Twin ready", "Twin progress", "Twin ready", "Twin progress"];
+  const names = ["BREW1", "CAPX", "TWINBNB", "POOLY", "DBLP"];
+  return Array.from({ length: n }, (_, i) => {
+    const token = fakeAddr(`brewtok${i}${names[i % names.length]}`);
+    const poolA = fakeAddr(`brewpa${i}`);
+    const poolB = fakeAddr(`brewpb${i}`);
+    const twin = i % 2 === 1;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: twin
+        ? ["TWIN", "READY", "BREW", "BSC", "DEMO"]
+        : ["PART", "BREW", "BSC", "DEMO"],
+      title: names[i % names.length],
+      body: twin
+        ? `pad brew-double-pair · launchId ${short(token)} · capUsd $69000 · poolA ${short(poolA)} · poolB ${short(poolB)} · #${60_000_000 + i * 11}`
+        : `pad brew-double-pair · launch ${short(token)} · pools 1/2 · cap $69000 · ${short(poolA)} · #${60_000_000 + i * 11}`,
+      address: token,
+      block: 60_000_000 + i * 11,
+      tx: fakeAddr(`txbrew${i}`),
+      chain: "BSC",
+      at: now - i * 1500,
+      metric: twin ? "twinReady" : "1/2",
+      metricLabel: twin ? (locale === "zh" ? "双池齐" : "Twin") : (locale === "zh" ? "池进度" : "Pools"),
+      metric2: "$69000",
+      metric2Label: "CAP_USD",
+    };
+  });
+}
+
+export function buildArbRwaFlowFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["mint 铸币", "Transfer", "PairCreated 开池", "mint 铸币", "Transfer"]
+      : ["mint", "transfer", "pair", "mint", "transfer"];
+  const syms = ["USDY", "USDC", "BUIDL", "USDT", "USDY"];
+  const kindTags = ["MINT", "TRANSFER", "PAIR", "MINT", "TRANSFER"];
+  return Array.from({ length: n }, (_, i) => {
+    const token = fakeAddr(`arbrwa${i}${syms[i % syms.length]}`);
+    const pair = fakeAddr(`arbpair${i}`);
+    const kind = kindTags[i % kindTags.length];
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: [kind, "RWA", "ARB", syms[i % syms.length], "DEMO"],
+      title: syms[i % syms.length],
+      body:
+        kind === "PAIR"
+          ? `pad rwa-flow · kind=pair · ${short(token)}/USDC · pair ${short(pair)} · #${250_000_000 + i * 13}`
+          : `pad rwa-flow · kind=${kind.toLowerCase()} · token ${syms[i % syms.length]} ${short(token)} · amt ${(10 + i * 3).toFixed(1)}K · #${250_000_000 + i * 13}`,
+      address: kind === "PAIR" ? pair : token,
+      block: 250_000_000 + i * 13,
+      tx: fakeAddr(`txarbrwa${i}`),
+      chain: "ARB",
+      at: now - i * 1400,
+      metric: kind === "PAIR" ? short(pair) : `${10 + i * 3}K`,
+      metricLabel: kind === "PAIR" ? "pair" : (locale === "zh" ? "数量" : "Amount"),
+      metric2: kind.toLowerCase(),
+      metric2Label: "kind",
+    };
+  });
+}

@@ -20,6 +20,22 @@ export const PUBLIC_ENDPOINTS = {
     wss: "wss://base-rpc.blockreq.com/v1/rpc/public",
     https: "https://base-rpc.blockreq.com/v1/rpc/public",
   },
+  /** BNB Smart Chain — live BlockReq public HTTPS/WSS (docs). */
+  bsc: {
+    label: "BSC",
+    chainId: 56,
+    chainIdHex: "0x38",
+    wss: "wss://bsc-rpc.blockreq.com/v1/rpc/public",
+    https: "https://bsc-rpc.blockreq.com/v1/rpc/public",
+  },
+  /** Arbitrum One — live BlockReq public HTTPS/WSS (docs). */
+  arbitrum: {
+    label: "Arbitrum One",
+    chainId: 42161,
+    chainIdHex: "0xa4b1",
+    wss: "wss://arbitrum-one-rpc.blockreq.com/v1/rpc/public",
+    https: "https://arbitrum-one-rpc.blockreq.com/v1/rpc/public",
+  },
   /**
    * Arc Mainnet day-1 prep — BlockReq Arc public HTTPS/WSS ship later (host 522).
    * Empty placeholders so demos1 UI can pre-wire Factory subs; fill when live.
