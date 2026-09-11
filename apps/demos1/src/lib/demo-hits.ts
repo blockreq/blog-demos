@@ -502,3 +502,90 @@ export function buildMonadO1Fixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+
+function shortSol(a: string) {
+  if (!a || a.length < 10) return a || "—";
+  return `${a.slice(0, 4)}…${a.slice(-4)}`;
+}
+
+/** Changelog filter fixtures — filtered log rows + upgrade-window alert chips. */
+export function buildChangelogFilterFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const programs = [
+    { id: "BPFLoaderUpgradeab1e11111111111111111111111", tag: "BPF-UPG" },
+    { id: "Config1111111111111111111111111111111111111", tag: "CONFIG" },
+    { id: "Vote111111111111111111111111111111111111111", tag: "VOTE" },
+    { id: "Stake11111111111111111111111111111111111111", tag: "STAKE" },
+    { id: "AddressLookupTab1e1111111111111111111111111", tag: "ALT" },
+  ];
+  const filters = ["upgrade", "setAuthority", "deploy", "extendProgram", "close"];
+  const upgradeTags = ["v2.1-window", "v2.2-window", "agave-v3", "v2.1-window", "hotfix"];
+  const kinds =
+    locale === "zh"
+      ? ["Filter 命中", "升级窗告警", "Filter 命中", "升级窗告警", "Filter 命中"]
+      : ["Filter hit", "Upgrade-window alert", "Filter hit", "Upgrade-window alert", "Filter hit"];
+  return Array.from({ length: n }, (_, i) => {
+    const p = programs[i % programs.length];
+    const fk = filters[i % filters.length];
+    const ut = upgradeTags[i % upgradeTags.length];
+    const alert = i % 2 === 1;
+    const sig = `SigChg${i}${fk}${"1".repeat(40)}`.slice(0, 64);
+    const slot = 310_000_000 + i * 23;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: alert
+        ? ["UPGRADE", "ALERT", "DEMO", ut]
+        : ["FILTER", "CHANGELOG", "DEMO", fk],
+      title: shortSol(p.id),
+      body: `pad changelog-filter · program ${p.tag} ${shortSol(p.id)} · filterKey ${fk} · upgradeTag ${ut} · sig ${shortSol(sig)} · slot ${slot}`,
+      address: p.id,
+      block: slot,
+      tx: sig,
+      chain: "SOL",
+      at: now - i * 1600,
+      metric: fk,
+      metricLabel: "filterKey",
+      metric2: ut,
+      metric2Label: "upgradeTag",
+    };
+  });
+}
+
+/** Agave RPC compat watch fixtures — tip/slot rows + pre/post diff chips + checklist. */
+export function buildAgaveCompatFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const releases = ["v2.1.0", "v2.1.11", "v2.2.0", "v3.0.0-rc", "v2.1.21"];
+  const diffs = ["logs+ok", "pre≠post", "fp-match", "sub-lag", "capabilityΔ"];
+  const kinds =
+    locale === "zh"
+      ? ["tip/slot 探针", "pre/post 差", "tip/slot 探针", "sub 健康", "兼容清单"]
+      : ["tip/slot probe", "pre/post diff", "tip/slot probe", "sub healthy", "compat checklist"];
+  return Array.from({ length: n }, (_, i) => {
+    const releaseTag = releases[i % releases.length];
+    const tipSlot = 312_500_000 + i * 41;
+    const programDiff = diffs[i % diffs.length];
+    const subLag = `${40 + i * 12}ms`;
+    const checks =
+      i % 2 === 0
+        ? "nodeCapability·tipAligned·subHealthy"
+        : "tipAligned·programDiffReady";
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: i % 2 === 1 ? ["DIFF", "AGAVE", "DEMO", releaseTag] : ["PROBE", "AGAVE", "DEMO", releaseTag],
+      title: releaseTag,
+      body: `pad agave-compat · releaseTag ${releaseTag} · tipSlot ${tipSlot} · programDiff ${programDiff} · subLag ${subLag} · checks ${checks}`,
+      address: `AgaveProg${i}${"1".repeat(40)}`.slice(0, 44),
+      block: tipSlot,
+      tx: `SigAgave${i}${"2".repeat(40)}`.slice(0, 64),
+      chain: "SOL",
+      at: now - i * 1800,
+      metric: String(tipSlot),
+      metricLabel: "tipSlot",
+      metric2: programDiff,
+      metric2Label: "programDiff",
+    };
+  });
+}

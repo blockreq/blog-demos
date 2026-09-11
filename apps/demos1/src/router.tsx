@@ -48,6 +48,8 @@ import { BaseStockTokenSwapDemo } from "./demos/base-stock-token-swap-listen";
 import { RhAnyQuoteLaunchDemo } from "./demos/rh-any-quote-launch-listen";
 import { PumpfunCustomPairsDemo } from "./demos/pumpfun-custom-pairs-listen";
 import { MonadO1LaunchpadDemo } from "./demos/monad-o1-launchpad-listen";
+import { SolanaChangelogSubscriptionFilterDemo } from "./demos/solana-changelog-subscription-filter";
+import { AnzaAgaveRpcCompatWatchDemo } from "./demos/anza-agave-rpc-compat-watch";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -263,6 +265,8 @@ function DemoPage() {
       {slug === "rh-any-quote-launch-listen" && <RhAnyQuoteLaunchDemo locale={locale} />}
       {slug === "pumpfun-custom-pairs-listen" && <PumpfunCustomPairsDemo locale={locale} />}
       {slug === "monad-o1-launchpad-listen" && <MonadO1LaunchpadDemo locale={locale} />}
+      {slug === "solana-changelog-subscription-filter" && <SolanaChangelogSubscriptionFilterDemo locale={locale} />}
+      {slug === "anza-agave-rpc-compat-watch" && <AnzaAgaveRpcCompatWatchDemo locale={locale} />}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
