@@ -36,6 +36,10 @@ https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/openlaunch-
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/equifold-multi-market-listen
 
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/brew-bnb-double-pair-listen
+
+https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/arbitrum-rwa-flow-listen
+
 Click Run after open (ctl=1).
 
 ## Public-only warning
