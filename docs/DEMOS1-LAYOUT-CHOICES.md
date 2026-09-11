@@ -1,3 +1,16 @@
+# demos1 layout choices (2026-09-12 brew BNB + arb RWA)
+
+Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
+
+| Slug | Layout | Why |
+| --- | --- | --- |
+| `brew-bnb-double-pair-listen` | **launch-feed** | Continuous twin-progress / twinReady PairCreated tape + sticky card (launchId/token/capUsd/poolA/poolB). single-focus would hide the twin grouping tape. |
+| `arbitrum-rwa-flow-listen` | **launch-feed** | Parallel mint / Transfer / PairCreated flow panel with kind chips — same family as Base stock-swap whitelist feeds. |
+
+Both demos reuse MonitorChrome (centered header, BlockReq RPC · 注册每月免费 3M 请求 CTA), editable RPC bar prefilled with **live** BlockReq BSC / Arbitrum One public HTTPS/WSS, and addr hover via shared chrome/feed components. Factory / RWA / stable lists use labeled editable samples — RPC defaults are live public only (zero Solana / fake endpoints).
+
+---
+
 # demos1 layout choices (2026-09-11 sol changelog + anza agave)
 
 Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
