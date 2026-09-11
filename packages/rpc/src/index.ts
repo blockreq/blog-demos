@@ -31,6 +31,29 @@ export const PUBLIC_ENDPOINTS = {
     wss: "",
     https: "",
   },
+  /**
+   * Solana — BlockReq Solana public is offline (EVM-only now).
+   * Empty SOLANA_HTTPS/WSS placeholders only. Never hardcode a live *.blockreq.com Solana public URL.
+   */
+  solana: {
+    label: "Solana",
+    chainId: 0,
+    chainIdHex: "0x0",
+    wss: "",
+    https: "",
+  },
+  /**
+   * Monad Mainnet day-0 prep — BlockReq Monad public HTTPS/WSS ship later (like Arc).
+   * Empty placeholders so demos1 UI can pre-wire Factory subs; fill when live.
+   * chainId 143 (0x8f) per official Monad mainnet table.
+   */
+  monad: {
+    label: "Monad",
+    chainId: 143,
+    chainIdHex: "0x8f",
+    wss: "",
+    https: "",
+  },
 } as const;
 
 export type PublicEndpointKey = keyof typeof PUBLIC_ENDPOINTS;

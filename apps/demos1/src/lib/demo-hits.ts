@@ -430,3 +430,75 @@ export function buildAnyQuoteFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+
+export function buildPumpCustomPairFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["Create", "CustomPair", "Create", "PumpSwap 毕业", "CustomPair"]
+      : ["Create", "CustomPair", "Create", "PumpSwap graduated", "CustomPair"];
+  const quotes = [
+    { tag: "WSOL", mint: "So11111111111111111111111111111111111111112" },
+    { tag: "USDC", mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+    { tag: "NVDA.x", mint: "XstkNVDAsampleMint111111111111111111111111" },
+    { tag: "TSLA.x", mint: "XstkTSLAsampleMint111111111111111111111111" },
+    { tag: "Sunrise", mint: "SunrisesampleMint1111111111111111111111111" },
+  ];
+  return Array.from({ length: n }, (_, i) => {
+    const q = quotes[i % quotes.length];
+    const base = fakeAddr(`pumpbase${i}${q.tag}`).replace("0x", "BaseMint");
+    const baseMint = (base + "111111111111111111111111111").slice(0, 44);
+    const sig = `SigPump${i}${q.tag}${"1".repeat(40)}`.slice(0, 64);
+    const grad = i === 3;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: grad
+        ? ["GRAD", "PUMPSWAP", "DEMO"]
+        : i % 2 === 1
+          ? ["CUSTOM", "PUMP", "DEMO", q.tag]
+          : ["CREATE", "PUMP", "DEMO", q.tag],
+      title: short(baseMint),
+      body: `pad pump-custom-pair · base ${short(baseMint)} · quote ${q.tag} ${short(q.mint)} · slot ${250_000_000 + i * 17}`,
+      address: baseMint,
+      block: 250_000_000 + i * 17,
+      tx: sig,
+      chain: "SOL",
+      at: now - i * 1500,
+      metric: q.tag,
+      metricLabel: "quoteTag",
+      metric2: short(q.mint),
+      metric2Label: "quoteMint",
+    };
+  });
+}
+
+export function buildMonadO1Fixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["Factory PairCreated", "早期 Swap 密度", "Factory PairCreated", "早期 Swap 密度", "Factory PairCreated"]
+      : ["Factory PairCreated", "Early Swap density", "Factory PairCreated", "Early Swap density", "Factory PairCreated"];
+  const names = ["O1PAD", "DAY0X", "MONADOPEN", "PAIRO1", "DENSO1"];
+  return Array.from({ length: n }, (_, i) => {
+    const pair = fakeAddr(`monado1${i}${names[i % names.length]}`);
+    const dens = i % 2 === 1;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: dens ? ["DENS", "MONAD", "O1", "DEMO"] : ["NEW", "MONAD", "O1", "DAY0", "DEMO"],
+      title: names[i % names.length],
+      body: `pad monad-o1 · ${short(pair)} · #${143_000 + i * 9}`,
+      address: pair,
+      block: 143_000 + i * 9,
+      tx: fakeAddr(`txmonado1${i}`),
+      chain: "MONAD",
+      at: now - i * 1600,
+      metric: dens ? String(3 + i) : short(pair),
+      metricLabel: dens ? (locale === "zh" ? "早期换手" : "Early swaps") : "pair",
+      metric2: dens ? "DENS" : "OPEN",
+      metric2Label: locale === "zh" ? "信号" : "Signal",
+    };
+  });
+}
