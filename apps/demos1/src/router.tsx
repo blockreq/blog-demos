@@ -46,6 +46,8 @@ import { LongEcoLaunchDemo } from "./demos/long-eco-launch-listen";
 import { ArcMainnetDay1Demo } from "./demos/arc-mainnet-day1-listen";
 import { BaseStockTokenSwapDemo } from "./demos/base-stock-token-swap-listen";
 import { RhAnyQuoteLaunchDemo } from "./demos/rh-any-quote-launch-listen";
+import { PumpfunCustomPairsDemo } from "./demos/pumpfun-custom-pairs-listen";
+import { MonadO1LaunchpadDemo } from "./demos/monad-o1-launchpad-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -259,6 +261,8 @@ function DemoPage() {
       {slug === "arc-mainnet-day1-listen" && <ArcMainnetDay1Demo locale={locale} />}
       {slug === "base-stock-token-swap-listen" && <BaseStockTokenSwapDemo locale={locale} />}
       {slug === "rh-any-quote-launch-listen" && <RhAnyQuoteLaunchDemo locale={locale} />}
+      {slug === "pumpfun-custom-pairs-listen" && <PumpfunCustomPairsDemo locale={locale} />}
+      {slug === "monad-o1-launchpad-listen" && <MonadO1LaunchpadDemo locale={locale} />}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
