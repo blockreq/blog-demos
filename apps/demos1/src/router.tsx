@@ -55,6 +55,7 @@ import { ArbitrumRwaFlowDemo } from "./demos/arbitrum-rwa-flow-listen";
 import { CronosAppLaunchpadDemo } from "./demos/cronos-app-launchpad-listen";
 import { EthUniswapV4StablePairHookDemo } from "./demos/ethereum-uniswap-v4-stablepair-hook-listen";
 import { BaseLaptopSniperLiquidityDemo } from "./demos/base-laptop-sniper-liquidity-listen";
+import { MultiplrEthLeverageLaunchpadDemo } from "./demos/multiplr-eth-leverage-launchpad-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -280,6 +281,9 @@ function DemoPage() {
       )}
       {slug === "base-laptop-sniper-liquidity-listen" && (
         <BaseLaptopSniperLiquidityDemo locale={locale} />
+      )}
+      {slug === "multiplr-eth-leverage-launchpad-listen" && (
+        <MultiplrEthLeverageLaunchpadDemo locale={locale} />
       )}
       <DemoCta
         title={t(locale, meta.titleKey)}

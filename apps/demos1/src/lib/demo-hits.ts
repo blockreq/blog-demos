@@ -751,3 +751,39 @@ export function buildBaseLaptopFixtures(locale: Locale, n = 5): FeedEvent[] {
   });
 }
 
+export function buildMultiplrLeverageFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["杠杆开池", "曲线早打印", "V3 毕业", "ETH2x 转账爆发", "杠杆开池"]
+      : ["Leverage open", "Curve print", "V3 graduate", "ETH2x transfer burst", "Leverage open"];
+  const tagsList = [
+    ["NEW", "LAUNCH"],
+    ["TRADE", "CURVE"],
+    ["V3", "GRAD"],
+    ["XFER", "BURST"],
+    ["NEW", "LAUNCH"],
+  ];
+  const names = ["ETH2X", "MPLR", "LEVX", "FLIQ", "OPEN"];
+  return Array.from({ length: n }, (_, i) => {
+    const token = fakeAddr(`mplr${i}${names[i % names.length]}`);
+    const quote = "0xaa6e8127831c9de45ae56bb1b0d4d4da6e5665bd";
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: ["ETH", "MULTIPLR", "LEVERAGE", "DEMO", "pad:multiplr-leverage", ...tagsList[i % tagsList.length]],
+      title: names[i % names.length],
+      body: `pad:multiplr-leverage · token ${short(token)} · quote ${short(quote)} · creator ${short(fakeAddr("creator" + i))} · launchTx ${short(fakeAddr("txmplr" + i))} · #${23_600_000 + i * 11}`,
+      address: token,
+      block: 23_600_000 + i * 11,
+      tx: fakeAddr(`txmplr${i}`),
+      chain: "ETH",
+      at: now - i * 1500,
+      metric: short(quote),
+      metricLabel: "quote",
+      metric2: `#${23_600_000 + i * 11}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
+

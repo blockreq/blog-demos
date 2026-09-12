@@ -15,6 +15,7 @@
     "dev:ethereum-uniswap-v4-stablepair-hook-listen": "pnpm --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen dev",
     "dev:base-laptop-sniper-liquidity-listen": "pnpm --filter @blockreq/ex-base-laptop-sniper-liquidity-listen dev",
     "typecheck:examples-three-20260912": "pnpm --filter @blockreq/ex-cronos-app-launchpad-listen --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen --filter @blockreq/ex-base-laptop-sniper-liquidity-listen typecheck",
-    "build:examples-three-20260912": "pnpm --filter @blockreq/ex-cronos-app-launchpad-listen --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen --filter @blockreq/ex-base-laptop-sniper-liquidity-listen build"
+    "build:examples-three-20260912": "pnpm --filter @blockreq/ex-cronos-app-launchpad-listen --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen --filter @blockreq/ex-base-laptop-sniper-liquidity-listen build",
+    "dev:multiplr-eth-leverage-launchpad-listen": "pnpm --filter @blockreq/ex-multiplr-eth-leverage-launchpad-listen dev"
   }
 }
