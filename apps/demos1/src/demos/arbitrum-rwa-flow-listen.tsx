@@ -118,7 +118,13 @@ function mapTransferHist(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
  * Arb RWA mint / Transfer / PairCreated flow panel.
  * Layout: launch-feed — continuous flow tape + sticky kind card.
  */
-export function ArbitrumRwaFlowDemo({ locale }: { locale: Locale }) {
+export function ArbitrumRwaFlowDemo({
+  locale,
+  onLocaleChange,
+}: {
+  locale: Locale;
+  onLocaleChange?: (locale: Locale) => void;
+}) {
   const [rwaText, setRwaText] = useState(DEFAULT_RWA);
   const [stableText, setStableText] = useState(DEFAULT_STABLE);
   const [factoryText, setFactoryText] = useState(DEFAULT_FACTORY);
@@ -562,6 +568,8 @@ export function ArbitrumRwaFlowDemo({ locale }: { locale: Locale }) {
         slug={SLUG}
         blogUrl={demoBlogUrl(SLUG, locale)}
         siteUrl={demoSiteUrl(getDemo(SLUG))}
+        localeMode={onLocaleChange ? "catalog" : "links"}
+        onLocaleChange={onLocaleChange}
       />
       <AnonStreamLayout
         locale={locale}

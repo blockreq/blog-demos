@@ -76,7 +76,13 @@ function SettingsPanel({ open, children }: { open: boolean; children: ReactNode 
  * Brew BNB same-cap twin-pool PairCreated listen.
  * Layout: launch-feed — continuous twin progress + sticky twinReady card.
  */
-export function BrewBnbDoublePairDemo({ locale }: { locale: Locale }) {
+export function BrewBnbDoublePairDemo({
+  locale,
+  onLocaleChange,
+}: {
+  locale: Locale;
+  onLocaleChange?: (locale: Locale) => void;
+}) {
   const [factory, setFactory] = useState(DEFAULT_FACTORY);
   const [topicPair, setTopicPair] = useState(TOPIC_PAIR);
   const [capUsd, setCapUsd] = useState(DEFAULT_CAP);
@@ -487,6 +493,8 @@ export function BrewBnbDoublePairDemo({ locale }: { locale: Locale }) {
         slug={SLUG}
         blogUrl={demoBlogUrl(SLUG, locale)}
         siteUrl={demoSiteUrl(getDemo(SLUG))}
+        localeMode={onLocaleChange ? "catalog" : "links"}
+        onLocaleChange={onLocaleChange}
       />
       <AnonStreamLayout
         locale={locale}
