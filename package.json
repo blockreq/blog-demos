@@ -10,6 +10,11 @@
     "dev:brew-bnb-double-pair-listen": "pnpm --filter @blockreq/ex-brew-bnb-double-pair-listen dev",
     "dev:arbitrum-rwa-flow-listen": "pnpm --filter @blockreq/ex-arbitrum-rwa-flow-listen dev",
     "build:examples-brew-arb": "pnpm --filter @blockreq/ex-brew-bnb-double-pair-listen --filter @blockreq/ex-arbitrum-rwa-flow-listen build",
-    "typecheck:examples-brew-arb": "pnpm --filter @blockreq/ex-brew-bnb-double-pair-listen --filter @blockreq/ex-arbitrum-rwa-flow-listen typecheck"
+    "typecheck:examples-brew-arb": "pnpm --filter @blockreq/ex-brew-bnb-double-pair-listen --filter @blockreq/ex-arbitrum-rwa-flow-listen typecheck",
+    "dev:cronos-app-launchpad-listen": "pnpm --filter @blockreq/ex-cronos-app-launchpad-listen dev",
+    "dev:ethereum-uniswap-v4-stablepair-hook-listen": "pnpm --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen dev",
+    "dev:base-laptop-sniper-liquidity-listen": "pnpm --filter @blockreq/ex-base-laptop-sniper-liquidity-listen dev",
+    "typecheck:examples-three-20260912": "pnpm --filter @blockreq/ex-cronos-app-launchpad-listen --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen --filter @blockreq/ex-base-laptop-sniper-liquidity-listen typecheck",
+    "build:examples-three-20260912": "pnpm --filter @blockreq/ex-cronos-app-launchpad-listen --filter @blockreq/ex-ethereum-uniswap-v4-stablepair-hook-listen --filter @blockreq/ex-base-laptop-sniper-liquidity-listen build"
   }
 }
