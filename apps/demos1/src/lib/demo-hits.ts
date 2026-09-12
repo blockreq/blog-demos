@@ -659,3 +659,95 @@ export function buildArbRwaFlowFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+export function buildCronosLaunchpadFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["池子开了", "首流动性", "池子开了", "早期转账", "首流动性"]
+      : ["Pool open", "First liquidity", "Pool open", "Early transfer", "First liquidity"];
+  const names = ["CROAPP", "PADX", "LAUNCHY", "MINT1", "XFERY"];
+  return Array.from({ length: n }, (_, i) => {
+    const pair = fakeAddr(`cro${i}${names[i % names.length]}`);
+    const first = i % 2 === 1;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: first
+        ? ["FIRST", "MINT", "CRO", "LAUNCHPAD", "DEMO", "pad:app-launchpad"]
+        : ["NEW", "CRO", "LAUNCHPAD", "DEMO", "pad:app-launchpad"],
+      title: names[i % names.length],
+      body: `pad:app-launchpad · pair ${short(pair)} · amount0 ${(i + 1) * 1000} · amount1 ${(i + 1) * 50} · #${22_000_000 + i * 11}`,
+      address: pair,
+      block: 22_000_000 + i * 11,
+      tx: fakeAddr(`txcro${i}`),
+      chain: "CRO",
+      at: now - i * 1600,
+      metric: String((i + 1) * 1000),
+      metricLabel: "amount0",
+      metric2: String((i + 1) * 50),
+      metric2Label: "amount1",
+    };
+  });
+}
+
+export function buildEthV4StablePairFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["Swap", "peg 偏离", "费率", "LP 变动", "Swap"]
+      : ["swap", "peg drift", "fee", "lp", "swap"];
+  const kindTags = ["swap", "peg", "fee", "lp", "swap"];
+  const pools = ["USDC/USDT", "USDC/USDG", "USDC/USDT", "USDC/USDG", "USDC/USDT"];
+  return Array.from({ length: n }, (_, i) => {
+    const poolId = fakeAddr(`ethv4sp${i}${pools[i % pools.length]}`);
+    const peg = 12 + i * 17;
+    const fee = 100 + i * 25;
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: ["V4", "STABLEPAIR", "ETH", `kind:${kindTags[i % kindTags.length]}`, "DEMO", "pad:stablepair-hook"],
+      title: pools[i % pools.length],
+      body: `pad:stablepair-hook · kind=${kindTags[i % kindTags.length]} · poolId ${short(poolId)} · pegBps ${peg} · fee ${fee} · #${23_500_000 + i * 9}`,
+      address: poolId,
+      block: 23_500_000 + i * 9,
+      tx: fakeAddr(`txethsp${i}`),
+      chain: "ETH",
+      at: now - i * 1700,
+      metric: String(peg),
+      metricLabel: "pegBps",
+      metric2: kindTags[i % kindTags.length] === "lp" ? String(1_000_000 * (i + 1)) : String(fee),
+      metric2Label: kindTags[i % kindTags.length] === "lp" ? "liquidityDelta" : "fee",
+    };
+  });
+}
+
+export function buildBaseLaptopFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["首池 Mint", "换手簇", "持仓集中", "薄 LP 退出", "首池 Mint"]
+      : ["firstMint", "swapBurst", "holderConc", "thinExit", "firstMint"];
+  const kindTags = ["firstMint", "swapBurst", "holderConc", "thinExit", "firstMint"];
+  const names = ["LAPTOP", "LPT1", "SNIPX", "THINLP", "BURST"];
+  return Array.from({ length: n }, (_, i) => {
+    const pair = fakeAddr(`laptop${i}${names[i % names.length]}`);
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: ["BASE", "LAPTOP", `kind:${kindTags[i % kindTags.length]}`, "DEMO", "pad:laptop-liq"],
+      title: names[i % names.length],
+      body: `pad:laptop-liq · kind=${kindTags[i % kindTags.length]} · pair ${short(pair)} · #${29_100_000 + i * 7}`,
+      address: pair,
+      block: 29_100_000 + i * 7,
+      tx: fakeAddr(`txlaptop${i}`),
+      chain: "BASE",
+      at: now - i * 1400,
+      metric: kindTags[i % kindTags.length] === "holderConc" ? "42%" : String(4 + i * 2),
+      metricLabel: kindTags[i % kindTags.length] === "holderConc" ? (locale === "zh" ? "顶仓占比" : "top share") : (locale === "zh" ? "信号" : "signal"),
+      metric2: kindTags[i % kindTags.length],
+      metric2Label: "kind",
+    };
+  });
+}
+

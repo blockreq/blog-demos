@@ -52,6 +52,9 @@ import { SolanaChangelogSubscriptionFilterDemo } from "./demos/solana-changelog-
 import { AnzaAgaveRpcCompatWatchDemo } from "./demos/anza-agave-rpc-compat-watch";
 import { BrewBnbDoublePairDemo } from "./demos/brew-bnb-double-pair-listen";
 import { ArbitrumRwaFlowDemo } from "./demos/arbitrum-rwa-flow-listen";
+import { CronosAppLaunchpadDemo } from "./demos/cronos-app-launchpad-listen";
+import { EthUniswapV4StablePairHookDemo } from "./demos/ethereum-uniswap-v4-stablepair-hook-listen";
+import { BaseLaptopSniperLiquidityDemo } from "./demos/base-laptop-sniper-liquidity-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -271,6 +274,13 @@ function DemoPage() {
       {slug === "anza-agave-rpc-compat-watch" && <AnzaAgaveRpcCompatWatchDemo locale={locale} />}
       {slug === "brew-bnb-double-pair-listen" && <BrewBnbDoublePairDemo locale={locale} />}
       {slug === "arbitrum-rwa-flow-listen" && <ArbitrumRwaFlowDemo locale={locale} />}
+      {slug === "cronos-app-launchpad-listen" && <CronosAppLaunchpadDemo locale={locale} />}
+      {slug === "ethereum-uniswap-v4-stablepair-hook-listen" && (
+        <EthUniswapV4StablePairHookDemo locale={locale} />
+      )}
+      {slug === "base-laptop-sniper-liquidity-listen" && (
+        <BaseLaptopSniperLiquidityDemo locale={locale} />
+      )}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}

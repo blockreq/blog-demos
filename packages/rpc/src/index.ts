@@ -70,6 +70,20 @@ export const PUBLIC_ENDPOINTS = {
     wss: "",
     https: "",
   },
+  ethereum: {
+    label: "Ethereum",
+    chainId: 1,
+    chainIdHex: "0x1",
+    wss: "wss://ethereum-rpc.blockreq.com/v1/rpc/public",
+    https: "https://ethereum-rpc.blockreq.com/v1/rpc/public",
+  },
+  cronos: {
+    label: "Cronos",
+    chainId: 25,
+    chainIdHex: "0x19",
+    wss: "wss://cronos-rpc.blockreq.com/v1/rpc/public",
+    https: "https://cronos-rpc.blockreq.com/v1/rpc/public",
+  },
 } as const;
 
 export type PublicEndpointKey = keyof typeof PUBLIC_ENDPOINTS;
