@@ -36,11 +36,27 @@ https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/openlaunch-
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/equifold-multi-market-listen
 
-https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/brew-bnb-double-pair-listen
+https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/brew-bnb-double-pair-listen/src/main.tsx&startScript=dev:brew-bnb-double-pair-listen&ctl=1
 
-https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/arbitrum-rwa-flow-listen
+https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/arbitrum-rwa-flow-listen/src/main.tsx&startScript=dev:arbitrum-rwa-flow-listen&ctl=1
 
 Click Run after open (ctl=1).
+
+### React + viem shells (Brew / Arb)
+
+These two open the **repo root** (pnpm workspace) with `file=` pointing at the Vite entry — not a vanilla `examples/<slug>/` single-file HTML twin.
+
+| Demo | StackBlitz (root + file) |
+| --- | --- |
+| Brew BNB double-pair | `tree/main` + `examples/brew-bnb-double-pair-listen/src/main.tsx` · `startScript=dev:brew-bnb-double-pair-listen` |
+| Arb RWA flow | `tree/main` + `examples/arbitrum-rwa-flow-listen/src/main.tsx` · `startScript=dev:arbitrum-rwa-flow-listen` |
+
+```bash
+pnpm install
+pnpm dev:brew-bnb-double-pair-listen
+pnpm dev:arbitrum-rwa-flow-listen
+pnpm build:examples-brew-arb
+```
 
 ## Public-only warning
 
@@ -64,8 +80,8 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 - examples/anoncoin-rh-launch-listen
 - examples/openlaunch-base-eth-subscribe
 - examples/equifold-multi-market-listen
-
-
+- examples/brew-bnb-double-pair-listen (Vite+React+viem+@blockreq/ui)
+- examples/arbitrum-rwa-flow-listen (Vite+React+viem+@blockreq/ui)
 
 ## Hosted demos1 (Cloudflare Worker + static assets)
 
@@ -101,7 +117,7 @@ Workflow `.github/workflows/demos1.yml`:
 
 See `docs/BOSS-DEMOS1-WORKER.md`.
 
-StackBlitz twins stay under `examples/` (unchanged).
+StackBlitz twins stay under `examples/`. Brew/Arb are React+viem workspace shells (open repo root); other slugs may still be single-file HTML until converted.
 
 ## License
 

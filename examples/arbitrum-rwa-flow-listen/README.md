@@ -1,13 +1,10 @@
-# Arbitrum · RWA flow listen
+# Arbitrum RWA flow listen
 
-Browser demo: parallel `eth_subscribe` → Transfer (mint if `from` = zero) on RWA ∪ stable lists + PairCreated on factory list → kind-tagged flow cards.
+Vite + React + TypeScript + Tailwind shell that mounts the demos1 listen UI
+(`ArbitrumRwaFlowDemo`) — React + viem + `@blockreq/ui` (shadcn-style).  
+Shared logic: `apps/demos1/src/demos/arbitrum-rwa-flow-listen.tsx` (no vanilla HTML/JS twin).
 
-On each hit:
-- **mint** — Transfer where `topics[1]` (from) is the zero address
-- **transfer** — Transfer above MIN_RAW / MIN_TRANSFER_USD soft gate
-- **pair** — PairCreated where either side hits RWA or stable tables
-
-RWA / STABLE / FACTORY lists + MIN filters live in UI textareas (demo stand-ins for env lists). Sample Arb addresses — verify / replace before production use.
+Browser demo: `eth_subscribe` → RWA Transfer / mint + optional PairCreated on Arb → large stable/RWA flow cards.
 
 ## Endpoints (public only)
 
@@ -17,12 +14,27 @@ RWA / STABLE / FACTORY lists + MIN filters live in UI textareas (demo stand-ins 
 
 No API keys in this repo.
 
-## StackBlitz
+## StackBlitz (repo root + file)
 
-https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/arbitrum-rwa-flow-listen
+Open the **monorepo root** (workspace packages) with the example entry file:
 
-Open `index.html` in the preview (single-file demo).
+https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/arbitrum-rwa-flow-listen/src/main.tsx&startScript=dev:arbitrum-rwa-flow-listen&ctl=1
+
+`:::stackblitz` for 运营 (repo root + file path):
+
+```
+https://stackblitz.com/github/blockreq/blog-demos/tree/main
+file: examples/arbitrum-rwa-flow-listen/src/main.tsx
+startScript: dev:arbitrum-rwa-flow-listen
+```
 
 ## Local
 
-Open `index.html` in a browser, or serve the folder with any static server.
+From repo root:
+
+```bash
+pnpm install
+pnpm --filter @blockreq/ex-arbitrum-rwa-flow-listen dev
+pnpm --filter @blockreq/ex-arbitrum-rwa-flow-listen build
+pnpm --filter @blockreq/ex-arbitrum-rwa-flow-listen typecheck
+```
