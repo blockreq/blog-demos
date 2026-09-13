@@ -585,6 +585,24 @@ const en: Dict = {
   "companypad.settingsHint": "Verified PAD factory + Launched topic0 prefilled. Optional Settled follow (editable SETTLED_TOPIC0). Hint chips for ORACLE / CURVE_DEPLOYER / TOKEN / PoolManager. Live BlockReq RH public only.",
 
 
+
+  "bucket.title": "Bucket RHC launchpad listen: catch Launched + routing flags",
+  "bucket.blurb": "Bucket RHC launchpad · factory Launched radar on public WSS.",
+  "bucket.tag": "RH // BUCKET-LAUNCHPAD",
+  "bucket.toast": "Hit — Bucket factory Launched",
+  "bucket.guide": "Launch factory Launched → decode token / creator / curve / founding / id. Sticky radar card owns the stage. Click a card to highlight Graduated for that token. RPC endpoints stay collapsed secondary.",
+  "bucket.watching": "Bucket factory Launched (+ optional Graduated follow) via BlockReq RH public WSS — launchpad + payout-engine routing.",
+  "bucket.hint": "Radar · Launched token / creator / founding",
+  "bucket.emptyTitle": "Waiting for Launched…",
+  "bucket.emptySub": "Live listen on launch factory — new tokens flash here. Click a card to follow Graduated.",
+  "bucket.latest": "Latest Launched",
+  "bucket.hero.idle": "Resume live — factory Launched radar on Bucket launchpad.",
+  "bucket.hero.connecting": "Connecting Robinhood public WSS…",
+  "bucket.hero.listening": "Live — waiting for Launched on LAUNCH_FACTORY.",
+  "bucket.hero.hit": "Sticky Launched card owns the stage; feed flashes left.",
+  "bucket.settingsHint": "Verified launch factory + Launched topic0 prefilled. Optional Graduated follow on the same factory (editable GRADUATED_TOPIC0). Hint chips for registry / seeder / distributor / protocol / USDG / BUCKET. Live BlockReq RH public only.",
+
+
   "layout.launch-feed": "Launch feed",
   "layout.single-focus": "Single focus",
   "layout.multi-market": "Multi-market",
@@ -1169,6 +1187,24 @@ const zh: Dict = {
   "companypad.settingsHint": "已验证 PAD 工厂 + Launched topic0 预填。可选 Settled 跟单（可编辑 SETTLED_TOPIC0）。ORACLE / CURVE_DEPLOYER / TOKEN / PoolManager 提示芯片。仅 Live BlockReq RH 公共端点。",
 
 
+
+  "bucket.title": "Bucket RHC 发射盘监听：Launched 盯新币+变异路由",
+  "bucket.blurb": "Bucket RHC 发射盘 · factory Launched 盯新币；公共 WSS 开跑。",
+  "bucket.tag": "RH // BUCKET-LAUNCHPAD",
+  "bucket.toast": "打中了——Bucket factory Launched",
+  "bucket.guide": "发射工厂 Launched → 解码 token / creator / curve / founding / id。粘性雷达卡占舞台。点卡片高亮该币 Graduated。RPC 端点折叠为次要。",
+  "bucket.watching": "Bucket factory Launched（+ 可选 Graduated 跟单），经 BlockReq RH 公共 WSS — 发射盘 + 分账路由。",
+  "bucket.hint": "雷达 · Launched token / creator / founding",
+  "bucket.emptyTitle": "在等 Launched…",
+  "bucket.emptySub": "发射工厂实时听 — 新币闪入这里。点卡片跟 Graduated。",
+  "bucket.latest": "最近 Launched",
+  "bucket.hero.idle": "恢复实时 — factory Launched 发射盘雷达。",
+  "bucket.hero.connecting": "正在连 Robinhood 公共 WSS…",
+  "bucket.hero.listening": "实时中 — 等 LAUNCH_FACTORY 上的 Launched。",
+  "bucket.hero.hit": "粘性 Launched 卡占舞台；左侧流闪入。",
+  "bucket.settingsHint": "已验证发射工厂 + Launched topic0 预填。可选同一工厂 Graduated 跟单（可编辑 GRADUATED_TOPIC0）。registry / seeder / distributor / protocol / USDG / BUCKET 提示芯片。仅 Live BlockReq RH 公共端点。",
+
+
   "layout.launch-feed": "开盘流",
   "layout.single-focus": "单焦舞台",
   "layout.multi-market": "分市场",
@@ -1677,6 +1713,27 @@ export const DEMO_CATALOG = [
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/companypad-rhc-company-market-listen/src/main.tsx&startScript=dev:companypad-rhc-company-market-listen&ctl=1",
     pathEn: "/demos1/companypad-rhc-company-market-listen/en/",
     pathZh: "/demos1/companypad-rhc-company-market-listen/zh/",
+  },
+
+  {
+    slug: "bucket-rhc-launchpad-listen",
+    blogSlug: "bucket-rhc-launchpad-listen",
+    siteUrl: "https://blockreq.com/",
+    titleKey: "bucket.title",
+    blurbKey: "bucket.blurb",
+    accent: "eth" as const,
+    layout: "launch-feed" as const satisfies DemoLayout,
+    published: true,
+    demoHits: false as const,
+    chainLabel: "RH",
+    endpointKey: "robinhood" as const,
+    blogEn: "https://blockreq.com/blog/en/bucket-rhc-launchpad-listen",
+    blogZh: "https://blockreq.com/blog/zh/bucket-rhc-launchpad-listen",
+    stackblitz:
+      "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/bucket-rhc-launchpad-listen/src/main.tsx&startScript=dev:bucket-rhc-launchpad-listen&ctl=1",
+    pathEn: "/demos1/bucket-rhc-launchpad-listen/en/",
+    pathZh: "/demos1/bucket-rhc-launchpad-listen/zh/",
+    tags: ["robinhood-chain", "bucket", "launchpad", "launched", "eth-subscribe", "blockreq"] as const,
   },
 
 
