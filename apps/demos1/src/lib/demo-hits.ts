@@ -787,3 +787,76 @@ export function buildMultiplrLeverageFixtures(locale: Locale, n = 5): FeedEvent[
   });
 }
 
+export function buildHarmonicRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const kinds =
+    locale === "zh"
+      ? ["Pons 发射", "HARMONIC 命中发射", "Hookr 发射", "V4 Initialize", "Pons 发射"]
+      : ["Pons launch", "HARMONIC launch hit", "Hookr launch", "V4 Initialize", "Pons launch"];
+  const tagsList = [
+    ["PONS", "LAUNCH", "pad:pons-v2"],
+    ["HARMONIC", "HIT", "LAUNCH", "pad:pons-v2"],
+    ["HOOKR", "LAUNCH", "pad:hookr"],
+    ["V4", "INIT", "pad:v4-init"],
+    ["PONS", "LAUNCH", "pad:pons-v2"],
+  ];
+  const names = ["HRMNC", "AGENTX", "HOOKY", "V4OPEN", "PONCAT"];
+  return Array.from({ length: n }, (_, i) => {
+    const token = fakeAddr(`harm${i}${names[i % names.length]}`);
+    const curve = fakeAddr(`curve${i}`);
+    return {
+      id: rid(),
+      kind: kinds[i % kinds.length],
+      tags: ["RH", "HARMONIC", "AGENT", "DEMO", ...tagsList[i % tagsList.length]],
+      title: names[i % names.length],
+      body: `pad:${tagsList[i % tagsList.length].find((t) => t.startsWith("pad:"))?.slice(4) || "pons-v2"} · token ${short(token)} · curve ${short(curve)} · deployer ${short(fakeAddr("dep" + i))} · launchTx ${short(fakeAddr("txharm" + i))} · #${12_800_000 + i * 17}`,
+      address: token,
+      block: 12_800_000 + i * 17,
+      tx: fakeAddr(`txharm${i}`),
+      chain: "RH",
+      at: now - i * 1600,
+      metric: short(curve),
+      metricLabel: "curve",
+      metric2: `#${12_800_000 + i * 17}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
+
+export function buildLongshotFootballFixtures(locale: Locale, n = 6): FeedEvent[] {
+  const now = Date.now();
+  const kindsZh = ["开市", "成交", "结算", "开市", "成交", "结算"];
+  const kindsEn = ["create", "trade", "resolve", "create", "trade", "resolve"];
+  const kindKeys = ["create", "trade", "resolve", "create", "trade", "resolve"] as const;
+  const leagues = ["EPL", "LaLiga", "UCL", "SerieA", "Bundesliga", "EPL"];
+  const names = ["ARS-MCI", "RMA-BAR", "INT-MIL", "BAY-DOR", "PSG-OL", "LIV-CHE"];
+  return Array.from({ length: n }, (_, i) => {
+    const marketId = fakeAddr(`lsfb${i}${names[i % names.length]}`);
+    const kind = kindKeys[i % kindKeys.length];
+    return {
+      id: rid(),
+      kind: locale === "zh" ? kindsZh[i % kindsZh.length] : kindsEn[i % kindsEn.length],
+      tags: [
+        "BASE",
+        "LONGSHOT",
+        "FOOTBALL",
+        "DEMO",
+        `kind:${kind}`,
+        "pad:longshot-football",
+        leagues[i % leagues.length],
+      ],
+      title: names[i % names.length],
+      body: `pad:longshot-football · kind=${kind} · marketId ${short(marketId)} · tx ${short(fakeAddr("txls" + i))} · #${29_200_000 + i * 9}`,
+      address: marketId,
+      block: 29_200_000 + i * 9,
+      tx: fakeAddr(`txls${i}`),
+      chain: "BASE",
+      at: now - i * 1300,
+      metric: kind,
+      metricLabel: "kind",
+      metric2: `#${29_200_000 + i * 9}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
+
