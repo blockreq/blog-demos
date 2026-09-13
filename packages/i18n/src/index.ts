@@ -1610,7 +1610,7 @@ export const DEMO_CATALOG = [
     blurbKey: "longshot.blurb",
     accent: "bnb" as const,
     layout: "launch-feed" as const satisfies DemoLayout,
-    published: true,
+    published: false,
     demoHits: false as const,
     chainLabel: "Base",
     endpointKey: "base" as const,
