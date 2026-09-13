@@ -934,3 +934,35 @@ export function buildBucketRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
   });
 }
 
+
+export function buildCrossrateRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const dubai = "0xd63a5E75412CC82d5aA68CD390578e993a2d4c4f";
+  const aed = "0x8998b43B5450D41B88E67a0914064b8F8445126D";
+  const usdg = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
+  const tokens = [dubai, fakeAddr("crtok1"), fakeAddr("crtok2"), fakeAddr("crtok3"), fakeAddr("crtok4")];
+  const quotes = [aed, aed, usdg, aed, usdg];
+  const codes = ["AED", "AED", "USDG", "AED", "USDG"];
+  return Array.from({ length: n }, (_, i) => {
+    const token = tokens[i % tokens.length];
+    const quote = quotes[i % quotes.length];
+    const currency = codes[i % codes.length];
+    const taxBps = String(100 + i * 25);
+    return {
+      id: rid(),
+      kind: locale === "zh" ? "示意 TokenLaunched" : "Demo TokenLaunched",
+      tags: ["RH", "CROSSRATE", "TOKENLAUNCHED", "DEMO", "pad:crossrate", currency, "FX", "RADAR"],
+      title: currency,
+      body: `pad:crossrate · currency ${currency} · token ${short(token)} · creator ${short(fakeAddr("crcr" + i))} · quoteToken ${short(quote)} · poolId ${short(fakeAddr("crpool" + i))} · taxBps ${taxBps} · supply ${String(1_000_000_000n + BigInt(i))} · liquidity ${String(50_000n + BigInt(i * 100))} · #${4_680_000 + i * 17}`,
+      address: token.toLowerCase(),
+      block: 4_680_000 + i * 17,
+      tx: fakeAddr(`txcr${i}`),
+      chain: "RH",
+      at: now - i * 1200,
+      metric: currency,
+      metricLabel: locale === "zh" ? "货币" : "FX",
+      metric2: `${taxBps} bps`,
+      metric2Label: "tax",
+    };
+  });
+}

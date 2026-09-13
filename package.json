@@ -22,6 +22,7 @@
     "dev:companypad-rhc-company-market-listen": "pnpm --filter @blockreq/ex-companypad-rhc-company-market-listen dev",
     "typecheck:examples-harmonic-longshot": "pnpm --filter @blockreq/ex-harmonic-rhc-agent-launch-listen --filter @blockreq/ex-longshot-base-football-market-listen typecheck",
     "build:examples-harmonic-longshot": "pnpm --filter @blockreq/ex-harmonic-rhc-agent-launch-listen --filter @blockreq/ex-longshot-base-football-market-listen build",
-    "dev:bucket-rhc-launchpad-listen": "pnpm --filter @blockreq/ex-bucket-rhc-launchpad-listen dev"
+    "dev:bucket-rhc-launchpad-listen": "pnpm --filter @blockreq/ex-bucket-rhc-launchpad-listen dev",
+    "dev:crossrate-rhc-currency-launch-listen": "pnpm --filter @blockreq/ex-crossrate-rhc-currency-launch-listen dev"
   }
 }
