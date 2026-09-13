@@ -892,3 +892,45 @@ export function buildCompanypadRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+export function buildBucketRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const tokens = [
+    "0x2d2e5cb9319c3b893db80eb6f9e2cea386720cf9",
+    "0xbd305151d3d7eb612d3969e9fa05315cd47374e4",
+    fakeAddr("bktok2"),
+    fakeAddr("bktok3"),
+    fakeAddr("bktok4"),
+  ];
+  const labels = ["BHC", "INFINITY", "NEW", "NEW", "NEW"];
+  return Array.from({ length: n }, (_, i) => {
+    const token = tokens[i % tokens.length];
+    const label = labels[i % labels.length];
+    const founding = i === 0;
+    return {
+      id: rid(),
+      kind: locale === "zh" ? "示意 Launched" : "Demo Launched",
+      tags: [
+        "RH",
+        "BUCKET",
+        "LAUNCHED",
+        "DEMO",
+        "pad:bucket",
+        founding ? "FOUNDING" : "STD",
+        "RADAR",
+      ],
+      title: label === "NEW" ? short(token) : label,
+      body: `pad:bucket · token ${short(token)} · creator ${short(fakeAddr("bkcr" + i))} · curve ${short(fakeAddr("bkcurve" + i))} · tierId ${i} · id ${100 + i} · founding ${founding ? "yes" : "no"} · #${4_670_000 + i * 13}`,
+      address: token.toLowerCase(),
+      block: 4_670_000 + i * 13,
+      tx: fakeAddr(`txbk${i}`),
+      chain: "RH",
+      at: now - i * 1200,
+      metric: founding ? "FOUNDING" : String(100 + i),
+      metricLabel: founding ? "founding" : "id",
+      metric2: `#${4_670_000 + i * 13}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
+
