@@ -602,6 +602,23 @@ const en: Dict = {
   "bucket.hero.hit": "Sticky Launched card owns the stage; feed flashes left.",
   "bucket.settingsHint": "Verified launch factory + Launched topic0 prefilled. Optional Graduated follow on the same factory (editable GRADUATED_TOPIC0). Hint chips for registry / seeder / distributor / protocol / USDG / BUCKET. Live BlockReq RH public only.",
 
+  "crossrate.title": "Crossrate RHC FX launchpad listen: TokenLaunched + currency quote",
+  "crossrate.blurb": "Crossrate RHC FX pad · Launcher TokenLaunched radar on public WSS.",
+  "crossrate.tag": "RH // CROSSRATE-FX",
+  "crossrate.toast": "Hit — Crossrate TokenLaunched",
+  "crossrate.guide": "Launcher TokenLaunched → decode token / creator / quoteToken / currency / poolId / taxBps. Sticky FX radar card owns the stage. Currency desk maps quoteToken→code. RPC endpoints stay collapsed secondary.",
+  "crossrate.watching": "Crossrate Launcher TokenLaunched via BlockReq RH public WSS — FX currency quote opens.",
+  "crossrate.hint": "Radar · TokenLaunched currency / quoteToken",
+  "crossrate.emptyTitle": "Waiting for TokenLaunched…",
+  "crossrate.emptySub": "Live listen on Launcher — FX currency opens flash here.",
+  "crossrate.latest": "Latest TokenLaunched",
+  "crossrate.hero.idle": "Resume live — Launcher TokenLaunched FX radar.",
+  "crossrate.hero.connecting": "Connecting Robinhood public WSS…",
+  "crossrate.hero.listening": "Live — waiting for TokenLaunched on LAUNCHER.",
+  "crossrate.hero.hit": "Sticky FX TokenLaunched card owns the stage; feed flashes left.",
+  "crossrate.settingsHint": "Verified Launcher + TokenLaunched topic0 prefilled. Currency desk maps quoteToken→code (AED sample included). Hint chips for factory / rate hook / locker / owner / PoolManager / USDG. Live BlockReq RH public only.",
+
+
 
   "layout.launch-feed": "Launch feed",
   "layout.single-focus": "Single focus",
@@ -1204,6 +1221,23 @@ const zh: Dict = {
   "bucket.hero.hit": "粘性 Launched 卡占舞台；左侧流闪入。",
   "bucket.settingsHint": "已验证发射工厂 + Launched topic0 预填。可选同一工厂 Graduated 跟单（可编辑 GRADUATED_TOPIC0）。registry / seeder / distributor / protocol / USDG / BUCKET 提示芯片。仅 Live BlockReq RH 公共端点。",
 
+  "crossrate.title": "Crossrate RHC 汇率盘监听：TokenLaunched 盯货币报价开盘",
+  "crossrate.blurb": "Crossrate RHC 汇率盘 · Launcher TokenLaunched 盯货币开盘；公共 WSS 开跑。",
+  "crossrate.tag": "RH // CROSSRATE-FX",
+  "crossrate.toast": "打中了——Crossrate TokenLaunched",
+  "crossrate.guide": "Launcher TokenLaunched → 解码 token / creator / quoteToken / currency / poolId / taxBps。粘性 FX 雷达卡占舞台。货币桌映射 quoteToken→代码。RPC 端点折叠为次要。",
+  "crossrate.watching": "Crossrate Launcher TokenLaunched，经 BlockReq RH 公共 WSS — 货币报价开盘。",
+  "crossrate.hint": "雷达 · TokenLaunched currency / quoteToken",
+  "crossrate.emptyTitle": "在等 TokenLaunched…",
+  "crossrate.emptySub": "Launcher 实时听 — 货币开盘闪入这里。",
+  "crossrate.latest": "最近 TokenLaunched",
+  "crossrate.hero.idle": "恢复实时 — Launcher TokenLaunched 汇率盘雷达。",
+  "crossrate.hero.connecting": "正在连 Robinhood 公共 WSS…",
+  "crossrate.hero.listening": "实时中 — 等 LAUNCHER 上的 TokenLaunched。",
+  "crossrate.hero.hit": "粘性 FX TokenLaunched 卡占舞台；左侧流闪入。",
+  "crossrate.settingsHint": "已验证 Launcher + TokenLaunched topic0 预填。货币桌映射 quoteToken→代码（含 AED 样例）。factory / rate hook / locker / owner / PoolManager / USDG 提示芯片。仅 Live BlockReq RH 公共端点。",
+
+
 
   "layout.launch-feed": "开盘流",
   "layout.single-focus": "单焦舞台",
@@ -1736,6 +1770,27 @@ export const DEMO_CATALOG = [
     tags: ["robinhood-chain", "bucket", "launchpad", "launched", "eth-subscribe", "blockreq"] as const,
   },
 
+
+  {
+    slug: "crossrate-rhc-currency-launch-listen",
+    blogSlug: "crossrate-rhc-currency-launch-listen",
+    siteUrl: "https://blockreq.com/",
+    titleKey: "crossrate.title",
+    blurbKey: "crossrate.blurb",
+    accent: "eth" as const,
+    layout: "launch-feed" as const satisfies DemoLayout,
+    published: true,
+    demoHits: false as const,
+    chainLabel: "RH",
+    endpointKey: "robinhood" as const,
+    blogEn: "https://blockreq.com/blog/en/crossrate-rhc-currency-launch-listen",
+    blogZh: "https://blockreq.com/blog/zh/crossrate-rhc-currency-launch-listen",
+    stackblitz:
+      "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/crossrate-rhc-currency-launch-listen/src/main.tsx&startScript=dev:crossrate-rhc-currency-launch-listen&ctl=1",
+    pathEn: "/demos1/crossrate-rhc-currency-launch-listen/en/",
+    pathZh: "/demos1/crossrate-rhc-currency-launch-listen/zh/",
+    tags: ["robinhood-chain", "crossrate", "launchpad", "tokenlaunched", "fx", "eth-subscribe", "blockreq"] as const,
+  },
 
 
 ] as const;
