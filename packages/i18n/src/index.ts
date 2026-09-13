@@ -567,6 +567,24 @@ const en: Dict = {
   "longshot.hero.hit": "Latest market event is stuck on the right.",
   "longshot.settingsHint": "No verified Longshot factory pinned — leave empty and paste when known. Product: longshot.xyz. Live BlockReq Base public only.",
 
+
+  "companypad.title": "CompanyPad company-market listen: catch RHC Launched",
+  "companypad.blurb": "CompanyPad RHC company markets · PAD Launched radar on public WSS.",
+  "companypad.tag": "RH // COMPANYPAD-LAUNCH",
+  "companypad.toast": "Hit — CompanyPad PAD Launched",
+  "companypad.guide": "PAD factory Launched → decode ticker / metricId / creator / curve / market. Sticky radar card owns the stage. Click a card to follow Settled on that market. RPC endpoints stay collapsed secondary.",
+  "companypad.watching": "CompanyPad PAD Launched (+ optional Settled follow) via BlockReq RH public WSS — company-metric markets registry.",
+  "companypad.hint": "Radar · Launched ticker / metricId / creator",
+  "companypad.emptyTitle": "Waiting for Launched…",
+  "companypad.emptySub": "Live listen on PAD factory — new company markets flash here. Click a card to follow Settled.",
+  "companypad.latest": "Latest Launched",
+  "companypad.hero.idle": "Resume live — PAD Launched radar on company markets.",
+  "companypad.hero.connecting": "Connecting Robinhood public WSS…",
+  "companypad.hero.listening": "Live — waiting for Launched on PAD_FACTORY.",
+  "companypad.hero.hit": "Sticky Launched card owns the stage; feed flashes left.",
+  "companypad.settingsHint": "Verified PAD factory + Launched topic0 prefilled. Optional Settled follow (editable SETTLED_TOPIC0). Hint chips for ORACLE / CURVE_DEPLOYER / TOKEN / PoolManager. Live BlockReq RH public only.",
+
+
   "layout.launch-feed": "Launch feed",
   "layout.single-focus": "Single focus",
   "layout.multi-market": "Multi-market",
@@ -1133,6 +1151,24 @@ const zh: Dict = {
   "longshot.hero.hit": "最近盘口事件粘在右侧。",
   "longshot.settingsHint": "无已验证 Longshot 工厂 — 默认空，已知再粘贴。产品：longshot.xyz。仅 Live BlockReq Base 公共端点。",
 
+
+  "companypad.title": "CompanyPad 公司盘监听：RHC Launched 盯新市场",
+  "companypad.blurb": "CompanyPad RHC 公司盘 · PAD Launched 盯新市场；公共 WSS 开跑。",
+  "companypad.tag": "RH // COMPANYPAD-LAUNCH",
+  "companypad.toast": "打中了——CompanyPad PAD Launched",
+  "companypad.guide": "PAD 工厂 Launched → 解码 ticker / metricId / creator / curve / market。粘性雷达卡占舞台。点卡片跟该市场 Settled。RPC 端点折叠为次要。",
+  "companypad.watching": "CompanyPad PAD Launched（+ 可选 Settled 跟单），经 BlockReq RH 公共 WSS — 公司指标盘注册表。",
+  "companypad.hint": "雷达 · Launched ticker / metricId / creator",
+  "companypad.emptyTitle": "在等 Launched…",
+  "companypad.emptySub": "PAD 工厂实时听 — 新公司盘闪入这里。点卡片跟 Settled。",
+  "companypad.latest": "最近 Launched",
+  "companypad.hero.idle": "恢复实时 — PAD Launched 公司盘雷达。",
+  "companypad.hero.connecting": "正在连 Robinhood 公共 WSS…",
+  "companypad.hero.listening": "实时中 — 等 PAD_FACTORY 上的 Launched。",
+  "companypad.hero.hit": "粘性 Launched 卡占舞台；左侧流闪入。",
+  "companypad.settingsHint": "已验证 PAD 工厂 + Launched topic0 预填。可选 Settled 跟单（可编辑 SETTLED_TOPIC0）。ORACLE / CURVE_DEPLOYER / TOKEN / PoolManager 提示芯片。仅 Live BlockReq RH 公共端点。",
+
+
   "layout.launch-feed": "开盘流",
   "layout.single-focus": "单焦舞台",
   "layout.multi-market": "分市场",
@@ -1621,6 +1657,28 @@ export const DEMO_CATALOG = [
     pathEn: "/demos1/longshot-base-football-market-listen/en/",
     pathZh: "/demos1/longshot-base-football-market-listen/zh/",
   },
+
+
+  {
+    slug: "companypad-rhc-company-market-listen",
+    blogSlug: "companypad-rhc-company-market-listen",
+    siteUrl: "https://blockreq.com/",
+    titleKey: "companypad.title",
+    blurbKey: "companypad.blurb",
+    accent: "eth" as const,
+    layout: "launch-feed" as const satisfies DemoLayout,
+    published: true,
+    demoHits: false as const,
+    chainLabel: "RH",
+    endpointKey: "robinhood" as const,
+    blogEn: "https://blockreq.com/blog/en/companypad-rhc-company-market-listen",
+    blogZh: "https://blockreq.com/blog/zh/companypad-rhc-company-market-listen",
+    stackblitz:
+      "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/companypad-rhc-company-market-listen/src/main.tsx&startScript=dev:companypad-rhc-company-market-listen&ctl=1",
+    pathEn: "/demos1/companypad-rhc-company-market-listen/en/",
+    pathZh: "/demos1/companypad-rhc-company-market-listen/zh/",
+  },
+
 
 
 ] as const;

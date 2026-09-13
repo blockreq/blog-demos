@@ -860,3 +860,35 @@ export function buildLongshotFootballFixtures(locale: Locale, n = 6): FeedEvent[
   });
 }
 
+export function buildCompanypadRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const tickers = ["NVDA", "AAPL", "TSLA", "META", "MSFT"];
+  const markets = [
+    "0x094cA423757D96B5334AF5D5386a2105a8B3fCE1",
+    fakeAddr("cpmkt1"),
+    fakeAddr("cpmkt2"),
+    fakeAddr("cpmkt3"),
+    fakeAddr("cpmkt4"),
+  ];
+  return Array.from({ length: n }, (_, i) => {
+    const ticker = tickers[i % tickers.length];
+    const market = markets[i % markets.length];
+    const metricId = String(1000 + i);
+    return {
+      id: rid(),
+      kind: locale === "zh" ? "示意 Launched" : "Demo Launched",
+      tags: ["RH", "COMPANYPAD", "LAUNCHED", "DEMO", "pad:companypad", "RADAR"],
+      title: ticker,
+      body: `pad:companypad · ticker ${ticker} · metricId ${metricId} · market ${short(market)} · creator ${short(fakeAddr("cpcr" + i))} · curve ${short(fakeAddr("cpcurve" + i))} · #${4_660_000 + i * 11}`,
+      address: market.toLowerCase(),
+      block: 4_660_000 + i * 11,
+      tx: fakeAddr(`txcp${i}`),
+      chain: "RH",
+      at: now - i * 1200,
+      metric: metricId,
+      metricLabel: "metricId",
+      metric2: `#${4_660_000 + i * 11}`,
+      metric2Label: locale === "zh" ? "区块" : "Block",
+    };
+  });
+}
