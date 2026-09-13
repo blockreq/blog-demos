@@ -58,6 +58,7 @@ import { BaseLaptopSniperLiquidityDemo } from "./demos/base-laptop-sniper-liquid
 import { MultiplrEthLeverageLaunchpadDemo } from "./demos/multiplr-eth-leverage-launchpad-listen";
 import { HarmonicRhcAgentLaunchDemo } from "./demos/harmonic-rhc-agent-launch-listen";
 import { LongshotBaseFootballMarketDemo } from "./demos/longshot-base-football-market-listen";
+import { CompanypadRhcCompanyMarketDemo } from "./demos/companypad-rhc-company-market-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -292,6 +293,9 @@ function DemoPage() {
       )}
       {slug === "longshot-base-football-market-listen" && (
         <LongshotBaseFootballMarketDemo locale={locale} />
+      )}
+      {slug === "companypad-rhc-company-market-listen" && (
+        <CompanypadRhcCompanyMarketDemo locale={locale} />
       )}
       <DemoCta
         title={t(locale, meta.titleKey)}
