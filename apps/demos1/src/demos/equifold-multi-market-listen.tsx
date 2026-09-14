@@ -314,7 +314,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const coinMeta = focusRec
     ? `${shortAddr(focusRec.base)} · ${focusRec.count} markets · ${endpoint === "rh" ? "RH" : "Base"}`
     : fixtureCoin
-      ? `${shortAddr(fixtureCoin.addr)} · ${locale === "zh" ? "示意币 · 多市场分叉" : "demo coin · multi-market fork"}`
+      ? `${shortAddr(fixtureCoin.addr)} · ${locale === "zh" ? "多市场分叉" : "multi-market fork"}`
       : t(locale, "equifold.metaIdle");
 
   const columns = useMemo(() => {
