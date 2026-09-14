@@ -57,7 +57,7 @@ export function Addr({
       )}
       title={full}
       data-full={full}
-      aria-label={`Copy ${full}`}
+      aria-label={`${t(pathLocale(), "common.copy")} ${full}`}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

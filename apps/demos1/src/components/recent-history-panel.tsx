@@ -87,7 +87,7 @@ export function RecentHistoryPanel({
             {t(locale, "history.windowBadge").replace("{n}", String(history.windowBlocks || 900))}
           </Badge>
         ) : null}
-        {usingLive ? <Badge variant="live">LIVE</Badge> : null}
+        {usingLive ? <Badge variant="live">{t(locale, "shell.live")}</Badge> : null}
         {typeof history.toBlock === "number" && usingRpc ? (
           <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
             #{history.fromBlock}–#{history.toBlock}
