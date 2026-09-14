@@ -324,7 +324,7 @@ function DemoPage() {
         siteLabel={t(locale, "shell.site")}
         friendLinksLabel={t(locale, "shell.friendLinks")}
         pricingLabel={t(locale, "shell.pricing")}
-        quotaLabel={t(locale, "shell.quotaAfter")}
+        subtitle={t(locale, "shell.footerSub")}
       />
     </>
   );
