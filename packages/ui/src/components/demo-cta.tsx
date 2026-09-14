@@ -11,7 +11,8 @@ export function DemoCta({
   primarySiteLabel,
   readLabel,
   pricingLabel = "Pricing →",
-  quotaLabel = "public endpoints",
+  subtitle = "Browser listen · no wallet",
+  quotaLabel,
 }: {
   title: string;
   blogUrl: string;
@@ -26,12 +27,15 @@ export function DemoCta({
   /** @deprecated friend Blog uses blogLabel — kept so old call sites compile */
   readLabel?: string;
   pricingLabel?: string;
-  /** Post-signup quota — never imply free-without-account */
+  /** Neutral footer subtitle — no product / public-node branding */
+  subtitle?: string;
+  /** @deprecated use subtitle — kept so old call sites compile during rollout */
   quotaLabel?: string;
-  /** @deprecated use quotaLabel — kept so old call sites compile during rollout */
+  /** @deprecated use subtitle — kept so old call sites compile during rollout */
   freeLabel?: string;
 }) {
   void readLabel;
+  void quotaLabel;
   const showPrimarySite = Boolean(primarySiteLabel && siteUrl);
 
   return (
@@ -40,7 +44,7 @@ export function DemoCta({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-[var(--color-foreground)]">{title}</p>
           <p className="truncate font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--color-muted-foreground)]">
-            BlockReq · {quotaLabel} · no wallet
+            {subtitle}
           </p>
         </div>
 
