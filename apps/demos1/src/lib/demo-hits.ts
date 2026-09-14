@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Locale } from "@blockreq/i18n";
-import type { FeedEvent } from "../components/feed-types";
+import { scrubDemoText, type FeedEvent } from "../components/feed-types";
 
 /** Query / catalog / local toggle — default OFF for normal visitors. */
 export function readDemoHitsFromUrl(): boolean {
@@ -1053,9 +1053,12 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
     const row = rows[i % rows.length];
     const sideLabel = row.side === "lock" ? (locale === "zh" ? "锁仓" : "LOCK") : locale === "zh" ? "释放" : "RELEASE";
     const tokenLabel = row.highlight ? "$RWA" : short(row.token);
+    const rawKind = row.side === "lock" ? (locale === "zh" ? "锁仓" : "VaultDeposit") : (locale === "zh" ? "释放" : "VaultWithdraw");
+    const rawTitle = `${tokenLabel} ${sideLabel}`;
+    const rawBody = `pad:messier-p2p · side ${row.side} · token ${short(row.token)} · amount ${row.amount} · maker ${short(row.maker)} · vault ${short(vault)} · ${poolUrl} · https://basescan.org/tx/${row.tx} · #${row.block}`;
     return {
       id: rid(),
-      kind: row.side === "lock" ? (locale === "zh" ? "锁仓" : "VaultDeposit") : (locale === "zh" ? "释放" : "VaultWithdraw"),
+      kind: scrubDemoText(rawKind),
       tags: [
         "BASE",
         "MESSIER",
@@ -1064,8 +1067,8 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
         row.highlight ? "RWA" : "TOKEN",
         "RADAR",
       ],
-      title: `${tokenLabel} ${sideLabel}`,
-      body: `pad:messier-p2p · side ${row.side} · token ${short(row.token)} · amount ${row.amount} · maker ${short(row.maker)} · vault ${short(vault)} · ${poolUrl} · https://basescan.org/tx/${row.tx} · #${row.block}`,
+      title: scrubDemoText(rawTitle),
+      body: scrubDemoText(rawBody),
       address: row.token.toLowerCase(),
       block: row.block,
       tx: row.tx,

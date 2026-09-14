@@ -10,7 +10,7 @@ import {
   TableRow,
   cn,
 } from "@blockreq/ui";
-import { displayTags, type FeedEvent } from "./feed-types";
+import { displayTags, scrubDemoText, type FeedEvent } from "./feed-types";
 import { FeedSkeletonRows, HeartbeatStrip } from "./feed-empty";
 import type { HistoryState } from "../lib/recent-history";
 
@@ -194,8 +194,8 @@ export function RecentHistoryPanel({
                       {usingLive || usingSeed ? ageLabel(ev.at) : `#${ev.block ?? "—"}`}
                     </TableCell>
                     <TableCell className="min-w-0">
-                      <div className="type-body truncate text-[14px] font-extrabold" title={ev.address || ev.title}>{ev.title || ev.kind}</div>
-                      <div className="mt-0.5 truncate type-meta" title={ev.tx || ev.body}>{ev.body}</div>
+                      <div className="type-body truncate text-[14px] font-extrabold" title={ev.address || scrubDemoText(ev.title || ev.kind)}>{scrubDemoText(ev.title || ev.kind)}</div>
+                      <div className="mt-0.5 truncate type-meta" title={ev.tx || scrubDemoText(ev.body)}>{scrubDemoText(ev.body)}</div>
                       {ev.metric ? (
                         <div
                           key={`${ev.id}-metric-${ev.metric}`}

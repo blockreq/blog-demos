@@ -21,7 +21,7 @@ import {
 } from "@blockreq/rpc";
 import { MonitorChrome } from "../components/monitor-chrome";
 import { AnonStreamLayout } from "../components/layouts/anon-stream-layout";
-import type { FeedEvent } from "../components/feed-types";
+import { scrubDemoText, type FeedEvent } from "../components/feed-types";
 import { EndpointConfigSlot } from "../components/endpoint-config-slot";
 import { Addr } from "../components/addr";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
@@ -191,8 +191,11 @@ function cardToFeed(
       : card.side === "lock"
         ? "Messier VaultDeposit"
         : "Messier VaultWithdraw";
+  const rawKind = live ? kind : locale === "zh" ? `历史 ${sideZh}` : `Recent ${card.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`;
+  const rawTitle = `${tok} ${sideLabel}`;
+  const rawBody = `pad:${card.pad} · side ${card.side} · token ${tok} ${card.token} · amount ${card.amount} · maker ${shortAddr(card.maker)} · highlight ${card.highlight ? "yes" : "no"} · tx ${shortAddr(card.txHash)} · #${card.blockNumber} · ${card.messierPoolUrl} · ${card.basescanUrl}`;
   return {
-    kind: live ? kind : locale === "zh" ? `历史 ${sideZh}` : `Recent ${card.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`,
+    kind: scrubDemoText(rawKind),
     tags: [
       live ? "NEW" : "HIST",
       "BASE",
@@ -203,8 +206,8 @@ function cardToFeed(
       "RADAR",
       card.side.toUpperCase(),
     ],
-    title: `${tok} ${sideLabel}`,
-    body: `pad:${card.pad} · side ${card.side} · token ${tok} ${card.token} · amount ${card.amount} · maker ${shortAddr(card.maker)} · highlight ${card.highlight ? "yes" : "no"} · tx ${shortAddr(card.txHash)} · #${card.blockNumber} · ${card.messierPoolUrl} · ${card.basescanUrl}`,
+    title: scrubDemoText(rawTitle),
+    body: scrubDemoText(rawBody),
     address: card.token || undefined,
     block: card.blockNumber,
     tx: card.txHash || undefined,
