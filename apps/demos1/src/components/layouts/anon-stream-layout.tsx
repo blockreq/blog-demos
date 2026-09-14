@@ -3,7 +3,6 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Separator, cn } from "@blockreq/ui";
 import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
-import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
 import { LiveToggle } from "../live-toggle";
@@ -36,7 +35,6 @@ export function AnonStreamLayout({
   watchParams,
   sourceItems,
   endpointSlot,
-  guide,
   watching,
   hint,
   emptyTitle,
@@ -75,8 +73,7 @@ export function AnonStreamLayout({
   const liveSelected = !!(selected && isLiveRow(selected.id));
 
   return (
-    <div className="demo-shell flex min-h-[calc(100vh-8rem)] flex-col gap-3">
-      <ToolGuideBanner locale={locale} stepHint={guide || t(locale, "anoncoin.guide")} />
+    <div className="demo-shell flex min-h-[calc(100vh-8rem)] min-w-0 flex-col gap-3 overflow-x-hidden">
       {banner}
       {endpointSlot}
       <SourceStrip items={sourceItems} />
@@ -107,7 +104,7 @@ export function AnonStreamLayout({
         </span>
       </div>
 
-      <div className="grid flex-1 gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 flex-1 gap-3 overflow-x-hidden lg:grid-cols-[1.1fr_0.9fr]">
         <RecentHistoryPanel
           locale={locale}
           history={history}
@@ -120,7 +117,7 @@ export function AnonStreamLayout({
           className="min-h-[280px]"
         />
 
-        <aside className="flex min-h-0 flex-col">
+        <aside className="flex min-h-0 min-w-0 flex-col overflow-x-hidden">
           <div
             data-hit={liveSelected ? "true" : undefined}
             data-highlight={selected?.highlight ? "true" : undefined}
@@ -186,7 +183,7 @@ export function AnonStreamLayout({
                     </>
                   ) : null}
                   <span className="text-[var(--color-muted-foreground)]">Meta</span>
-                  <span className="break-all font-mono text-[12px] text-[#C8CDDF]">{scrubDemoText(selected.body)}</span>
+                  <span className="truncate font-mono text-[12px] text-[#C8CDDF]" title={scrubDemoText(selected.body)}>{scrubDemoText(selected.body)}</span>
                 </div>
                 {selected.links?.length ? (
                   <div className="flex flex-wrap gap-2">

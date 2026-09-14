@@ -74,7 +74,7 @@ export function RecentHistoryPanel({
   return (
     <div
       className={cn(
-        "flex min-h-[180px] flex-col border border-[var(--color-line)] bg-[var(--color-panel)]",
+        "flex min-h-[180px] min-w-0 flex-col overflow-x-hidden border border-[var(--color-line)] bg-[var(--color-panel)]",
         className
       )}
     >
@@ -97,13 +97,13 @@ export function RecentHistoryPanel({
 
       {showLoading ? (
         <div className="flex-1">
-          <Table>
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[56px]">{t(locale, "history.colAge")}</TableHead>
-                <TableHead>{t(locale, "history.colEvent")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
-                <TableHead className="text-right">{t(locale, "history.colTags")}</TableHead>
+                <TableHead className="min-w-0">{t(locale, "history.colEvent")}</TableHead>
+                <TableHead className="hidden w-[88px] sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
+                <TableHead className="w-[100px] text-right">{t(locale, "history.colTags")}</TableHead>
               </TableRow>
             </TableHeader>
           </Table>
@@ -114,13 +114,13 @@ export function RecentHistoryPanel({
         </div>
       ) : showEmpty ? (
         <div className="flex flex-1 flex-col">
-          <Table>
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[56px]">{t(locale, "history.colAge")}</TableHead>
-                <TableHead>{t(locale, "history.colEvent")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
-                <TableHead className="text-right">{t(locale, "history.colTags")}</TableHead>
+                <TableHead className="min-w-0">{t(locale, "history.colEvent")}</TableHead>
+                <TableHead className="hidden w-[88px] sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
+                <TableHead className="w-[100px] text-right">{t(locale, "history.colTags")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -155,7 +155,7 @@ export function RecentHistoryPanel({
           <HeartbeatStrip locale={locale} active={listening} className="mt-auto" />
         </div>
       ) : (
-        <div className="flex-1 overflow-auto">
+        <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
           {usingSeed ? (
             <p className="border-b border-[var(--color-line)] px-3 py-1.5 text-[11px] text-[var(--color-muted-foreground)]">
               {t(locale, "history.seedNote")}
@@ -165,13 +165,13 @@ export function RecentHistoryPanel({
               {t(locale, "history.rpcNote")}
             </p>
           ) : null}
-          <Table>
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[56px]">{t(locale, "history.colAge")}</TableHead>
-                <TableHead>{t(locale, "history.colEvent")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
-                <TableHead className="text-right">{t(locale, "history.colTags")}</TableHead>
+                <TableHead className="min-w-0">{t(locale, "history.colEvent")}</TableHead>
+                <TableHead className="hidden w-[88px] sm:table-cell">{t(locale, "history.colBlock")}</TableHead>
+                <TableHead className="w-[100px] text-right">{t(locale, "history.colTags")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -193,7 +193,7 @@ export function RecentHistoryPanel({
                     <TableCell className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
                       {usingLive || usingSeed ? ageLabel(ev.at) : `#${ev.block ?? "—"}`}
                     </TableCell>
-                    <TableCell className="min-w-0">
+                    <TableCell className="min-w-0 max-w-0">
                       <div className="type-body truncate text-[14px] font-extrabold" title={ev.address || scrubDemoText(ev.title || ev.kind)}>{scrubDemoText(ev.title || ev.kind)}</div>
                       <div className="mt-0.5 truncate type-meta" title={ev.tx || scrubDemoText(ev.body)}>{scrubDemoText(ev.body)}</div>
                       {ev.metric ? (
@@ -208,10 +208,10 @@ export function RecentHistoryPanel({
                         </div>
                       ) : null}
                     </TableCell>
-                    <TableCell className="hidden font-mono text-[12px] sm:table-cell">
+                    <TableCell className="hidden w-[88px] font-mono text-[12px] sm:table-cell">
                       {typeof ev.block === "number" ? `#${ev.block}` : "—"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="w-[100px] text-right">
                       <span className="inline-flex flex-wrap justify-end gap-1">
                         {displayTags(ev.tags).slice(0, 2).map((tag) => (
                           <Badge key={tag} variant="secondary" className="px-1.5 py-0.5 text-[9px]">

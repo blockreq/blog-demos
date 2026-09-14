@@ -3,7 +3,6 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, ScrollArea, Separator, cn } from "@blockreq/ui";
 import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
-import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
 import { LiveToggle } from "../live-toggle";
@@ -78,8 +77,7 @@ export function EquiSplitLayout({
       : null;
 
   return (
-    <div className="demo-shell flex min-h-[calc(100vh-8rem)] flex-col gap-3">
-      <ToolGuideBanner locale={locale} stepHint={t(locale, "equifold.guide")} />
+    <div className="demo-shell flex min-h-[calc(100vh-8rem)] min-w-0 flex-col gap-3 overflow-x-hidden">
       {banner}
       {endpointSlot}
       <SourceStrip items={sourceItems} />
