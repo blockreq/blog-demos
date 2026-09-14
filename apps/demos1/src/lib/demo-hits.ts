@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { L, type Locale } from "@blockreq/i18n";
+import { L, t, type Locale } from "@blockreq/i18n";
 import { scrubDemoText, type FeedEvent } from "../components/feed-types";
 
 function locList(locale: Locale, en: string[], zh: string[]): string[] {
@@ -1022,7 +1022,7 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
     const tokenLabel = row.highlight ? "$RWA" : short(row.token);
     const rawKind = row.side === "lock" ? (L(locale, "VaultDeposit", "锁仓")) : (L(locale, "VaultWithdraw", "释放"));
     const rawTitle = `${tokenLabel} ${sideLabel}`;
-    const rawBody = `pad:messier-p2p · side ${row.side} · token ${row.token} · amount ${row.amount} · maker ${row.maker} · vault ${vault} · #${row.block}`;
+    const rawBody = `pad:messier-p2p · ${t(locale, "feed.bodySide")} ${row.side} · ${t(locale, "feed.bodyToken")} ${row.token} · ${t(locale, "feed.bodyAmount")} ${row.amount} · ${t(locale, "feed.bodyMaker")} ${row.maker} · ${t(locale, "feed.bodyVault")} ${vault} · #${row.block}`;
     return {
       id: rid(),
       kind: scrubDemoText(rawKind),
@@ -1045,7 +1045,7 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
       metric: row.amount,
       metricLabel: tokenLabel,
       metric2: sideLabel,
-      metric2Label: L(locale, "side", "方向"),
+      metric2Label: t(locale, "feed.bodySide"),
       highlight: row.highlight,
       links: [
         { label: L(locale, "Messier pool", "Messier 池"), href: poolUrl },

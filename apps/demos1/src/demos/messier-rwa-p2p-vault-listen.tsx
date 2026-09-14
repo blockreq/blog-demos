@@ -218,7 +218,7 @@ function cardToFeed(
         "zh-tw": `歷史 ${histSide}`,
       });
   const rawTitle = `${tok} ${sideLabel}`;
-  const rawBody = `pad:${card.pad} · side ${card.side} · token ${card.token || "—"} · amount ${card.amount} · maker ${card.maker || "—"} · vault ${DEFAULT_VAULT} · #${card.blockNumber}`;
+  const rawBody = `pad:${card.pad} · ${t(locale, "feed.bodySide")} ${card.side} · ${t(locale, "feed.bodyToken")} ${card.token || "—"} · ${t(locale, "feed.bodyAmount")} ${card.amount} · ${t(locale, "feed.bodyMaker")} ${card.maker || "—"} · ${t(locale, "feed.bodyVault")} ${DEFAULT_VAULT} · #${card.blockNumber}`;
   return {
     kind: scrubDemoText(rawKind),
     tags: [
@@ -241,7 +241,7 @@ function cardToFeed(
     metric: card.amount || "—",
     metricLabel: tok,
     metric2: sideLabel,
-    metric2Label: L(locale, "side", "方向"),
+    metric2Label: t(locale, "feed.bodySide"),
     highlight: card.highlight,
     links: [
       { label: t(locale, "messier.poolLink"), href: card.messierPoolUrl },
