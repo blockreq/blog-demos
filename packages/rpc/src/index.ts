@@ -151,6 +151,25 @@ export type JsonRpcLog = {
   logIndex?: string | number;
 };
 
+/** One topic position: exact hash, OR-list, or null (any). */
+export type LogsTopic = string | string[] | null | undefined;
+
+export type JsonRpcReceipt = {
+  status?: string;
+  blockNumber?: string;
+  transactionHash?: string;
+  logs?: JsonRpcLog[];
+};
+
+function normalizeTopicPos(t: LogsTopic): string | string[] | null {
+  if (t == null || t === "") return null;
+  if (Array.isArray(t)) {
+    const xs = t.map((x) => x.trim().toLowerCase()).filter(Boolean);
+    return xs.length ? xs : null;
+  }
+  return t.trim().toLowerCase();
+}
+
 /**
  * Thin browser WebSocket JSON-RPC helper for eth_subscribe logs.
  * Connections always originate in the visitor browser to BlockReq public WSS.
@@ -288,7 +307,7 @@ async function jsonRpc<T>(
 export async function fetchPublicRecentLogs(opts: {
   https: string;
   address?: string;
-  topics: (string | null | undefined)[];
+  topics: LogsTopic[];
   /** Blocks to look back; clamped to PUBLIC_GETLOGS_SAFE_WINDOW */
   windowBlocks?: number;
   signal?: AbortSignal;
@@ -321,12 +340,12 @@ export async function fetchPublicRecentLogs(opts: {
   const filter: {
     fromBlock: string;
     toBlock: string;
-    topics: (string | null)[];
+    topics: (string | string[] | null)[];
     address?: string;
   } = {
     fromBlock: "0x" + fromBlock.toString(16),
     toBlock: "0x" + toBlock.toString(16),
-    topics: opts.topics.map((t) => (t ? t.toLowerCase() : null)),
+    topics: opts.topics.map((t) => normalizeTopicPos(t)),
   };
   if (opts.address && isAddress(opts.address, { strict: false })) {
     filter.address = opts.address.toLowerCase();
@@ -374,4 +393,39 @@ export async function fetchPublicRecentLogs(opts: {
     toBlock,
     windowBlocks,
   };
+}
+
+/**
+ * Browser-only eth_getTransactionReceipt against BlockReq public HTTPS.
+ */
+export async function fetchPublicTxReceipt(opts: {
+  https: string;
+  txHash: string;
+  signal?: AbortSignal;
+}): Promise<JsonRpcReceipt | null> {
+  try {
+    assertBrowserOnly("fetchPublicTxReceipt");
+  } catch {
+    return null;
+  }
+  const tx = opts.txHash.trim();
+  if (!/^0x[a-fA-F0-9]{64}$/.test(tx)) return null;
+  const res = await fetch(opts.https, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_getTransactionReceipt",
+      params: [tx],
+    }),
+    signal: opts.signal,
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    result?: JsonRpcReceipt | null;
+    error?: { message?: string };
+  };
+  if (json.error || !json.result) return null;
+  return json.result;
 }

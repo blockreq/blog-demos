@@ -7,6 +7,7 @@ import {
   unpadTopic,
   wordAddr,
   type JsonRpcLog,
+  type LogsTopic,
   type RecentLogsResult,
 } from "@blockreq/rpc";
 import type { FeedEvent } from "../components/feed-types";
@@ -109,7 +110,7 @@ export function useRecentHistory(opts: {
   locale: Locale;
   https: string;
   address?: string;
-  topics: (string | null | undefined)[];
+  topics: LogsTopic[];
   map: (logs: JsonRpcLog[]) => FeedEvent[];
   enabled?: boolean;
 }): HistoryState {
@@ -120,7 +121,7 @@ export function useRecentHistory(opts: {
     reason: "",
   });
 
-  const topicKey = topics.map((t) => t || "").join("|");
+  const topicKey = JSON.stringify(topics);
 
   useEffect(() => {
     if (!enabled) {

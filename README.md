@@ -40,6 +40,8 @@ https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/brew-b
 
 https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/arbitrum-rwa-flow-listen/src/main.tsx&startScript=dev:arbitrum-rwa-flow-listen&ctl=1
 
+https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/messier-rwa-p2p-vault-listen/src/main.tsx&startScript=dev:messier-rwa-p2p-vault-listen&ctl=1
+
 Click Run after open (ctl=1).
 
 ### React + viem shells (Brew / Arb)
@@ -82,6 +84,7 @@ No API keys in runnable code. Defaults to BlockReq public WSS/HTTPS. See docs.bl
 - examples/equifold-multi-market-listen
 - examples/brew-bnb-double-pair-listen (Vite+React+viem+@blockreq/ui)
 - examples/arbitrum-rwa-flow-listen (Vite+React+viem+@blockreq/ui)
+- examples/messier-rwa-p2p-vault-listen (Vite+React+viem+@blockreq/ui)
 
 ## Hosted demos1 (Cloudflare Worker + static assets)
 
@@ -92,6 +95,7 @@ Single Worker (`blockreq-demos1`) serves many demos under `/demos1/`.
 | Anoncoin RH launch listen | `/demos1/anoncoin-rh-launch-listen/en/` · `/zh/` |
 | OpenLaunch Base eth_subscribe | `/demos1/openlaunch-base-eth-subscribe/en/` · `/zh/` |
 | Equifold multi-market listen | `/demos1/equifold-multi-market-listen/en/` · `/zh/` |
+| Messier P2P vault listen | `/demos1/messier-rwa-p2p-vault-listen/en/` · `/zh/` |
 | Index | `/demos1/` |
 
 Stack: **React + TanStack Router/Query + shadcn-style UI + viem**. No Next.js. Browser-only RPC — the Worker serves assets + CSP headers and does **not** proxy WSS/subscriptions.

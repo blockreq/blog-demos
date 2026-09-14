@@ -16,4 +16,8 @@ export type FeedEvent = {
   /** Secondary metric for diffs / volume. */
   metric2?: string;
   metric2Label?: string;
+  /** Flash $RWA (or other) highlight on the sticky card. */
+  highlight?: boolean;
+  /** Deep links (pool UI, explorer tx). */
+  links?: { label: string; href: string }[];
 };

@@ -997,3 +997,93 @@ export function buildBasestonkAdvancedLauncherFixtures(locale: Locale, n = 5): F
   });
 }
 
+export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const rwa = "0xE2B1dc2D4A3b4E59FDF0c47B71A7A86391a8B35a";
+  const vault = "0xa5E09fBCaB81B2F501262035A9721f98532BD16B";
+  const poolUrl = "https://p2p.messier.app/pools?network=BASE&s=RWA_USDC";
+  const depositTx = "0xd8b19b0d666858eed6d9eb5fdda9f194a8e21c1f9808391c93b4e009347e06d4";
+  const withdrawTx = "0x1ba4dc5bf46a6816d1447751d4bbcb5de9c5f483f75b9fce62255539c6a2e3a1";
+  const rows: { side: "lock" | "release"; token: string; amount: string; maker: string; tx: string; highlight: boolean; block: number }[] = [
+    {
+      side: "lock",
+      token: rwa,
+      amount: "9999.99",
+      maker: "0xe227c46f778f451318a48337c257693a3d2783aa",
+      tx: depositTx,
+      highlight: true,
+      block: 51_265_509,
+    },
+    {
+      side: "release",
+      token: "0xf53a3b2cf482494eec4ca096af4b107a6c3b759b",
+      amount: "530181.101988",
+      maker: "0x505f99d145bb9f7d9cf87c4dedb7b1e4b3f57a99",
+      tx: withdrawTx,
+      highlight: false,
+      block: 49_347_278,
+    },
+    {
+      side: "lock",
+      token: rwa,
+      amount: "1200",
+      maker: fakeAddr("msmaker2"),
+      tx: fakeAddr("txms2"),
+      highlight: true,
+      block: 51_266_000,
+    },
+    {
+      side: "release",
+      token: rwa,
+      amount: "88.5",
+      maker: fakeAddr("msmaker3"),
+      tx: fakeAddr("txms3"),
+      highlight: true,
+      block: 51_266_100,
+    },
+    {
+      side: "lock",
+      token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      amount: "2500",
+      maker: fakeAddr("msmaker4"),
+      tx: fakeAddr("txms4"),
+      highlight: false,
+      block: 51_266_200,
+    },
+  ];
+  return Array.from({ length: n }, (_, i) => {
+    const row = rows[i % rows.length];
+    const sideLabel = row.side === "lock" ? (locale === "zh" ? "锁仓" : "LOCK") : locale === "zh" ? "释放" : "RELEASE";
+    const tokenLabel = row.highlight ? "$RWA" : short(row.token);
+    return {
+      id: rid(),
+      kind: locale === "zh" ? `示意 ${sideLabel}` : `Demo ${row.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`,
+      tags: [
+        "BASE",
+        "MESSIER",
+        row.side === "lock" ? "VAULTDEPOSIT" : "VAULTWITHDRAW",
+        "DEMO",
+        "pad:messier-p2p",
+        row.highlight ? "RWA" : "TOKEN",
+        "RADAR",
+      ],
+      title: `${tokenLabel} ${sideLabel}`,
+      body: `pad:messier-p2p · side ${row.side} · token ${short(row.token)} · amount ${row.amount} · maker ${short(row.maker)} · vault ${short(vault)} · ${poolUrl} · https://basescan.org/tx/${row.tx} · #${row.block}`,
+      address: row.token.toLowerCase(),
+      block: row.block,
+      tx: row.tx,
+      chain: "BASE",
+      at: now - i * 1200,
+      metric: row.amount,
+      metricLabel: tokenLabel,
+      metric2: sideLabel,
+      metric2Label: locale === "zh" ? "方向" : "side",
+      highlight: row.highlight,
+      links: [
+        { label: locale === "zh" ? "Messier 池" : "Messier pool", href: poolUrl },
+        { label: locale === "zh" ? "BaseScan 交易" : "BaseScan tx", href: `https://basescan.org/tx/${row.tx}` },
+      ],
+    };
+  });
+}
+

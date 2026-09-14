@@ -1,3 +1,15 @@
+# demos1 layout choices (2026-09-14 Messier P2P vault)
+
+Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
+
+| Slug | Layout | Why |
+| --- | --- | --- |
+| `messier-rwa-p2p-vault-listen` | **launch-feed** | Continuous VaultDeposit / VaultWithdraw tape + sticky lock/release cards (pad / side / token / amount / maker / $RWA highlight / tx / Messier pool + BaseScan). single-focus would hide the lock/release radar tape. |
+
+Reuses MonitorChrome (centered header, BlockReq RPC · 注册每月免费 3M 请求 CTA), collapsed RPC bar prefilled with **live** BlockReq Base public HTTPS/WSS, and addr hover via shared chrome/feed components. Verified vault / $RWA / USDC / topic0s only — Aerodrome RWA/USDC is a DEX chart chip, not a listen target. Zero Solana / Arc / Robinhood / publicnode / placeholder endpoints.
+
+---
+
 # demos1 layout choices (2026-09-12 brew BNB + arb RWA)
 
 Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
