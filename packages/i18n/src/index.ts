@@ -619,6 +619,24 @@ const en: Dict = {
   "crossrate.settingsHint": "Verified Launcher + TokenLaunched topic0 prefilled. Currency desk maps quoteToken→code (AED sample included). Hint chips for factory / rate hook / locker / owner / PoolManager / USDG. Live BlockReq RH public only.",
 
 
+  "basestonk.title": "BaseStonk launchpad listen: AdvancedLaunched open cards",
+  "basestonk.blurb": "BaseStonk pad · AdvancedLauncherV2 AdvancedLaunched radar on public WSS.",
+  "basestonk.tag": "BASE // BASESTONK",
+  "basestonk.toast": "Hit — BaseStonk AdvancedLaunched",
+  "basestonk.guide": "AdvancedLauncherV2 AdvancedLaunched → decode token / creator / poolId / pairToken / sqrtPriceX96 / taxBps / burnBps / liquidityBps / payees. Flashy open-card radar owns the stage. Optional RewardsEnabled chip. RPC endpoints stay collapsed secondary.",
+  "basestonk.watching": "BaseStonk AdvancedLauncherV2 AdvancedLaunched via BlockReq Base public WSS — open cards.",
+  "basestonk.hint": "Radar · AdvancedLaunched open cards",
+  "basestonk.emptyTitle": "Waiting for AdvancedLaunched…",
+  "basestonk.emptySub": "Live listen on AdvancedLauncherV2 — open cards flash here.",
+  "basestonk.latest": "Latest AdvancedLaunched",
+  "basestonk.hero.idle": "Resume live — AdvancedLauncherV2 AdvancedLaunched radar.",
+  "basestonk.hero.connecting": "Connecting Base public WSS…",
+  "basestonk.hero.listening": "Live — waiting for AdvancedLaunched on LAUNCHER.",
+  "basestonk.hero.hit": "Sticky AdvancedLaunched open card owns the stage; feed flashes left.",
+  "basestonk.settingsHint": "Verified AdvancedLauncherV2 + AdvancedLaunched topic0 prefilled. Optional RewardsEnabled topic0 chip. Hint chips for AdvancedFeeHook / PoolManager / PairOracleRegistry / HolderRewardsFactory / sample BSTONK. Live BlockReq Base public only.",
+
+
+
 
   "layout.launch-feed": "Launch feed",
   "layout.single-focus": "Single focus",
@@ -1238,6 +1256,24 @@ const zh: Dict = {
   "crossrate.settingsHint": "已验证 Launcher + TokenLaunched topic0 预填。货币桌映射 quoteToken→代码（含 AED 样例）。factory / rate hook / locker / owner / PoolManager / USDG 提示芯片。仅 Live BlockReq RH 公共端点。",
 
 
+  "basestonk.title": "BaseStonk 发射台监听：AdvancedLaunched 盯开盘卡",
+  "basestonk.blurb": "BaseStonk 发射台 · AdvancedLauncherV2 AdvancedLaunched 盯开盘卡；公共 WSS 开跑。",
+  "basestonk.tag": "BASE // BASESTONK",
+  "basestonk.toast": "打中了——BaseStonk AdvancedLaunched",
+  "basestonk.guide": "AdvancedLauncherV2 AdvancedLaunched → 解码 token / creator / poolId / pairToken / sqrtPriceX96 / taxBps / burnBps / liquidityBps / payees。闪卡开盘雷达占舞台。可选 RewardsEnabled 芯片。RPC 端点折叠为次要。",
+  "basestonk.watching": "BaseStonk AdvancedLauncherV2 AdvancedLaunched，经 BlockReq Base 公共 WSS — 开盘卡。",
+  "basestonk.hint": "雷达 · AdvancedLaunched 开盘卡",
+  "basestonk.emptyTitle": "在等 AdvancedLaunched…",
+  "basestonk.emptySub": "AdvancedLauncherV2 实时听 — 开盘卡闪入这里。",
+  "basestonk.latest": "最近 AdvancedLaunched",
+  "basestonk.hero.idle": "恢复实时 — AdvancedLauncherV2 AdvancedLaunched 雷达。",
+  "basestonk.hero.connecting": "正在连 Base 公共 WSS…",
+  "basestonk.hero.listening": "实时中 — 等 LAUNCHER 上的 AdvancedLaunched。",
+  "basestonk.hero.hit": "粘性 AdvancedLaunched 开盘卡占舞台；左侧流闪入。",
+  "basestonk.settingsHint": "已验证 AdvancedLauncherV2 + AdvancedLaunched topic0 预填。可选 RewardsEnabled topic0 芯片。AdvancedFeeHook / PoolManager / PairOracleRegistry / HolderRewardsFactory / 样例 BSTONK 提示芯片。仅 Live BlockReq Base 公共端点。",
+
+
+
 
   "layout.launch-feed": "开盘流",
   "layout.single-focus": "单焦舞台",
@@ -1790,6 +1826,28 @@ export const DEMO_CATALOG = [
     pathEn: "/demos1/crossrate-rhc-currency-launch-listen/en/",
     pathZh: "/demos1/crossrate-rhc-currency-launch-listen/zh/",
     tags: ["robinhood-chain", "crossrate", "launchpad", "tokenlaunched", "fx", "eth-subscribe", "blockreq"] as const,
+  },
+
+
+  {
+    slug: "basestonk-advanced-launcher-listen",
+    blogSlug: "basestonk-advanced-launcher-listen",
+    siteUrl: "https://blockreq.com/",
+    titleKey: "basestonk.title",
+    blurbKey: "basestonk.blurb",
+    accent: "eth" as const,
+    layout: "launch-feed" as const satisfies DemoLayout,
+    published: true,
+    demoHits: false as const,
+    chainLabel: "Base",
+    endpointKey: "base" as const,
+    blogEn: "https://blockreq.com/blog/en/basestonk-advanced-launcher-listen",
+    blogZh: "https://blockreq.com/blog/zh/basestonk-advanced-launcher-listen",
+    stackblitz:
+      "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/basestonk-advanced-launcher-listen/src/main.tsx&startScript=dev:basestonk-advanced-launcher-listen&ctl=1",
+    pathEn: "/demos1/basestonk-advanced-launcher-listen/en/",
+    pathZh: "/demos1/basestonk-advanced-launcher-listen/zh/",
+    tags: ["base", "basestonk", "advanced-launcher", "launchpad", "advancedlaunched", "eth-subscribe", "blockreq"] as const,
   },
 
 

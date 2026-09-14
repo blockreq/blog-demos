@@ -966,3 +966,34 @@ export function buildCrossrateRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     };
   });
 }
+
+export function buildBasestonkAdvancedLauncherFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  /** Verified sample BSTONK AdvancedLaunchToken (hint / idle only) */
+  const bstonk = "0x0f61edbfe6cd86024c0f210c0695b08df55fdfc9";
+  const sampleTx = "0x4c564ba2a09921e830f12368f80be2c26e6a020d6e49167907ee43dd6aa9905b";
+  const tokens = [bstonk, fakeAddr("bstok1"), fakeAddr("bstok2"), fakeAddr("bstok3"), fakeAddr("bstok4")];
+  return Array.from({ length: n }, (_, i) => {
+    const token = tokens[i % tokens.length];
+    const taxBps = String(100 + i * 50);
+    const burnBps = String(50 + i * 10);
+    const liquidityBps = String(8000 + i * 25);
+    return {
+      id: rid(),
+      kind: locale === "zh" ? "示意 AdvancedLaunched" : "Demo AdvancedLaunched",
+      tags: ["BASE", "BASESTONK", "ADVANCEDLAUNCHED", "DEMO", "pad:basestonk", "RADAR"],
+      title: short(token),
+      body: `pad:basestonk · token ${short(token)} · creator ${short(fakeAddr("bscr" + i))} · poolId ${short(fakeAddr("bspool" + i))} · pairToken ${short(fakeAddr("bspair" + i))} · sqrtPriceX96 ${String(79228162514264337593543950336n + BigInt(i))} · taxBps ${taxBps} · burnBps ${burnBps} · liquidityBps ${liquidityBps} · payees ${1 + i} · #${38_000_000 + i * 17}`,
+      address: token.toLowerCase(),
+      block: 38_000_000 + i * 17,
+      tx: i === 0 ? sampleTx : fakeAddr(`txbs${i}`),
+      chain: "BASE",
+      at: now - i * 1200,
+      metric: `${taxBps} bps`,
+      metricLabel: "tax",
+      metric2: `burn ${burnBps}`,
+      metric2Label: "burn",
+    };
+  });
+}
+
