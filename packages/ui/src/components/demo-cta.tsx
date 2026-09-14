@@ -21,7 +21,7 @@ export function DemoCta({
   /** Friend Site label (Blog/Site / 官网) */
   siteLabel?: string;
   friendLinksLabel?: string;
-  /** Optional primary site button label (messier.cta); uses siteUrl */
+  /** Optional primary site button label; uses siteUrl — prefer quiet Site/官网 if set */
   primarySiteLabel?: string;
   /** @deprecated friend Blog uses blogLabel — kept so old call sites compile */
   readLabel?: string;

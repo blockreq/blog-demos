@@ -876,7 +876,7 @@ export function buildCompanypadRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     const metricId = String(1000 + i);
     return {
       id: rid(),
-      kind: locale === "zh" ? "示意 Launched" : "Demo Launched",
+      kind: "Launched",
       tags: ["RH", "COMPANYPAD", "LAUNCHED", "DEMO", "pad:companypad", "RADAR"],
       title: ticker,
       body: `pad:companypad · ticker ${ticker} · metricId ${metricId} · market ${short(market)} · creator ${short(fakeAddr("cpcr" + i))} · curve ${short(fakeAddr("cpcurve" + i))} · #${4_660_000 + i * 11}`,
@@ -909,7 +909,7 @@ export function buildBucketRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     const founding = i === 0;
     return {
       id: rid(),
-      kind: locale === "zh" ? "示意 Launched" : "Demo Launched",
+      kind: "Launched",
       tags: [
         "RH",
         "BUCKET",
@@ -950,7 +950,7 @@ export function buildCrossrateRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     const taxBps = String(100 + i * 25);
     return {
       id: rid(),
-      kind: locale === "zh" ? "示意 TokenLaunched" : "Demo TokenLaunched",
+      kind: "TokenLaunched",
       tags: ["RH", "CROSSRATE", "TOKENLAUNCHED", "DEMO", "pad:crossrate", currency, "FX", "RADAR"],
       title: currency,
       body: `pad:crossrate · currency ${currency} · token ${short(token)} · creator ${short(fakeAddr("crcr" + i))} · quoteToken ${short(quote)} · poolId ${short(fakeAddr("crpool" + i))} · taxBps ${taxBps} · supply ${String(1_000_000_000n + BigInt(i))} · liquidity ${String(50_000n + BigInt(i * 100))} · #${4_680_000 + i * 17}`,
@@ -980,7 +980,7 @@ export function buildBasestonkAdvancedLauncherFixtures(locale: Locale, n = 5): F
     const liquidityBps = String(8000 + i * 25);
     return {
       id: rid(),
-      kind: locale === "zh" ? "示意 AdvancedLaunched" : "Demo AdvancedLaunched",
+      kind: "AdvancedLaunched",
       tags: ["BASE", "BASESTONK", "ADVANCEDLAUNCHED", "DEMO", "pad:basestonk", "RADAR"],
       title: short(token),
       body: `pad:basestonk · token ${short(token)} · creator ${short(fakeAddr("bscr" + i))} · poolId ${short(fakeAddr("bspool" + i))} · pairToken ${short(fakeAddr("bspair" + i))} · sqrtPriceX96 ${String(79228162514264337593543950336n + BigInt(i))} · taxBps ${taxBps} · burnBps ${burnBps} · liquidityBps ${liquidityBps} · payees ${1 + i} · #${38_000_000 + i * 17}`,
@@ -1057,7 +1057,7 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
     const tokenLabel = row.highlight ? "$RWA" : short(row.token);
     return {
       id: rid(),
-      kind: locale === "zh" ? `示意 ${sideLabel}` : `Demo ${row.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`,
+      kind: row.side === "lock" ? (locale === "zh" ? "锁仓" : "VaultDeposit") : (locale === "zh" ? "释放" : "VaultWithdraw"),
       tags: [
         "BASE",
         "MESSIER",

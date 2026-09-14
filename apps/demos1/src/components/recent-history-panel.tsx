@@ -22,7 +22,7 @@ function ageLabel(at: number) {
 
 /**
  * Dense history/feed table.
- * Priority: liveEvents → rpc history → seedEvents (labeled 示意数据).
+ * Priority: liveEvents → rpc history → seedEvents (silent fixtures).
  * Never a blank void; 「暂无记录」+ reason only when all empty.
  */
 export function RecentHistoryPanel({
@@ -41,7 +41,7 @@ export function RecentHistoryPanel({
   locale: Locale;
   history: HistoryState;
   liveEvents: FeedEvent[];
-  /** First-paint DEMO DATA rows when RPC empty */
+  /** First-paint fixture rows when RPC empty */
   seedEvents?: FeedEvent[];
   listening: boolean;
   selectedId?: string | null;
