@@ -61,6 +61,7 @@ import { LongshotBaseFootballMarketDemo } from "./demos/longshot-base-football-m
 import { CompanypadRhcCompanyMarketDemo } from "./demos/companypad-rhc-company-market-listen";
 import { BucketRhcLaunchpadListenDemo } from "./demos/bucket-rhc-launchpad-listen";
 import { CrossrateRhcCurrencyLaunchListenDemo } from "./demos/crossrate-rhc-currency-launch-listen";
+import { BasestonkAdvancedLauncherListenDemo } from "./demos/basestonk-advanced-launcher-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -304,6 +305,9 @@ function DemoPage() {
       )}
       {slug === "crossrate-rhc-currency-launch-listen" && (
         <CrossrateRhcCurrencyLaunchListenDemo locale={locale} />
+      )}
+      {slug === "basestonk-advanced-launcher-listen" && (
+        <BasestonkAdvancedLauncherListenDemo locale={locale} />
       )}
       <DemoCta
         title={t(locale, meta.titleKey)}
