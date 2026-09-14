@@ -85,7 +85,7 @@ export function DemoCta({
             href={SIGNUP}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 min-w-0 shrink-0 items-center justify-center border border-[var(--color-line)] bg-[var(--color-panel)] px-5 text-sm font-bold text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.45)] hover:text-[var(--color-neon-cyan)]"
+            className="inline-flex min-h-9 min-w-0 shrink-0 items-center justify-center border border-transparent px-3 text-xs font-medium text-[var(--color-muted-foreground)] opacity-60 hover:opacity-100 hover:border-[var(--color-line)] hover:text-[var(--color-neon-cyan)]"
           >
             {pricingLabel}
           </a>

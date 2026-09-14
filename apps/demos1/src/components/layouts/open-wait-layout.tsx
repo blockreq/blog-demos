@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Separator, cn } from "@blockreq/ui";
-import type { FeedEvent } from "../feed-types";
+import { displayTags, type FeedEvent } from "../feed-types";
 import { toFeelState } from "../../lib/ui-state";
 import type { ConnStatus } from "@blockreq/ui";
 import { HeartbeatStrip } from "../feed-empty";
@@ -202,7 +202,7 @@ export function OpenWaitLayout({
               </div>
 
               <div className="mt-3 flex flex-wrap gap-1">
-                {latest.tags.map((tag) => (
+                {displayTags(latest.tags).map((tag) => (
                   <Badge key={tag}>{tag}</Badge>
                 ))}
               </div>

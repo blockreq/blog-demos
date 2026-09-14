@@ -34,7 +34,7 @@ function fakeAddr(seed: string) {
   return `0x${hex}`;
 }
 
-/** Fixture payloads — clearly tagged DEMO so 美工 can verify flash/hit/columns. */
+/** Fixture payloads for 美工 flash/hit/columns checks (no DEMO/FIXTURE badge tags). */
 export function buildAnonFixtures(locale: Locale, n = 4): FeedEvent[] {
   const now = Date.now();
   const kinds =
@@ -48,7 +48,7 @@ export function buildAnonFixtures(locale: Locale, n = 4): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: i % 2 === 0 ? ["NEW", "ANON", "DEMO"] : ["LP", "DEMO"],
+      tags: i % 2 === 0 ? ["NEW", "ANON"] : ["LP"],
       title: short(addr),
       body: `${syms[i % syms.length]} · #${12_400_000 + i * 17}`,
       address: addr,
@@ -73,7 +73,7 @@ export function buildOpenFixtures(locale: Locale, n = 3): FeedEvent[] {
     return {
       id: rid(),
       kind,
-      tags: ["HIT", "BASE", "DEMO"],
+      tags: ["HIT", "BASE"],
       title: names[i % names.length],
       body: `${short(addr)} · pool init+lock · #${28_900_000 + i * 9}`,
       address: addr,
@@ -127,7 +127,7 @@ export function buildEquiFixtures(
           ? "又开一个"
           : "Next market";
     const tags =
-      m.tag === "FIRST" ? ["FIRST", "DEMO"] : ["NEXT", `N=${m.idx}`, "DEMO", ...(m.idx >= 3 ? ["BURST"] : [])];
+      m.tag === "FIRST" ? ["FIRST"] : ["NEXT", `N=${m.idx}`, ...(m.idx >= 3 ? ["BURST"] : [])];
     const px = (0.00012 * (i + 1)).toFixed(5);
     const vol = (42_000 / (i + 1)).toFixed(0);
     return {
@@ -164,7 +164,7 @@ export function buildStockFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: i % 2 === 0 ? ["STOCK", "PAIR", "DEMO"] : ["LP", "STOCK", "DEMO"],
+      tags: i % 2 === 0 ? ["STOCK", "PAIR"] : ["LP", "STOCK"],
       title: short(addr),
       body: `${syms[i % syms.length]} ↔ ${short(meme)} · #${12_500_000 + i * 11}`,
       address: addr,
@@ -188,7 +188,7 @@ export function buildPonsFixtures(locale: Locale, n = 4): FeedEvent[] {
     return {
       id: rid(),
       kind: i === 1 && locale === "zh" ? "Pons 毕业" : i === 1 ? "Pons graduated" : kind,
-      tags: i === 1 ? ["GRAD", "PONS", "DEMO"] : ["NEW", "PONS", "DEMO"],
+      tags: i === 1 ? ["GRAD", "PONS"] : ["NEW", "PONS"],
       title: names[i % names.length],
       body: `${short(addr)} · curve ${short(curve)} · #${12_600_000 + i * 13}`,
       address: addr,
@@ -239,7 +239,7 @@ export function buildRhV4DirectFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: i === 2 && locale === "zh" ? "流动性到位" : i === 2 ? "Liquidity in" : kind,
-      tags: i === 2 ? ["LP", "V4", "DIRECT", "DEMO"] : ["NEW", "V4", "DIRECT", "DEMO"],
+      tags: i === 2 ? ["LP", "V4", "DIRECT"] : ["NEW", "V4", "DIRECT"],
       title: names[i % names.length],
       body: `${short(c0)} / ${short(c1)} · pool ${short(poolId)} · #${12_700_000 + i * 19}`,
       address: poolId,
@@ -269,7 +269,7 @@ export function buildBaseSpikeFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: spike ? ["SPIKE", "BASE", "DEMO"] : ["NEW", "BASE", "DEMO"],
+      tags: spike ? ["SPIKE", "BASE"] : ["NEW", "BASE"],
       title: names[i % names.length],
       body: `${short(pair)} · swaps ${swaps}/window · #${28_920_000 + i * 7}`,
       address: pair,
@@ -300,7 +300,7 @@ export function buildBasketFixtures(locale: Locale, n = 4): FeedEvent[] {
     return {
       id: rid(),
       kind,
-      tags: ["NEW", "BASKET", "RH", "DEMO"],
+      tags: ["NEW", "BASKET", "RH"],
       title: `${b.symbol} · ${b.name}`,
       body: `components ${b.comps} · ${short(addr)} · #${12_800_000 + i * 15}`,
       address: addr,
@@ -329,7 +329,7 @@ export function buildLongEcoFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: i % 3 === 2 ? ["LP", "ECO", "DEMO"] : ["ECO", "PAIR", "DEMO"],
+      tags: i % 3 === 2 ? ["LP", "ECO"] : ["ECO", "PAIR"],
       title: short(meme),
       body: `${ecos[i % ecos.length]} ↔ ${short(meme)} · #${12_810_000 + i * 11}`,
       address: meme,
@@ -359,7 +359,7 @@ export function buildArcDay1Fixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: dens ? ["DENS", "ARC", "DEMO"] : ["NEW", "ARC", "DAY1", "DEMO"],
+      tags: dens ? ["DENS", "ARC"] : ["NEW", "ARC", "DAY1"],
       title: names[i % names.length],
       body: `${short(pair)} · #${1_000_000 + i * 9}`,
       address: pair,
@@ -386,7 +386,7 @@ export function buildBaseStockSwapFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind,
-      tags: ["BIG", "BASE", venues[i % venues.length], syms[i % syms.length], "DEMO"],
+      tags: ["BIG", "BASE", venues[i % venues.length], syms[i % syms.length]],
       title: `${syms[i % syms.length]} · ${venues[i % venues.length]}`,
       body: `chain=base · venue=${venues[i % venues.length]} · print $${size} · pool ${short(pool)} · #${28_930_000 + i * 5}`,
       address: pool,
@@ -415,7 +415,7 @@ export function buildAnyQuoteFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: ["ANYQUOTE", "RH", quotes[i % quotes.length], "DEMO"],
+      tags: ["ANYQUOTE", "RH", quotes[i % quotes.length]],
       title: short(launch),
       body: `path=any-quote · quoteSide ${quotes[i % quotes.length]} ${short(quote)} · launchSide ${short(launch)} · #${12_820_000 + i * 13}`,
       address: launch,
@@ -455,10 +455,10 @@ export function buildPumpCustomPairFixtures(locale: Locale, n = 5): FeedEvent[] 
       id: rid(),
       kind: kinds[i % kinds.length],
       tags: grad
-        ? ["GRAD", "PUMPSWAP", "DEMO"]
+        ? ["GRAD", "PUMPSWAP"]
         : i % 2 === 1
-          ? ["CUSTOM", "PUMP", "DEMO", q.tag]
-          : ["CREATE", "PUMP", "DEMO", q.tag],
+          ? ["CUSTOM", "PUMP", q.tag]
+          : ["CREATE", "PUMP", q.tag],
       title: short(baseMint),
       body: `pad pump-custom-pair · base ${short(baseMint)} · quote ${q.tag} ${short(q.mint)} · slot ${250_000_000 + i * 17}`,
       address: baseMint,
@@ -487,7 +487,7 @@ export function buildMonadO1Fixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: dens ? ["DENS", "MONAD", "O1", "DEMO"] : ["NEW", "MONAD", "O1", "DAY0", "DEMO"],
+      tags: dens ? ["DENS", "MONAD", "O1"] : ["NEW", "MONAD", "O1", "DAY0"],
       title: names[i % names.length],
       body: `pad monad-o1 · ${short(pair)} · #${143_000 + i * 9}`,
       address: pair,
@@ -536,8 +536,8 @@ export function buildChangelogFilterFixtures(locale: Locale, n = 5): FeedEvent[]
       id: rid(),
       kind: kinds[i % kinds.length],
       tags: alert
-        ? ["UPGRADE", "ALERT", "DEMO", ut]
-        : ["FILTER", "CHANGELOG", "DEMO", fk],
+        ? ["UPGRADE", "ALERT", ut]
+        : ["FILTER", "CHANGELOG", fk],
       title: shortSol(p.id),
       body: `pad changelog-filter · program ${p.tag} ${shortSol(p.id)} · filterKey ${fk} · upgradeTag ${ut} · sig ${shortSol(sig)} · slot ${slot}`,
       address: p.id,
@@ -574,7 +574,7 @@ export function buildAgaveCompatFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: i % 2 === 1 ? ["DIFF", "AGAVE", "DEMO", releaseTag] : ["PROBE", "AGAVE", "DEMO", releaseTag],
+      tags: i % 2 === 1 ? ["DIFF", "AGAVE", releaseTag] : ["PROBE", "AGAVE", releaseTag],
       title: releaseTag,
       body: `pad agave-compat · releaseTag ${releaseTag} · tipSlot ${tipSlot} · programDiff ${programDiff} · subLag ${subLag} · checks ${checks}`,
       address: `AgaveProg${i}${"1".repeat(40)}`.slice(0, 44),
@@ -607,8 +607,8 @@ export function buildBrewDoublePairFixtures(locale: Locale, n = 5): FeedEvent[] 
       id: rid(),
       kind: kinds[i % kinds.length],
       tags: twin
-        ? ["TWIN", "READY", "BREW", "BSC", "DEMO"]
-        : ["PART", "BREW", "BSC", "DEMO"],
+        ? ["TWIN", "READY", "BREW", "BSC"]
+        : ["PART", "BREW", "BSC"],
       title: names[i % names.length],
       body: twin
         ? `pad brew-double-pair · launchId ${short(token)} · capUsd $69000 · poolA ${short(poolA)} · poolB ${short(poolB)} · #${60_000_000 + i * 11}`
@@ -641,7 +641,7 @@ export function buildArbRwaFlowFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: [kind, "RWA", "ARB", syms[i % syms.length], "DEMO"],
+      tags: [kind, "RWA", "ARB", syms[i % syms.length]],
       title: syms[i % syms.length],
       body:
         kind === "PAIR"
@@ -674,8 +674,8 @@ export function buildCronosLaunchpadFixtures(locale: Locale, n = 5): FeedEvent[]
       id: rid(),
       kind: kinds[i % kinds.length],
       tags: first
-        ? ["FIRST", "MINT", "CRO", "LAUNCHPAD", "DEMO", "pad:app-launchpad"]
-        : ["NEW", "CRO", "LAUNCHPAD", "DEMO", "pad:app-launchpad"],
+        ? ["FIRST", "MINT", "CRO", "LAUNCHPAD", "pad:app-launchpad"]
+        : ["NEW", "CRO", "LAUNCHPAD", "pad:app-launchpad"],
       title: names[i % names.length],
       body: `pad:app-launchpad · pair ${short(pair)} · amount0 ${(i + 1) * 1000} · amount1 ${(i + 1) * 50} · #${22_000_000 + i * 11}`,
       address: pair,
@@ -706,7 +706,7 @@ export function buildEthV4StablePairFixtures(locale: Locale, n = 5): FeedEvent[]
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: ["V4", "STABLEPAIR", "ETH", `kind:${kindTags[i % kindTags.length]}`, "DEMO", "pad:stablepair-hook"],
+      tags: ["V4", "STABLEPAIR", "ETH", `kind:${kindTags[i % kindTags.length]}`, "pad:stablepair-hook"],
       title: pools[i % pools.length],
       body: `pad:stablepair-hook · kind=${kindTags[i % kindTags.length]} · poolId ${short(poolId)} · pegBps ${peg} · fee ${fee} · #${23_500_000 + i * 9}`,
       address: poolId,
@@ -735,7 +735,7 @@ export function buildBaseLaptopFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: ["BASE", "LAPTOP", `kind:${kindTags[i % kindTags.length]}`, "DEMO", "pad:laptop-liq"],
+      tags: ["BASE", "LAPTOP", `kind:${kindTags[i % kindTags.length]}`, "pad:laptop-liq"],
       title: names[i % names.length],
       body: `pad:laptop-liq · kind=${kindTags[i % kindTags.length]} · pair ${short(pair)} · #${29_100_000 + i * 7}`,
       address: pair,
@@ -771,7 +771,7 @@ export function buildMultiplrLeverageFixtures(locale: Locale, n = 5): FeedEvent[
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: ["ETH", "MULTIPLR", "LEVERAGE", "DEMO", "pad:multiplr-leverage", ...tagsList[i % tagsList.length]],
+      tags: ["ETH", "MULTIPLR", "LEVERAGE", "pad:multiplr-leverage", ...tagsList[i % tagsList.length]],
       title: names[i % names.length],
       body: `pad:multiplr-leverage · token ${short(token)} · quote ${short(quote)} · creator ${short(fakeAddr("creator" + i))} · launchTx ${short(fakeAddr("txmplr" + i))} · #${23_600_000 + i * 11}`,
       address: token,
@@ -807,7 +807,7 @@ export function buildHarmonicRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: kinds[i % kinds.length],
-      tags: ["RH", "HARMONIC", "AGENT", "DEMO", ...tagsList[i % tagsList.length]],
+      tags: ["RH", "HARMONIC", "AGENT", ...tagsList[i % tagsList.length]],
       title: names[i % names.length],
       body: `pad:${tagsList[i % tagsList.length].find((t) => t.startsWith("pad:"))?.slice(4) || "pons-v2"} · token ${short(token)} · curve ${short(curve)} · deployer ${short(fakeAddr("dep" + i))} · launchTx ${short(fakeAddr("txharm" + i))} · #${12_800_000 + i * 17}`,
       address: token,
@@ -840,7 +840,6 @@ export function buildLongshotFootballFixtures(locale: Locale, n = 6): FeedEvent[
         "BASE",
         "LONGSHOT",
         "FOOTBALL",
-        "DEMO",
         `kind:${kind}`,
         "pad:longshot-football",
         leagues[i % leagues.length],
@@ -877,7 +876,7 @@ export function buildCompanypadRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: "Launched",
-      tags: ["RH", "COMPANYPAD", "LAUNCHED", "DEMO", "pad:companypad", "RADAR"],
+      tags: ["RH", "COMPANYPAD", "LAUNCHED", "pad:companypad", "RADAR"],
       title: ticker,
       body: `pad:companypad · ticker ${ticker} · metricId ${metricId} · market ${short(market)} · creator ${short(fakeAddr("cpcr" + i))} · curve ${short(fakeAddr("cpcurve" + i))} · #${4_660_000 + i * 11}`,
       address: market.toLowerCase(),
@@ -914,7 +913,6 @@ export function buildBucketRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
         "RH",
         "BUCKET",
         "LAUNCHED",
-        "DEMO",
         "pad:bucket",
         founding ? "FOUNDING" : "STD",
         "RADAR",
@@ -951,7 +949,7 @@ export function buildCrossrateRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
     return {
       id: rid(),
       kind: "TokenLaunched",
-      tags: ["RH", "CROSSRATE", "TOKENLAUNCHED", "DEMO", "pad:crossrate", currency, "FX", "RADAR"],
+      tags: ["RH", "CROSSRATE", "TOKENLAUNCHED", "pad:crossrate", currency, "FX", "RADAR"],
       title: currency,
       body: `pad:crossrate · currency ${currency} · token ${short(token)} · creator ${short(fakeAddr("crcr" + i))} · quoteToken ${short(quote)} · poolId ${short(fakeAddr("crpool" + i))} · taxBps ${taxBps} · supply ${String(1_000_000_000n + BigInt(i))} · liquidity ${String(50_000n + BigInt(i * 100))} · #${4_680_000 + i * 17}`,
       address: token.toLowerCase(),
@@ -981,7 +979,7 @@ export function buildBasestonkAdvancedLauncherFixtures(locale: Locale, n = 5): F
     return {
       id: rid(),
       kind: "AdvancedLaunched",
-      tags: ["BASE", "BASESTONK", "ADVANCEDLAUNCHED", "DEMO", "pad:basestonk", "RADAR"],
+      tags: ["BASE", "BASESTONK", "ADVANCEDLAUNCHED", "pad:basestonk", "RADAR"],
       title: short(token),
       body: `pad:basestonk · token ${short(token)} · creator ${short(fakeAddr("bscr" + i))} · poolId ${short(fakeAddr("bspool" + i))} · pairToken ${short(fakeAddr("bspair" + i))} · sqrtPriceX96 ${String(79228162514264337593543950336n + BigInt(i))} · taxBps ${taxBps} · burnBps ${burnBps} · liquidityBps ${liquidityBps} · payees ${1 + i} · #${38_000_000 + i * 17}`,
       address: token.toLowerCase(),
@@ -1062,7 +1060,6 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
         "BASE",
         "MESSIER",
         row.side === "lock" ? "VAULTDEPOSIT" : "VAULTWITHDRAW",
-        "DEMO",
         "pad:messier-p2p",
         row.highlight ? "RWA" : "TOKEN",
         "RADAR",
