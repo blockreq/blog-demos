@@ -10,7 +10,7 @@ import {
   TableRow,
   cn,
 } from "@blockreq/ui";
-import type { FeedEvent } from "./feed-types";
+import { displayTags, type FeedEvent } from "./feed-types";
 import { FeedSkeletonRows, HeartbeatStrip } from "./feed-empty";
 import type { HistoryState } from "../lib/recent-history";
 
@@ -213,7 +213,7 @@ export function RecentHistoryPanel({
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="inline-flex flex-wrap justify-end gap-1">
-                        {ev.tags.slice(0, 2).map((tag) => (
+                        {displayTags(ev.tags).slice(0, 2).map((tag) => (
                           <Badge key={tag} variant="secondary" className="px-1.5 py-0.5 text-[9px]">
                             {tag}
                           </Badge>

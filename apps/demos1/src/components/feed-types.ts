@@ -21,3 +21,15 @@ export type FeedEvent = {
   /** Deep links (pool UI, explorer tx). */
   links?: { label: string; href: string }[];
 };
+
+/** Fixture/seed markers — never show as UI badges. */
+const NOISE_TAG_RE = /^(DEMO|FIXTURE|SEED|示意)$/i;
+
+export function isNoiseTag(tag: string): boolean {
+  return NOISE_TAG_RE.test(tag);
+}
+
+/** Tags safe to render as badges (filters DEMO/FIXTURE/SEED/示意). */
+export function displayTags(tags: string[]): string[] {
+  return tags.filter((tag) => !isNoiseTag(tag));
+}

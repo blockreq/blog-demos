@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Separator, cn } from "@blockreq/ui";
-import type { FeedEvent } from "../feed-types";
+import { displayTags, type FeedEvent } from "../feed-types";
 import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
@@ -204,7 +204,7 @@ export function AnonStreamLayout({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap gap-1">
-                  {selected.tags.map((tag) => (
+                  {displayTags(selected.tags).map((tag) => (
                     <Badge key={tag}>{tag}</Badge>
                   ))}
                 </div>

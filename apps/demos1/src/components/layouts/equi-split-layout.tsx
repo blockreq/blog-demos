@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, ScrollArea, Separator, cn } from "@blockreq/ui";
-import type { FeedEvent } from "../feed-types";
+import { displayTags, type FeedEvent } from "../feed-types";
 import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
@@ -137,7 +137,7 @@ export function EquiSplitLayout({
               className={cn(
                 "border border-[var(--color-line)] bg-[#07070E] px-3 py-2.5",
                 isLead && "col-diff-lead",
-                !isLead && top && !top.tags.includes("DEMO") && "col-diff-hot"
+                !isLead && top && "col-diff-hot"
               )}
             >
               <div className="flex items-center justify-between gap-2">
@@ -205,7 +205,7 @@ export function EquiSplitLayout({
                       className={cn(
                         "grid grid-cols-[1fr_auto] gap-1.5 border-b border-[rgba(30,30,46,0.85)] px-2.5 py-2.5",
                         idx === 0 && "row-focus",
-                        idx === 0 && !ev.tags.includes("DEMO") && "feed-row-flash is-insert"
+                        idx === 0 && "feed-row-flash is-insert"
                       )}
                     >
                       <div className="min-w-0">
@@ -219,7 +219,7 @@ export function EquiSplitLayout({
                         ) : null}
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {ev.tags.slice(0, 1).map((tag) => (
+                        {displayTags(ev.tags).slice(0, 1).map((tag) => (
                           <Badge key={tag} variant="secondary" className="px-1.5 py-0.5 text-[9px]">
                             {tag}
                           </Badge>
