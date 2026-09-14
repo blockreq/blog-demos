@@ -62,6 +62,7 @@ import { CompanypadRhcCompanyMarketDemo } from "./demos/companypad-rhc-company-m
 import { BucketRhcLaunchpadListenDemo } from "./demos/bucket-rhc-launchpad-listen";
 import { CrossrateRhcCurrencyLaunchListenDemo } from "./demos/crossrate-rhc-currency-launch-listen";
 import { BasestonkAdvancedLauncherListenDemo } from "./demos/basestonk-advanced-launcher-listen";
+import { MessierRwaP2pVaultListenDemo } from "./demos/messier-rwa-p2p-vault-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -309,12 +310,17 @@ function DemoPage() {
       {slug === "basestonk-advanced-launcher-listen" && (
         <BasestonkAdvancedLauncherListenDemo locale={locale} />
       )}
+      {slug === "messier-rwa-p2p-vault-listen" && (
+        <MessierRwaP2pVaultListenDemo locale={locale} />
+      )}
       <DemoCta
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
         siteUrl={siteUrl}
         readLabel={t(locale, "shell.readGuide")}
-        siteLabel={t(locale, "shell.site")}
+        siteLabel={
+          slug === "messier-rwa-p2p-vault-listen" ? t(locale, "messier.cta") : t(locale, "shell.site")
+        }
         pricingLabel={t(locale, "shell.pricing")}
         quotaLabel={t(locale, "shell.quotaAfter")}
       />

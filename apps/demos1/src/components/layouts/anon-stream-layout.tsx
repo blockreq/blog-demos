@@ -124,9 +124,11 @@ export function AnonStreamLayout({
         <aside className="flex min-h-0 flex-col">
           <div
             data-hit={liveSelected ? "true" : undefined}
+            data-highlight={selected?.highlight ? "true" : undefined}
             className={cn(
               "focus-card live-surface sticky top-0 flex min-h-[300px] flex-1 flex-col gap-3 p-4",
-              liveSelected && "hit-panel-flash"
+              liveSelected && "hit-panel-flash",
+              selected?.highlight && "border-[rgba(0,240,255,0.55)]"
             )}
           >
             {!selected ? (
@@ -147,7 +149,12 @@ export function AnonStreamLayout({
                   </span>
                 </div>
 
-                <h2 className="type-hit" title={selected.address || selected.title}>{selected.title || selected.kind}</h2>
+                <h2
+                  className={cn("type-hit", selected.highlight && "text-[var(--color-neon-cyan)]")}
+                  title={selected.address || selected.title}
+                >
+                  {selected.title || selected.kind}
+                </h2>
                 <p className="text-[15px] font-bold text-[var(--color-neon-mag)]">{selected.kind}</p>
 
                 {(selected.metric || typeof selected.block === "number") && (
@@ -183,6 +190,21 @@ export function AnonStreamLayout({
                   <span className="text-[var(--color-muted-foreground)]">Meta</span>
                   <span className="break-all font-mono text-[12px] text-[#C8CDDF]">{selected.body}</span>
                 </div>
+                {selected.links?.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selected.links.map((link) => (
+                      <a
+                        key={link.href + link.label}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-9 items-center border border-[rgba(0,240,255,0.35)] bg-[rgba(0,240,255,0.08)] px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-neon-cyan)] hover:brightness-110"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap gap-1">
                   {selected.tags.map((tag) => (
                     <Badge key={tag}>{tag}</Badge>

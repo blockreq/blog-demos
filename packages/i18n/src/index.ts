@@ -635,6 +635,26 @@ const en: Dict = {
   "basestonk.hero.hit": "Sticky AdvancedLaunched open card owns the stage; feed flashes left.",
   "basestonk.settingsHint": "Verified AdvancedLauncherV2 + AdvancedLaunched topic0 prefilled. Optional RewardsEnabled topic0 chip. Hint chips for AdvancedFeeHook / PoolManager / PairOracleRegistry / HolderRewardsFactory / sample BSTONK. Live BlockReq Base public only.",
 
+  "messier.title": "Messier P2P vault listen: $RWA zero-slippage lock radar",
+  "messier.blurb": "Messier P2P vault · VaultDeposit / VaultWithdraw lock-release radar on public WSS.",
+  "messier.tag": "BASE // MESSIER-P2P",
+  "messier.toast": "Hit — Messier vault lock/release",
+  "messier.guide": "VaultDeposit / VaultWithdraw on the Messier P2P vault → receipt sibling ERC-20 Transfer (token / amount / maker). Flashy lock/release cards own the stage; $RWA highlighted. Optional USDC filter. RPC endpoints stay collapsed secondary.",
+  "messier.watching": "Messier P2P vault VaultDeposit / VaultWithdraw via BlockReq Base public WSS — $RWA lock radar.",
+  "messier.hint": "Radar · VaultDeposit lock / VaultWithdraw release",
+  "messier.emptyTitle": "Waiting for vault lock / release…",
+  "messier.emptySub": "Live listen on Messier P2P vault — lock/release cards flash here.",
+  "messier.latest": "Latest vault lock/release",
+  "messier.hero.idle": "Resume live — Messier P2P vault lock/release radar.",
+  "messier.hero.connecting": "Connecting Base public WSS…",
+  "messier.hero.listening": "Live — waiting for VaultDeposit / VaultWithdraw on VAULT.",
+  "messier.hero.hit": "Sticky lock/release card owns the stage; $RWA flashes when matched.",
+  "messier.settingsHint": "Verified Messier P2P vault + VaultDeposit / VaultWithdraw topic0s prefilled. Optional USDC-only filter. Hint chips for $RWA / USDC / Messier pool / sample txs / Aerodrome RWA/USDC (DEX chart only). Live BlockReq Base public only.",
+  "messier.cta": "Register for 3M free requests monthly",
+  "messier.usdcFilter": "USDC only (optional filter)",
+  "messier.poolLink": "Messier pool",
+  "messier.scanLink": "BaseScan tx",
+
 
 
 
@@ -1272,6 +1292,26 @@ const zh: Dict = {
   "basestonk.hero.hit": "粘性 AdvancedLaunched 开盘卡占舞台；左侧流闪入。",
   "basestonk.settingsHint": "已验证 AdvancedLauncherV2 + AdvancedLaunched topic0 预填。可选 RewardsEnabled topic0 芯片。AdvancedFeeHook / PoolManager / PairOracleRegistry / HolderRewardsFactory / 样例 BSTONK 提示芯片。仅 Live BlockReq Base 公共端点。",
 
+  "messier.title": "Messier P2P 金库监听：$RWA 零滑点锁仓雷达",
+  "messier.blurb": "Messier P2P 金库 · VaultDeposit / VaultWithdraw 锁仓/释放雷达；公共 WSS 开跑。",
+  "messier.tag": "BASE // MESSIER-P2P",
+  "messier.toast": "打中了——Messier 金库锁仓/释放",
+  "messier.guide": "Messier P2P 金库 VaultDeposit / VaultWithdraw → 收据配对 ERC-20 Transfer（token / amount / maker）。闪卡锁仓/释放占舞台；$RWA 高亮。可选 USDC 过滤。RPC 端点折叠为次要。",
+  "messier.watching": "Messier P2P 金库 VaultDeposit / VaultWithdraw，经 BlockReq Base 公共 WSS — $RWA 锁仓雷达。",
+  "messier.hint": "雷达 · VaultDeposit 锁仓 / VaultWithdraw 释放",
+  "messier.emptyTitle": "在等金库锁仓 / 释放…",
+  "messier.emptySub": "Messier P2P 金库实时听 — 锁仓/释放卡闪入这里。",
+  "messier.latest": "最近锁仓/释放",
+  "messier.hero.idle": "恢复实时 — Messier P2P 金库锁仓/释放雷达。",
+  "messier.hero.connecting": "正在连 Base 公共 WSS…",
+  "messier.hero.listening": "实时中 — 等 VAULT 上的 VaultDeposit / VaultWithdraw。",
+  "messier.hero.hit": "粘性锁仓/释放卡占舞台；命中 $RWA 时高亮。",
+  "messier.settingsHint": "已验证 Messier P2P 金库 + VaultDeposit / VaultWithdraw topic0 预填。可选仅 USDC 过滤。$RWA / USDC / Messier 池 / 样例交易 / Aerodrome RWA/USDC（仅 DEX 图芯片）提示芯片。仅 Live BlockReq Base 公共端点。",
+  "messier.cta": "注册每月免费 3M 请求",
+  "messier.usdcFilter": "仅 USDC（可选过滤）",
+  "messier.poolLink": "Messier 池",
+  "messier.scanLink": "BaseScan 交易",
+
 
 
 
@@ -1848,6 +1888,27 @@ export const DEMO_CATALOG = [
     pathEn: "/demos1/basestonk-advanced-launcher-listen/en/",
     pathZh: "/demos1/basestonk-advanced-launcher-listen/zh/",
     tags: ["base", "basestonk", "advanced-launcher", "launchpad", "advancedlaunched", "eth-subscribe", "blockreq"] as const,
+  },
+
+  {
+    slug: "messier-rwa-p2p-vault-listen",
+    blogSlug: "messier-rwa-p2p-vault-listen",
+    siteUrl: "https://blockreq.com/",
+    titleKey: "messier.title",
+    blurbKey: "messier.blurb",
+    accent: "eth" as const,
+    layout: "launch-feed" as const satisfies DemoLayout,
+    published: true,
+    demoHits: false as const,
+    chainLabel: "Base",
+    endpointKey: "base" as const,
+    blogEn: "https://blockreq.com/blog/en/messier-rwa-p2p-vault-listen",
+    blogZh: "https://blockreq.com/blog/zh/messier-rwa-p2p-vault-listen",
+    stackblitz:
+      "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/messier-rwa-p2p-vault-listen/src/main.tsx&startScript=dev:messier-rwa-p2p-vault-listen&ctl=1",
+    pathEn: "/demos1/messier-rwa-p2p-vault-listen/en/",
+    pathZh: "/demos1/messier-rwa-p2p-vault-listen/zh/",
+    tags: ["base", "messier", "p2p", "vault", "rwa", "vaultdeposit", "vaultwithdraw", "eth-subscribe", "blockreq"] as const,
   },
 
 
