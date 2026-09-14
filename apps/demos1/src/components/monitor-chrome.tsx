@@ -222,35 +222,23 @@ export function LocaleToggle({
 
 function AdSlots({ locale }: { locale: Locale }) {
   return (
-    <>
-      <a
-        className="ad-banner"
-        href={SITE}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={t(locale, "shell.adAria")}
-      >
-        <span className="ad-label">{t(locale, "shell.adLabel")}</span>
-        <span className="ad-creative">{t(locale, "shell.adCreative")}</span>
-      </a>
-      <a
-        className="ad-rail"
-        href={SITE}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={t(locale, "shell.adAria")}
-      >
-        <span className="ad-label">{t(locale, "shell.adLabel")}</span>
-        <span className="ad-creative">{t(locale, "shell.adCreativeShort")}</span>
-      </a>
-    </>
+    <a
+      className="ad-banner"
+      href={SITE}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={t(locale, "shell.adAria")}
+    >
+      <span className="ad-label">{t(locale, "shell.adLabel")}</span>
+      <span className="ad-creative">{t(locale, "shell.adCreative")}</span>
+    </a>
   );
 }
 
 /**
  * Locked product top bar — centered chrome (no back-to-catalog).
- * Center: brand + LIVE/fresh + PUBLIC/Free3M + Blog/Site; right: ZH/EN.
- * Ad banner + ≥1400px side rail under header (whole-block CTA → site).
+ * Center: brand + LIVE/fresh + PUBLIC/Free3M chip; right: ZH/EN.
+ * Top ad banner under header (whole-block CTA → site). No right ad rail / top Blog·Site·Sign up.
  */
 export function MonitorChrome({
   locale,
@@ -263,8 +251,8 @@ export function MonitorChrome({
   localeMode = "links",
   onLocaleChange,
   lastUpdateAt,
-  blogUrl,
-  siteUrl = SITE,
+  blogUrl: _blogUrl,
+  siteUrl: _siteUrl = SITE,
 }: {
   locale: Locale;
   title: string;
@@ -276,14 +264,17 @@ export function MonitorChrome({
   localeMode?: "links" | "catalog";
   onLocaleChange?: (locale: Locale) => void;
   lastUpdateAt?: number | null;
+  /** @deprecated Blog moved to DemoCta friend links — prop kept for call-site compat */
   blogUrl?: string;
+  /** @deprecated Site moved to DemoCta friend links — prop kept for call-site compat */
   siteUrl?: string;
 }) {
+  void _blogUrl;
+  void _siteUrl;
   const feel = toFeelState(status, !!hasHit);
   const live = feel === "listening" || feel === "hit";
   const connecting = feel === "connecting";
   const streaming = live || connecting;
-  const blogHref = blogUrl || "https://blockreq.com/blog";
 
   const dataState = useMemo(() => {
     if (feel === "hit") return "hit";
@@ -338,28 +329,6 @@ export function MonitorChrome({
               <span className="tag">{t(locale, "shell.publicTag")}</span>
               <span aria-hidden>·</span>
               <span>{t(locale, "shell.publicFree")}</span>
-            </a>
-            <a
-              className="tb-signup"
-              href={PRICING}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t(locale, "shell.signup")}
-            </a>
-          </div>
-
-          <span className="tb-sep" aria-hidden />
-
-          <div className="tb-group tb-links">
-            <a href={blogHref} target="_blank" rel="noopener noreferrer">
-              {t(locale, "shell.blog")}
-            </a>
-            <span className="dot-sep" aria-hidden>
-              ·
-            </span>
-            <a href={siteUrl} target="_blank" rel="noopener noreferrer">
-              {t(locale, "shell.site")}
             </a>
             {trailing}
           </div>

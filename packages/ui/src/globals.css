@@ -35,11 +35,16 @@
 
 * { border-color: var(--color-border); }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: "Inter", "PingFang SC", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
   min-height: 100vh;
+  overflow-x: hidden;
   background-image:
     linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
@@ -260,11 +265,11 @@ body {
 .live-surface { position: relative; overflow: hidden; }
 
 
-/* Content shell — locked feel baseline max-width 1180px (1100–1280 ok) */
+/* Content shell — ~1280px (Tailwind max-w-screen-xl) */
 .demo-shell,
 .demo-shell-wide {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1280px;
   margin-inline: auto;
   padding-inline: clamp(12px, 2vw, 16px);
   padding-block: 12px 20px;
@@ -593,8 +598,8 @@ body {
 }
 
 
-/* ===== AD / SPONSOR SLOTS — whole block CTA, no separate signup btn ===== */
-a.ad-banner,a.ad-rail{text-decoration:none;color:inherit;cursor:pointer}
+/* ===== AD / SPONSOR SLOTS — top banner only (right rail removed) ===== */
+a.ad-banner{text-decoration:none;color:inherit;cursor:pointer}
 .ad-banner{
   display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
   padding:10px 16px;min-height:44px;
@@ -613,23 +618,6 @@ a.ad-banner,a.ad-rail{text-decoration:none;color:inherit;cursor:pointer}
 .ad-creative{
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;font-weight:900;letter-spacing:.02em;
   color:#061018;text-shadow:none;padding:0;border:0;background:transparent;box-shadow:none;clip-path:none;
-}
-.ad-rail{
-  display:none;position:fixed;top:50%;right:10px;transform:translateY(-50%);
-  z-index:6;width:96px;padding:12px 8px;text-align:center;
-  border:2px solid rgba(241,185,44,.7);
-  background:linear-gradient(180deg,#F1B92C,#00F0FF);
-  box-shadow:0 0 24px rgba(241,185,44,.35);
-  transition:filter .15s ease;
-}
-.ad-rail:hover{filter:brightness(1.06)}
-.ad-rail .ad-label{display:block;margin:0 auto 8px;font-size:8px;letter-spacing:.08em;color:#061018;border-color:rgba(6,16,24,.35);background:rgba(255,255,255,.35)}
-.ad-rail .ad-creative{
-  display:block;padding:4px 2px;font-size:11px;line-height:1.35;letter-spacing:.02em;color:#061018;
-  writing-mode:horizontal-tb;clip-path:none;
-}
-@media(min-width:1400px){
-  .ad-rail{display:block}
 }
 @media(max-width:720px){
   .ad-banner .ad-creative{font-size:12px}
