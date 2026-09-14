@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, ScrollArea, Separator, cn } from "@blockreq/ui";
-import { displayTags, type FeedEvent } from "../feed-types";
+import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
 import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
@@ -209,8 +209,8 @@ export function EquiSplitLayout({
                       )}
                     >
                       <div className="min-w-0">
-                        <div className="type-body truncate text-[14px]">{ev.title || ev.kind}</div>
-                        <div className="mt-0.5 truncate type-meta">{ev.body}</div>
+                        <div className="type-body truncate text-[14px]">{scrubDemoText(ev.title || ev.kind)}</div>
+                        <div className="mt-0.5 truncate type-meta">{scrubDemoText(ev.body)}</div>
                         {ev.metric ? (
                           <div key={`${ev.id}-m`} className="metric-tick mt-1 font-mono text-[15px] font-extrabold text-[var(--color-neon-cyan)]">
                             {ev.metric}

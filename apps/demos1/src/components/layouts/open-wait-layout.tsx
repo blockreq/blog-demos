@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Separator, cn } from "@blockreq/ui";
-import { displayTags, type FeedEvent } from "../feed-types";
+import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
 import { toFeelState } from "../../lib/ui-state";
 import type { ConnStatus } from "@blockreq/ui";
 import { HeartbeatStrip } from "../feed-empty";
@@ -174,8 +174,8 @@ export function OpenWaitLayout({
               <Badge variant="hit" className="mb-2">
                 {t(locale, "state.hit")}
               </Badge>
-              <div className="type-hit" title={latest.address || latest.title}>{latest.title || latest.kind}</div>
-              <div className="mt-2 type-meta text-[13px]">{latest.body}</div>
+              <div className="type-hit" title={latest.address || scrubDemoText(latest.title || latest.kind)}>{scrubDemoText(latest.title || latest.kind)}</div>
+              <div className="mt-2 type-meta text-[13px]">{scrubDemoText(latest.body)}</div>
               {latest.address ? (
                 <div className="mt-2 font-mono text-[12px]">
                   <Addr value={latest.address} />

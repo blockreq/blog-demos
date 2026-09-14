@@ -33,3 +33,26 @@ export function isNoiseTag(tag: string): boolean {
 export function displayTags(tags: string[]): string[] {
   return tags.filter((tag) => !isNoiseTag(tag));
 }
+
+/** Bracketed or bare fixture markers in body/title/kind Meta lines. */
+const BRACKET_LABEL_RE = /\[(?:DEMO|FIXTURE|SEED|示意)\]/gi;
+const NOISE_SEGMENT_RE = /^(?:DEMO|FIXTURE|SEED|示意)$/i;
+const LEADING_KIND_PREFIX_RE = /^(?:Demo|示意)\s+/i;
+
+/**
+ * Scrub DEMO/FIXTURE/SEED/示意 tokens from event body/title/kind text.
+ * Handles bracketed DEMO/FIXTURE/SEED/示意, ·-separated bare tokens, and leading Demo/示意 prefixes.
+ */
+export function scrubDemoText(s: string): string {
+  if (!s) return s;
+  let out = s.replace(BRACKET_LABEL_RE, "");
+  const parts = out
+    .split(/\s*·\s*/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0 && !NOISE_SEGMENT_RE.test(p));
+  out = parts.join(" · ");
+  out = out.replace(LEADING_KIND_PREFIX_RE, "");
+  out = out.replace(/\s*·\s*·\s*/g, " · ").replace(/\s{2,}/g, " ").trim();
+  out = out.replace(/^(?:\s*·\s*)+|(?:\s*·\s*)+$/g, "").trim();
+  return out;
+}

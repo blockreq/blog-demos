@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Separator, cn } from "@blockreq/ui";
-import { displayTags, type FeedEvent } from "../feed-types";
+import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
 import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
@@ -149,11 +149,11 @@ export function AnonStreamLayout({
 
                 <h2
                   className={cn("type-hit", selected.highlight && "text-[var(--color-neon-cyan)]")}
-                  title={selected.address || selected.title}
+                  title={selected.address || scrubDemoText(selected.title || selected.kind)}
                 >
-                  {selected.title || selected.kind}
+                  {scrubDemoText(selected.title || selected.kind)}
                 </h2>
-                <p className="text-[15px] font-bold text-[var(--color-neon-mag)]">{selected.kind}</p>
+                <p className="text-[15px] font-bold text-[var(--color-neon-mag)]">{scrubDemoText(selected.kind)}</p>
 
                 {(selected.metric || typeof selected.block === "number") && (
                   <div className="grid grid-cols-2 gap-2">
@@ -186,7 +186,7 @@ export function AnonStreamLayout({
                     </>
                   ) : null}
                   <span className="text-[var(--color-muted-foreground)]">Meta</span>
-                  <span className="break-all font-mono text-[12px] text-[#C8CDDF]">{selected.body}</span>
+                  <span className="break-all font-mono text-[12px] text-[#C8CDDF]">{scrubDemoText(selected.body)}</span>
                 </div>
                 {selected.links?.length ? (
                   <div className="flex flex-wrap gap-2">
