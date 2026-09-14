@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
-import { t } from "@blockreq/i18n";
+import { t, L } from "@blockreq/i18n";
 import { Badge, Separator, cn } from "@blockreq/ui";
 import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
 import { toFeelState } from "../../lib/ui-state";
@@ -196,7 +196,7 @@ export function OpenWaitLayout({
               <div className="mt-4 grid grid-cols-2 gap-2.5">
                 <div className="border border-[rgba(0,240,255,0.3)] bg-[rgba(0,240,255,0.05)] px-3 py-3">
                   <div className="type-metric-label">
-                    {latest.metricLabel || (locale === "zh" ? "价格" : "Price")}
+                    {latest.metricLabel || (L(locale, "Price", "价格"))}
                   </div>
                   <div key={`${latest.id}-px`} className="type-metric metric-tick mt-1">
                     {latest.metric || "—"}
@@ -204,7 +204,7 @@ export function OpenWaitLayout({
                 </div>
                 <div className="border border-[rgba(255,43,214,0.3)] bg-[rgba(255,43,214,0.05)] px-3 py-3">
                   <div className="type-metric-label">
-                    {latest.metric2Label || (locale === "zh" ? "成交额" : "Volume")}
+                    {latest.metric2Label || (L(locale, "Volume", "成交额"))}
                   </div>
                   <div key={`${latest.id}-vol`} className="type-metric metric-tick mt-1 !text-[var(--color-neon-mag)]">
                     {latest.metric2 || (typeof latest.block === "number" ? `#${latest.block}` : "—")}

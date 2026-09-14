@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -91,7 +91,7 @@ function mapLaunchLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     const bn = log.blockNumber ? parseInt(String(log.blockNumber), 16) : 0;
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史开池" : "Recent launch",
+      kind: L(locale, "Recent launch", "历史开池"),
       tags: ["HIST", "ETH", "MULTIPLR", "pad:multiplr-leverage"],
       title: shortAddr(token),
       body: `pad:multiplr-leverage · token ${shortAddr(token)} · creator ${shortAddr(creator)} · quote ${shortAddr(quote)} · #${bn}`,
@@ -103,7 +103,7 @@ function mapLaunchLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
       metric: shortAddr(quote),
       metricLabel: "quote",
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -252,7 +252,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
   const emitLaunchCard = useCallback(
     (rec: LaunchRec, kindZh: string, kindEn: string, extraTags: string[] = []) => {
       pushEvent({
-        kind: locale === "zh" ? kindZh : kindEn,
+        kind: L(locale, kindEn, kindZh),
         tags: ["NEW", "ETH", "MULTIPLR", "LEVERAGE", "pad:multiplr-leverage", ...extraTags],
         title: shortAddr(rec.token),
         body: `pad:multiplr-leverage · factory ${shortAddr(rec.factory)} · token ${shortAddr(rec.token)} · creator ${shortAddr(rec.creator)} · quote ${shortAddr(rec.quote)} · launchTx ${shortAddr(rec.launchTx)} · curvePrintTx ${rec.curvePrintTx ? shortAddr(rec.curvePrintTx) : "—"} · v3Pool ${rec.v3Pool ? shortAddr(rec.v3Pool) : "—"} · transferBurst ${rec.transferBurst ?? 0} · #${rec.blockNumber}`,
@@ -263,7 +263,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
         metric: shortAddr(rec.quote),
         metricLabel: "quote",
         metric2: `#${rec.blockNumber}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
     },
     [locale, pushEvent]
@@ -324,7 +324,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
         emitLaunchCard(linked, "曲线早打印", "Curve print", ["TRADE", "CURVE"]);
       } else {
         pushEvent({
-          kind: locale === "zh" ? "曲线 TRADE" : "Curve TRADE",
+          kind: L(locale, "Curve TRADE", "曲线 TRADE"),
           tags: ["TRADE", "CURVE", "ETH", "MULTIPLR", "pad:multiplr-leverage"],
           title: shortAddr(tx),
           body: `pad:multiplr-leverage · curvePrintTx ${shortAddr(tx)} · #${bn}`,
@@ -334,7 +334,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
           metric: shortAddr(tx),
           metricLabel: "tx",
           metric2: `#${bn}`,
-          metric2Label: locale === "zh" ? "区块" : "Block",
+          metric2Label: L(locale, "Block", "区块"),
         });
       }
     },
@@ -357,7 +357,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
       if (pool) linked.v3Pool = pool.toLowerCase();
       emitLaunchCard(linked, "V3 毕业", "V3 graduate", ["V3", "GRAD"]);
       pushEvent({
-        kind: locale === "zh" ? "V3 PoolCreated" : "V3 PoolCreated",
+        kind: L(locale, "V3 PoolCreated", "V3 PoolCreated"),
         tags: ["V3", "POOL", "ETH", "MULTIPLR", "pad:multiplr-leverage"],
         title: shortAddr(pool),
         body: `pad:multiplr-leverage · v3Pool ${shortAddr(pool)} · token ${shortAddr(linked.token)} · ${shortAddr(token0)} / ${shortAddr(token1)} · #${bn}`,
@@ -387,7 +387,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
       const recent = [...launches.current.values()].pop();
       if (recent) recent.transferBurst = burst;
       pushEvent({
-        kind: locale === "zh" ? "ETH2x 转账爆发" : "ETH2x transfer burst",
+        kind: L(locale, "ETH2x transfer burst", "ETH2x 转账爆发"),
         tags: ["XFER", "BURST", "ETH", "MULTIPLR", "pad:multiplr-leverage"],
         title: `×${burst}`,
         body: `pad:multiplr-leverage · transferBurst ${burst} · eth2x ${shortAddr(fields.current.eth2x || DEFAULT_ETH2X_FLI)} · #${bn}`,
@@ -398,7 +398,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
         metric: String(burst),
         metricLabel: "burst",
         metric2: `#${bn}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
       // reset window so we don't flood
       xferTs.current = [];
@@ -538,7 +538,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
     { label: "LAUNCH_TOPIC0", value: shortAddr(launchTopic || LAUNCH_TOPIC0), mono: true },
     {
       label: "QUOTE_WHITELIST",
-      value: locale === "zh" ? "ETH2x-FLI 默认" : "ETH2x-FLI default",
+      value: L(locale, "ETH2x-FLI default", "ETH2x-FLI 默认"),
       mono: false,
     },
     {
@@ -548,7 +548,7 @@ export function MultiplrEthLeverageLaunchpadDemo({
     },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "multiplr.leverage" },
+    { k: L(locale, "SRC", "源"), v: "multiplr.leverage" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "LAUNCH+quote-wl" },
     { k: "WSS", v: ep.wss },

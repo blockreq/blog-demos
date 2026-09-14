@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -123,7 +123,7 @@ export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
       const threshold = wordU256(r.data as string, 2);
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       pushEvent({
-        kind: locale === "zh" ? "Pons 发射" : "Pons launch",
+        kind: L(locale, "Pons launch", "Pons 发射"),
         tags: ["NEW", "PONS", "RH"],
         title: shortAddr(token),
         body: `deployer ${shortAddr(deployer)} · curve ${shortAddr(curve)} · pair ${shortAddr(pairToken)} · cfg ${configId.toString()} · thr ${threshold.toString()} · #${bn}`,
@@ -134,7 +134,7 @@ export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
         metric: shortAddr(curve),
         metricLabel: "curve",
         metric2: `#${bn}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
     },
     [locale, pushEvent]
@@ -149,7 +149,7 @@ export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
       const pairAmt = wordU256(r.data as string, 2);
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       pushEvent({
-        kind: locale === "zh" ? "Pons 毕业" : "Pons graduated",
+        kind: L(locale, "Pons graduated", "Pons 毕业"),
         tags: ["GRAD", "PONS", "RH"],
         title: shortAddr(token),
         body: `pos ${positionId.toString()} · tokenAmt ${tokenAmt.toString()} · pairAmt ${pairAmt.toString()} · #${bn}`,
@@ -160,7 +160,7 @@ export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
         metric: shortAddr(token),
         metricLabel: "token",
         metric2: `#${bn}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
     },
     [locale, pushEvent]
@@ -286,7 +286,7 @@ export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
     { label: "Topic0", value: shortAddr(TOKEN_LAUNCHED), mono: true },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "pons.rh / launchpad" },
+    { k: L(locale, "SRC", "源"), v: "pons.rh / launchpad" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "pons-listen" },
     { k: "WSS", v: ep.wss },
@@ -322,9 +322,7 @@ export function PonsLaunchpadDemo({ locale }: { locale: Locale }) {
           <CardHeader className="pb-2">
             <CardTitle>{t(locale, "pons.factoryLabel")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "默认 Pons V2 工厂；可改。可选同时听 PoolGraduated。"
-                : "Default Pons V2 factory; editable. Optional PoolGraduated."}
+              {L(locale, "Default Pons V2 factory; editable. Optional PoolGraduated.", "默认 Pons V2 工厂；可改。可选同时听 PoolGraduated。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

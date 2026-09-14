@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -174,7 +174,7 @@ export function MonadO1LaunchpadDemo({ locale }: { locale: Locale }) {
         });
       }
       pushEvent({
-        kind: locale === "zh" ? "Factory PairCreated" : "Factory PairCreated",
+        kind: L(locale, "Factory PairCreated", "Factory PairCreated"),
         tags: ["NEW", "MONAD", "DAY0"],
         title: shortAddr(pair),
         body: `pad ${shortAddr(factoryAddr)} · pair ${shortAddr(pair)} · ${shortAddr(token0)}/${shortAddr(token1)} · #${bn}`,
@@ -209,7 +209,7 @@ export function MonadO1LaunchpadDemo({ locale }: { locale: Locale }) {
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       if (rec.swapCount >= min || rec.swapCount === 1 || rec.swapCount % 2 === 0) {
         pushEvent({
-          kind: locale === "zh" ? "早期 Swap 密度" : "Early Swap density",
+          kind: L(locale, "Early Swap density", "早期 Swap 密度"),
           tags: ["DENS", "MONAD"],
           title: shortAddr(pair),
           body: `swaps ${rec.swapCount} · thr ≥${min} · #${bn}`,
@@ -218,7 +218,7 @@ export function MonadO1LaunchpadDemo({ locale }: { locale: Locale }) {
           tx: String(r.transactionHash || "") || undefined,
           chain: "MONAD",
           metric: String(rec.swapCount),
-          metricLabel: locale === "zh" ? "早期换手" : "Early swaps",
+          metricLabel: L(locale, "Early swaps", "早期换手"),
           metric2: `${rec.swapCount}/${min}`,
           metric2Label: "vs thr",
         });
@@ -339,17 +339,17 @@ export function MonadO1LaunchpadDemo({ locale }: { locale: Locale }) {
 
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: t(locale, "monad.factoryLabel"), value: factory.trim() || (locale === "zh" ? "（待填）" : "(unset)"), mono: true },
+    { label: t(locale, "monad.factoryLabel"), value: factory.trim() || (L(locale, "(unset)", "（待填）")), mono: true },
     { label: "PairCreated", value: subPair ? "on" : "off" },
     { label: "Swap dens", value: subSwap ? "on" : "off" },
-    { label: locale === "zh" ? "尖刺阈值" : "Dens thr", value: `≥${minSwaps}` },
+    { label: L(locale, "Dens thr", "尖刺阈值"), value: `≥${minSwaps}` },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "monad.o1.factory" },
+    { k: L(locale, "SRC", "源"), v: "monad.o1.factory" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "o1-paircreated+swap-density" },
-    { k: "WSS", v: ep.wss || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
-    { k: "HTTPS", v: ep.https || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
+    { k: "WSS", v: ep.wss || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
+    { k: "HTTPS", v: ep.https || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
   ];
 
   useEffect(() => {
@@ -384,9 +384,7 @@ export function MonadO1LaunchpadDemo({ locale }: { locale: Locale }) {
           <CardHeader className="pb-2">
             <CardTitle>{t(locale, "monad.factoryLabel")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "预埋 O1_LAUNCHPAD_FACTORY + PairCreated topic0。命中 pair 后可窄听 Swap 密度。"
-                : "Pre-wire O1_LAUNCHPAD_FACTORY + PairCreated topic0. Optional narrow Swap density on hit pair."}
+              {L(locale, "Pre-wire O1_LAUNCHPAD_FACTORY + PairCreated topic0. Optional narrow Swap density on hit pair.", "预埋 O1_LAUNCHPAD_FACTORY + PairCreated topic0。命中 pair 后可窄听 Swap 密度。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -403,11 +401,11 @@ export function MonadO1LaunchpadDemo({ locale }: { locale: Locale }) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="monad-min">{locale === "zh" ? "最少换手数" : "Min early swaps"}</Label>
+                <Label htmlFor="monad-min">{L(locale, "Min early swaps", "最少换手数")}</Label>
                 <Input id="monad-min" value={minSwaps} onChange={(e) => setMinSwaps(e.target.value)} onBlur={saveFields} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="monad-win">{locale === "zh" ? "窗口（秒）" : "Window (sec)"}</Label>
+                <Label htmlFor="monad-win">{L(locale, "Window (sec)", "窗口（秒）")}</Label>
                 <Input id="monad-win" value={windowSec} onChange={(e) => setWindowSec(e.target.value)} onBlur={saveFields} />
               </div>
             </div>

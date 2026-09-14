@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
-import { t } from "@blockreq/i18n";
+import { t, L } from "@blockreq/i18n";
 import { Badge, ScrollArea, Separator, cn } from "@blockreq/ui";
 import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
@@ -95,7 +95,7 @@ export function EquiSplitLayout({
       <WatchTargetPanel
         locale={locale}
         watching={t(locale, "equifold.watching")}
-        chainLabel={locale === "zh" ? "多市场" : "Multi"}
+        chainLabel={L(locale, "Multi", "多市场")}
         params={watchParams}
         sourceStatus={
           history.status === "loading"
@@ -131,12 +131,12 @@ export function EquiSplitLayout({
       {/* Cross-market diff strip — primary visual focus */}
       <div className="focus-card grid gap-2 p-3.5 sm:grid-cols-[1.1fr_repeat(3,minmax(0,1fr))]">
         <div className="flex flex-col justify-center gap-1 border border-[var(--color-line)] bg-[#07070E] px-3 py-2.5 sm:border-0 sm:bg-transparent sm:px-1">
-          <div className="type-metric-label">{locale === "zh" ? "跨市场价差" : "Cross-market spread"}</div>
+          <div className="type-metric-label">{L(locale, "Cross-market spread", "跨市场价差")}</div>
           <div key={`spread-${spread}-${lastUpdateAt || 0}`} className="type-metric metric-tick">
             {spread != null ? `${spread}%` : "—"}
           </div>
           <p className="type-meta text-[11px]">
-            {locale === "zh" ? "高亮列 = 最高价 / FIRST" : "Hot column = highest price / FIRST"}
+            {L(locale, "Hot column = highest price / FIRST", "高亮列 = 最高价 / FIRST")}
           </p>
         </div>
         {columns.map((col, i) => {

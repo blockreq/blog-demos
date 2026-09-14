@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -154,7 +154,7 @@ function mapTokenLaunchedLogs(
     const currency = resolveCurrency(decoded.quoteToken, desk);
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史 TokenLaunched" : "Recent TokenLaunched",
+      kind: L(locale, "Recent TokenLaunched", "历史 TokenLaunched"),
       tags: ["HIST", "RH", "CROSSRATE", "TOKENLAUNCHED", "pad:crossrate", currency, "FX", "RADAR"],
       title: currency,
       body: `pad:crossrate · currency ${currency} · token ${shortAddr(decoded.token)} · creator ${shortAddr(decoded.creator)} · quoteToken ${shortAddr(decoded.quoteToken)} · poolId ${shortAddr(decoded.poolId)} · taxBps ${decoded.taxBps || "—"} · supply ${decoded.supply || "—"} · liquidity ${decoded.liquidity || "—"} · #${bn}`,
@@ -164,9 +164,9 @@ function mapTokenLaunchedLogs(
       chain: "RH",
       at: now - i * 400,
       metric: currency,
-      metricLabel: locale === "zh" ? "货币" : "FX",
+      metricLabel: L(locale, "FX", "货币"),
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -274,7 +274,7 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
   const emitLaunch = useCallback(
     (card: LaunchCard, kindZh: string, kindEn: string, extraTags: string[] = []) => {
       pushEvent({
-        kind: locale === "zh" ? kindZh : kindEn,
+        kind: L(locale, kindEn, kindZh),
         tags: [
           "NEW",
           "RH",
@@ -292,9 +292,9 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
         tx: card.launchTx || undefined,
         chain: "RH",
         metric: card.currency,
-        metricLabel: locale === "zh" ? "货币" : "FX",
+        metricLabel: L(locale, "FX", "货币"),
         metric2: card.taxBps ? `${card.taxBps} bps` : `#${card.blockNumber}`,
-        metric2Label: card.taxBps ? "tax" : locale === "zh" ? "区块" : "Block",
+        metric2Label: card.taxBps ? "tax" : L(locale, "Block", "区块"),
         at: card.ts,
       });
     },
@@ -474,21 +474,19 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
       mono: true,
     },
     {
-      label: locale === "zh" ? "货币桌" : "CURRENCY_DESK",
+      label: L(locale, "CURRENCY_DESK", "货币桌"),
       value: Object.keys(currencyDesk).length
         ? Object.entries(currencyDesk)
             .slice(0, 3)
             .map(([a, c]) => `${c}:${shortAddr(a)}`)
             .join(" · ")
-        : locale === "zh"
-          ? "可编辑 quote→code"
-          : "editable quote→code",
+        : L(locale, "editable quote→code", "可编辑 quote→code"),
       mono: true,
     },
     { label: "PAD", value: "crossrate", mono: true },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "crossrate.market / Launcher TokenLaunched" },
+    { k: L(locale, "SRC", "源"), v: "crossrate.market / Launcher TokenLaunched" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "fx-launch-listen" },
     { k: "WSS", v: ep.wss },
@@ -538,7 +536,7 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {locale === "zh" ? "汇率盘 · TokenLaunched" : "FX launchpad · TokenLaunched"}
+              {L(locale, "FX launchpad · TokenLaunched", "汇率盘 · TokenLaunched")}
             </CardTitle>
             <CardDescription>{t(locale, "crossrate.settingsHint")}</CardDescription>
           </CardHeader>
@@ -565,9 +563,7 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cr-desk">
-                {locale === "zh"
-                  ? "CURRENCY_DESK（quoteToken → 货币代码 JSON）"
-                  : "CURRENCY_DESK (quoteToken → code JSON)"}
+                {L(locale, "CURRENCY_DESK (quoteToken → code JSON)", "CURRENCY_DESK（quoteToken → 货币代码 JSON）")}
               </Label>
               <textarea
                 id="cr-desk"
@@ -590,9 +586,7 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
               {hintChip("DUBAI", SAMPLE_DUBAI)}
             </div>
             <p className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
-              {locale === "zh"
-                ? "提示芯片只读/可粘贴 · 点复制。crossrate.market"
-                : "Hint chips read-only / paste · click to copy. crossrate.market"}
+              {L(locale, "Hint chips read-only / paste · click to copy. crossrate.market", "提示芯片只读/可粘贴 · 点复制。crossrate.market")}
             </p>
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
               <input

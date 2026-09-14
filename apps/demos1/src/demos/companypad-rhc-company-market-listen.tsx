@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -165,7 +165,7 @@ function mapLaunchedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     const ticker = decoded.ticker || shortAddr(decoded.market);
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史 Launched" : "Recent Launched",
+      kind: L(locale, "Recent Launched", "历史 Launched"),
       tags: ["HIST", "RH", "COMPANYPAD", "LAUNCHED", "pad:companypad"],
       title: ticker,
       body: `pad:companypad · ticker ${ticker} · metricId ${decoded.metricId || "—"} · market ${shortAddr(decoded.market)} · creator ${shortAddr(decoded.creator)} · curve ${shortAddr(decoded.curve)} · #${bn}`,
@@ -177,7 +177,7 @@ function mapLaunchedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
       metric: decoded.metricId || shortAddr(decoded.curve),
       metricLabel: "metricId",
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -292,7 +292,7 @@ export function CompanypadRhcCompanyMarketDemo({
     (card: LaunchCard, kindZh: string, kindEn: string, extraTags: string[] = []) => {
       const title = card.ticker || shortAddr(card.market);
       pushEvent({
-        kind: locale === "zh" ? kindZh : kindEn,
+        kind: L(locale, kindEn, kindZh),
         tags: ["NEW", "RH", "COMPANYPAD", "LAUNCHED", `pad:${card.pad}`, ...extraTags],
         title,
         body: `pad:${card.pad} · ticker ${title} · metricId ${card.metricId || "—"} · market ${shortAddr(card.market)} · creator ${shortAddr(card.creator)} · curve ${shortAddr(card.curve)} · key ${shortAddr(card.key)} · firstEventAt ${card.firstEventAt || "—"} · launchTx ${shortAddr(card.launchTx)} · #${card.blockNumber}`,
@@ -303,7 +303,7 @@ export function CompanypadRhcCompanyMarketDemo({
         metric: card.metricId || shortAddr(card.curve),
         metricLabel: "metricId",
         metric2: `#${card.blockNumber}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
         at: card.ts,
       });
     },
@@ -318,7 +318,7 @@ export function CompanypadRhcCompanyMarketDemo({
       bn: number
     ) => {
       pushEvent({
-        kind: locale === "zh" ? "Settled 结算" : "Settled",
+        kind: L(locale, "Settled", "Settled 结算"),
         tags: ["NEW", "RH", "COMPANYPAD", "SETTLED", "pad:companypad", "FOLLOW"],
         title: `epoch ${settled.epoch || "—"}`,
         body: `pad:companypad · Settled · market ${shortAddr(market)} · epoch ${settled.epoch} · value ${settled.value} · beat ${settled.beat ? "yes" : "no"} · potSpent ${settled.potSpent} · nextEventAt ${settled.nextEventAt} · tx ${shortAddr(tx)} · #${bn}`,
@@ -532,7 +532,7 @@ export function CompanypadRhcCompanyMarketDemo({
     },
     {
       label: "FOLLOW_MARKET",
-      value: followMarket.trim() ? shortAddr(followMarket) : locale === "zh" ? "点卡片跟 Settled" : "click card → Settled",
+      value: followMarket.trim() ? shortAddr(followMarket) : L(locale, "click card → Settled", "点卡片跟 Settled"),
       mono: true,
     },
     {
@@ -542,7 +542,7 @@ export function CompanypadRhcCompanyMarketDemo({
     },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "companypad.fun / PAD Launched" },
+    { k: L(locale, "SRC", "源"), v: "companypad.fun / PAD Launched" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "company-market-listen" },
     { k: "WSS", v: ep.wss },
@@ -592,7 +592,7 @@ export function CompanypadRhcCompanyMarketDemo({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {locale === "zh" ? "公司盘 · PAD Launched / Settled" : "Company markets · PAD Launched / Settled"}
+              {L(locale, "Company markets · PAD Launched / Settled", "公司盘 · PAD Launched / Settled")}
             </CardTitle>
             <CardDescription>{t(locale, "companypad.settingsHint")}</CardDescription>
           </CardHeader>
@@ -618,7 +618,7 @@ export function CompanypadRhcCompanyMarketDemo({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="cp-follow">FOLLOW_MARKET {locale === "zh" ? "（点卡片跟 Settled）" : "(click card → Settled)"}</Label>
+              <Label htmlFor="cp-follow">FOLLOW_MARKET {L(locale, "(click card → Settled)", "（点卡片跟 Settled）")}</Label>
               <Input
                 id="cp-follow"
                 value={followMarket}
@@ -642,7 +642,7 @@ export function CompanypadRhcCompanyMarketDemo({
                   reconnectIfRunning();
                 }}
                 spellCheck={false}
-                placeholder={locale === "zh" ? "可编辑 · 空则不跟 Settled" : "editable · empty = skip Settled"}
+                placeholder={L(locale, "editable · empty = skip Settled", "可编辑 · 空则不跟 Settled")}
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -654,9 +654,7 @@ export function CompanypadRhcCompanyMarketDemo({
               {hintChip("SAMPLE_CURVE", SAMPLE_CURVE)}
             </div>
             <p className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
-              {locale === "zh"
-                ? "提示芯片只读/可粘贴 · 点复制。companypad.fun"
-                : "Hint chips read-only / paste · click to copy. companypad.fun"}
+              {L(locale, "Hint chips read-only / paste · click to copy. companypad.fun", "提示芯片只读/可粘贴 · 点复制。companypad.fun")}
             </p>
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
               <input type="checkbox" checked={demoHits} onChange={(e) => setDemoHits(e.target.checked)} className="h-4 w-4" />

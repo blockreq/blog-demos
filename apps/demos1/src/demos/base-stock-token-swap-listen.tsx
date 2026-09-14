@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -137,7 +137,7 @@ function mapSwapHist(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     const pool = String(log.address || "");
     return {
       id: `hist:${log.transactionHash}:${log.logIndex ?? i}`,
-      kind: locale === "zh" ? "历史 Swap" : "Recent Swap",
+      kind: L(locale, "Recent Swap", "历史 Swap"),
       tags: ["HIST", "BASE"],
       title: shortAddr(pool),
       body: `pool ${shortAddr(pool)} · #${bn}`,
@@ -300,7 +300,7 @@ export function BaseStockTokenSwapDemo({ locale }: { locale: Locale }) {
         tokenInGuess = tokenIn;
         tokenOutGuess = tokenOut;
         pushEvent({
-          kind: locale === "zh" ? "股币大单" : "Stock big print",
+          kind: L(locale, "Stock big print", "股币大单"),
           tags: ["BIG", "BASE", venue, sym],
           title: `${sym} · ${venue}`,
           body: `chain=base · venue=${venue} · tokenIn ${shortAddr(tokenInGuess)} · tokenOut ${shortAddr(tokenOutGuess)} · in ${formatRaw(amountIn)} · out ${formatRaw(amountOut)} · pairOrPool ${shortAddr(pool)} · #${bn}`,
@@ -309,7 +309,7 @@ export function BaseStockTokenSwapDemo({ locale }: { locale: Locale }) {
           tx: tx || undefined,
           chain: "BASE",
           metric: formatRaw(size),
-          metricLabel: locale === "zh" ? "大单" : "Print",
+          metricLabel: L(locale, "Print", "大单"),
           metric2: venue,
           metric2Label: "venue",
         });
@@ -465,7 +465,7 @@ export function BaseStockTokenSwapDemo({ locale }: { locale: Locale }) {
     { label: "MIN_RAW", value: minRaw },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "base.stock.swap" },
+    { k: L(locale, "SRC", "源"), v: "base.stock.swap" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "v2+v3-swap-parallel" },
     { k: "WSS", v: ep.wss },

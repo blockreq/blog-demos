@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -196,7 +196,7 @@ export function RhAnyQuoteLaunchDemo({ locale }: { locale: Locale }) {
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       const tx = String(r.transactionHash || "");
       pushEvent({
-        kind: locale === "zh" ? "任意报价 Initialize" : "any-quote Initialize",
+        kind: L(locale, "any-quote Initialize", "任意报价 Initialize"),
         tags: ["NEW", "V4", "ANYQUOTE", hit.symbol],
         title: shortAddr(hit.launchSide || poolId),
         body: `path=any-quote · quoteSide ${hit.symbol} ${shortAddr(hit.quoteSide)} · launchSide ${shortAddr(hit.launchSide)} · fee ${fee.toString()} · hooks ${shortAddr(hooks)} · #${bn}`,
@@ -205,9 +205,9 @@ export function RhAnyQuoteLaunchDemo({ locale }: { locale: Locale }) {
         tx: tx || undefined,
         chain: "RH",
         metric: hit.symbol,
-        metricLabel: locale === "zh" ? "报价侧" : "quoteSide",
+        metricLabel: L(locale, "quoteSide", "报价侧"),
         metric2: shortAddr(hit.launchSide),
-        metric2Label: locale === "zh" ? "发射侧" : "launchSide",
+        metric2Label: L(locale, "launchSide", "发射侧"),
       });
     },
     [locale, pushEvent]
@@ -224,7 +224,7 @@ export function RhAnyQuoteLaunchDemo({ locale }: { locale: Locale }) {
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       const tx = String(r.transactionHash || "");
       pushEvent({
-        kind: locale === "zh" ? "任意报价 PairCreated" : "any-quote PairCreated",
+        kind: L(locale, "any-quote PairCreated", "任意报价 PairCreated"),
         tags: ["NEW", "PAIR", "ANYQUOTE", hit.symbol],
         title: shortAddr(hit.launchSide || pair),
         body: `path=any-quote · quoteSide ${hit.symbol} ${shortAddr(hit.quoteSide)} · launchSide ${shortAddr(hit.launchSide)} · poolOrPair ${shortAddr(pair)} · #${bn}`,
@@ -233,9 +233,9 @@ export function RhAnyQuoteLaunchDemo({ locale }: { locale: Locale }) {
         tx: tx || undefined,
         chain: "RH",
         metric: hit.symbol,
-        metricLabel: locale === "zh" ? "报价侧" : "quoteSide",
+        metricLabel: L(locale, "quoteSide", "报价侧"),
         metric2: shortAddr(hit.launchSide),
-        metric2Label: locale === "zh" ? "发射侧" : "launchSide",
+        metric2Label: L(locale, "launchSide", "发射侧"),
       });
     },
     [locale, pushEvent]
@@ -357,13 +357,13 @@ export function RhAnyQuoteLaunchDemo({ locale }: { locale: Locale }) {
   const running = status === "connecting" || status === "listening";
   const watchParams = [
     { label: "PoolManager", value: shortAddr(poolManager) || poolManager, mono: true },
-    { label: "V2_FACTORY", value: factory.trim() || (locale === "zh" ? "（宽听）" : "(wide)"), mono: true },
+    { label: "V2_FACTORY", value: factory.trim() || (L(locale, "(wide)", "（宽听）")), mono: true },
     { label: "Quotes", value: String(quoteMap.current.size || parseQuote(quoteText).size) },
     { label: "Initialize", value: subInit ? "on" : "off" },
     { label: "PairCreated", value: subPair ? "on" : "off" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "rh.any-quote.launch" },
+    { k: L(locale, "SRC", "源"), v: "rh.any-quote.launch" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "init+paircreated-quote-gate" },
     { k: "WSS", v: ep.wss },

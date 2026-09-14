@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -140,7 +140,7 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       const tx = String(r.transactionHash || "");
       pushEvent({
-        kind: locale === "zh" ? "V4 直开" : "V4 direct open",
+        kind: L(locale, "V4 direct open", "V4 直开"),
         tags: ["NEW", "V4", "DIRECT", "RH"],
         title: shortAddr(poolId),
         body: `${shortAddr(currency0)} / ${shortAddr(currency1)} · #${bn}`,
@@ -164,7 +164,7 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       const sender = unpadTopic(topics[2]);
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       pushEvent({
-        kind: locale === "zh" ? "流动性到位" : "Liquidity in",
+        kind: L(locale, "Liquidity in", "流动性到位"),
         tags: ["LP", "V4", "DIRECT", "RH"],
         title: shortAddr(poolId),
         body: `sender ${shortAddr(sender)} · #${bn}`,
@@ -175,7 +175,7 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
         metric: shortAddr(sender),
         metricLabel: "sender",
         metric2: `#${bn}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
     },
     [locale, pushEvent]
@@ -295,10 +295,10 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
     { label: "PoolManager", value: shortAddr(poolManager) || poolManager, mono: true },
     { label: "Init", value: subInit ? "on" : "off" },
     { label: "ModifyLiq", value: subLiq ? "on" : "off" },
-    { label: "Mode", value: locale === "zh" ? "直开 · 无 bonding" : "direct · no bonding" },
+    { label: "Mode", value: L(locale, "direct · no bonding", "直开 · 无 bonding") },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "rh.uniswap.v4.direct" },
+    { k: L(locale, "SRC", "源"), v: "rh.uniswap.v4.direct" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "v4-initialize" },
     { k: "WSS", v: ep.wss },
@@ -332,11 +332,9 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "PoolManager / topics" : "PoolManager / topics"}</CardTitle>
+            <CardTitle>{L(locale, "PoolManager / topics", "PoolManager / topics")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "听 Uniswap v4 Initialize（直开，无 bonding/Pons 曲线）。PoolManager 可改。"
-                : "Listen Uniswap v4 Initialize (direct pool open — no bonding/Pons curve). PoolManager editable."}
+              {L(locale, "Listen Uniswap v4 Initialize (direct pool open — no bonding/Pons curve). PoolManager editable.", "听 Uniswap v4 Initialize（直开，无 bonding/Pons 曲线）。PoolManager 可改。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

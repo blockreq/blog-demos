@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -165,7 +165,7 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       };
       if (pair) pairs.current.set(pair.toLowerCase(), rec);
       pushEvent({
-        kind: locale === "zh" ? "新开盘" : "New launch",
+        kind: L(locale, "New launch", "新开盘"),
         tags,
         title: shortAddr(pair),
         body: `${shortAddr(baseSide || "?")} · #${bn}`,
@@ -190,7 +190,7 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       known.firstLp = true;
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       pushEvent({
-        kind: locale === "zh" ? "LP 到位" : "LP ready",
+        kind: L(locale, "LP ready", "LP 到位"),
         tags: ["LP"],
         title: shortAddr(pool),
         body: `#${bn}`,
@@ -326,15 +326,15 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
 
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听 · 未限定）" : "(wide · unset)") },
+    { label: "Factory", value: factory.trim() || (L(locale, "(wide · unset)", "（宽听 · 未限定）")) },
     { label: "Topic0", value: topicPair, mono: true },
     { label: "Mint", value: shortAddr(MINT), mono: true },
-    { label: "Quote", value: quote.trim() || (locale === "zh" ? "任意" : "any") },
+    { label: "Quote", value: quote.trim() || (L(locale, "any", "任意")) },
     { label: "Pair", value: subPair ? "on" : "off" },
     { label: "LP", value: subMint ? "on" : "off" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "anoncoin.rh / stream" },
+    { k: L(locale, "SRC", "源"), v: "anoncoin.rh / stream" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "launch-watch" },
     { k: "WSS", v: ep.wss },
@@ -369,11 +369,9 @@ export function AnoncoinDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardTitle>{L(locale, "Optional knobs", "可选参数")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "一般不用改。粘贴工厂地址可更安静。"
-                : "Leave empty for the default wide listen."}
+              {L(locale, "Leave empty for the default wide listen.", "一般不用改。粘贴工厂地址可更安静。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

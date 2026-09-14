@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -121,9 +121,7 @@ export function LongshotBaseFootballMarketDemo({
       status: "empty" as const,
       events: [] as FeedEvent[],
       reason:
-        locale === "zh"
-          ? "粘贴 MARKET_FACTORY + CREATE/TRADE/RESOLVE_TOPIC0 后开始听"
-          : "Paste MARKET_FACTORY + CREATE/TRADE/RESOLVE_TOPIC0 to start",
+        L(locale, "Paste MARKET_FACTORY + CREATE/TRADE/RESOLVE_TOPIC0 to start", "粘贴 MARKET_FACTORY + CREATE/TRADE/RESOLVE_TOPIC0 后开始听"),
       fromBlock: 0,
       toBlock: 0,
       windowBlocks: 0,
@@ -225,13 +223,11 @@ export function LongshotBaseFootballMarketDemo({
       if (eventDedup.current.has(dedupeKey)) return;
       eventDedup.current.add(dedupeKey);
       const kindLabel =
-        locale === "zh"
-          ? card.kind === "create"
-            ? "开市"
-            : card.kind === "trade"
-              ? "成交"
-              : "结算"
-          : card.kind;
+        card.kind === "create"
+          ? L(locale, "create", "开市", { ja: "開市", ko: "개설", "zh-tw": "開市" })
+          : card.kind === "trade"
+            ? L(locale, "trade", "成交", { ja: "約定", ko: "체결", "zh-tw": "成交" })
+            : L(locale, card.kind, "结算", { ja: "決算", ko: "정산", "zh-tw": "結算" });
       const extra = tagSuffix();
       pushEvent({
         kind: kindLabel,
@@ -252,7 +248,7 @@ export function LongshotBaseFootballMarketDemo({
         metric: card.kind,
         metricLabel: "kind",
         metric2: `#${card.blockNumber}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
         at: card.ts,
       });
     },
@@ -484,22 +480,22 @@ export function LongshotBaseFootballMarketDemo({
   const watchParams = [
     {
       label: "MARKET_FACTORY",
-      value: factory.trim() || (locale === "zh" ? "（粘贴）" : "(paste)"),
+      value: factory.trim() || (L(locale, "(paste)", "（粘贴）")),
       mono: true,
     },
     {
       label: "CREATE_TOPIC0",
-      value: createTopic.trim() ? shortAddr(createTopic) : locale === "zh" ? "（空）" : "(empty)",
+      value: createTopic.trim() ? shortAddr(createTopic) : L(locale, "(empty)", "（空）"),
       mono: true,
     },
     {
       label: "TRADE_TOPIC0",
-      value: tradeTopic.trim() ? shortAddr(tradeTopic) : locale === "zh" ? "（空）" : "(empty)",
+      value: tradeTopic.trim() ? shortAddr(tradeTopic) : L(locale, "(empty)", "（空）"),
       mono: true,
     },
     {
       label: "RESOLVE_TOPIC0",
-      value: resolveTopic.trim() ? shortAddr(resolveTopic) : locale === "zh" ? "（空）" : "(empty)",
+      value: resolveTopic.trim() ? shortAddr(resolveTopic) : L(locale, "(empty)", "（空）"),
       mono: true,
     },
     {
@@ -509,7 +505,7 @@ export function LongshotBaseFootballMarketDemo({
     },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "longshot.base / football" },
+    { k: L(locale, "SRC", "源"), v: "longshot.base / football" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "create|trade|resolve" },
     { k: "WSS", v: ep.wss },
@@ -549,7 +545,7 @@ export function LongshotBaseFootballMarketDemo({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {locale === "zh" ? "足球盘 · 开市 / 成交 / 结算" : "Football · create / trade / resolve"}
+              {L(locale, "Football · create / trade / resolve", "足球盘 · 开市 / 成交 / 结算")}
             </CardTitle>
             <CardDescription>{t(locale, "longshot.settingsHint")}</CardDescription>
           </CardHeader>
@@ -562,7 +558,7 @@ export function LongshotBaseFootballMarketDemo({
                 onChange={(e) => setFactory(e.target.value)}
                 onBlur={saveFields}
                 spellCheck={false}
-                placeholder={locale === "zh" ? "粘贴工厂地址 · 无已验证默认" : "paste factory · no verified default"}
+                placeholder={L(locale, "paste factory · no verified default", "粘贴工厂地址 · 无已验证默认")}
               />
             </div>
             <div className="space-y-1.5">
@@ -611,7 +607,7 @@ export function LongshotBaseFootballMarketDemo({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{locale === "zh" ? "联赛标签" : "League tags"}</Label>
+              <Label>{L(locale, "League tags", "联赛标签")}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {LEAGUE_CHIPS.map((chip) => {
                   const on = tags.includes(chip);
@@ -633,14 +629,14 @@ export function LongshotBaseFootballMarketDemo({
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ls-match">{locale === "zh" ? "比赛标签" : "Match tag"}</Label>
+              <Label htmlFor="ls-match">{L(locale, "Match tag", "比赛标签")}</Label>
               <Input
                 id="ls-match"
                 value={matchTag}
                 onChange={(e) => setMatchTag(e.target.value)}
                 onBlur={saveFields}
                 spellCheck={false}
-                placeholder={locale === "zh" ? "可选 · 如 ARS-MCI" : "optional · e.g. ARS-MCI"}
+                placeholder={L(locale, "optional · e.g. ARS-MCI", "可选 · 如 ARS-MCI")}
               />
             </div>
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">

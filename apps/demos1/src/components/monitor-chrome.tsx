@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Locale } from "@blockreq/i18n";
-import { t } from "@blockreq/i18n";
+import { t, LOCALES, LOCALE_LABELS } from "@blockreq/i18n";
 import { type ConnStatus, cn } from "@blockreq/ui";
 import { toFeelState } from "../lib/ui-state";
 import {
@@ -141,7 +141,7 @@ export function FreshnessChip({
       <span className={cn("freshness-stamp", className)} data-live={live ? "true" : undefined}>
         <span>{t(locale, "shell.freshStamp")}</span>
         &nbsp;
-        <span className="age-live">{locale === "zh" ? "暂无" : "n/a"}</span>
+        <span className="age-live">{t(locale, "shell.freshNa")}</span>
       </span>
     );
   }
@@ -180,42 +180,33 @@ export function LocaleToggle({
   if (mode === "catalog") {
     return (
       <div className="tb-lang" role="group" aria-label={t(locale, "shell.locale")}>
-        <button
-          type="button"
-          aria-pressed={locale === "zh"}
-          onClick={() => onChange?.("zh")}
-        >
-          中文
-        </button>
-        <button
-          type="button"
-          aria-pressed={locale === "en"}
-          onClick={() => onChange?.("en")}
-        >
-          EN
-        </button>
+        {LOCALES.map((loc) => (
+          <button
+            key={loc}
+            type="button"
+            aria-pressed={locale === loc}
+            onClick={() => onChange?.(loc)}
+          >
+            {LOCALE_LABELS[loc]}
+          </button>
+        ))}
       </div>
     );
   }
   if (!slug) return null;
   return (
     <div className="tb-lang" role="group" aria-label={t(locale, "shell.locale")}>
-      <Link
-        to="/$slug/$locale/"
-        params={{ slug, locale: "zh" }}
-        aria-pressed={locale === "zh"}
-        className={cn(locale === "zh" && "is-active")}
-      >
-        中文
-      </Link>
-      <Link
-        to="/$slug/$locale/"
-        params={{ slug, locale: "en" }}
-        aria-pressed={locale === "en"}
-        className={cn(locale === "en" && "is-active")}
-      >
-        EN
-      </Link>
+      {LOCALES.map((loc) => (
+        <Link
+          key={loc}
+          to="/$slug/$locale/"
+          params={{ slug, locale: loc }}
+          aria-pressed={locale === loc}
+          className={cn(locale === loc && "is-active")}
+        >
+          {LOCALE_LABELS[loc]}
+        </Link>
+      ))}
     </div>
   );
 }

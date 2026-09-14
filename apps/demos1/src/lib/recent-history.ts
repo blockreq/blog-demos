@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Locale } from "@blockreq/i18n";
-import { t } from "@blockreq/i18n";
+import { t, L } from "@blockreq/i18n";
 import {
   fetchPublicRecentLogs,
   shortAddr,
@@ -64,7 +64,7 @@ export function mapPairCreatedLogs(
     const block = bn(log);
     return {
       id: logId(log, i),
-      kind: locale === "zh" ? "历史开盘" : "Recent launch",
+      kind: L(locale, "Recent launch", "历史开盘"),
       tags: ["HIST", chain],
       title: shortAddr(pair),
       body: `${shortAddr(token0 || "?")} / ${shortAddr(token1 || "?")} · #${block}`,
@@ -93,7 +93,7 @@ export function mapInitializeLogs(
     const block = bn(log);
     return {
       id: logId(log, i),
-      kind: locale === "zh" ? "历史池开" : "Recent pool open",
+      kind: L(locale, "Recent pool open", "历史池开"),
       tags: ["HIST", "V4", chain],
       title: shortAddr(poolId || String(log.address || "")),
       body: `${shortAddr(currency0 || "?")} / ${shortAddr(currency1 || "?")} · #${block}`,
@@ -199,7 +199,7 @@ export function mapTokenLaunchedLogs(
     const block = bn(log);
     return {
       id: logId(log, i),
-      kind: locale === "zh" ? "Pons 发射" : "Pons launch",
+      kind: L(locale, "Pons launch", "Pons 发射"),
       tags: ["HIST", "PONS", chain],
       title: shortAddr(token),
       body: `${shortAddr(deployer || "?")} · curve ${shortAddr(curve || "?")} · #${block}`,
@@ -229,7 +229,7 @@ export function mapBasketCreatedLogs(
     const block = bn(log);
     return {
       id: logId(log, i),
-      kind: locale === "zh" ? "历史篮筐" : "Recent basket",
+      kind: L(locale, "Recent basket", "历史篮筐"),
       tags: ["HIST", "BASKET", chain],
       title: shortAddr(basket),
       body: `creator ${shortAddr(creator || "?")} · #${block}`,

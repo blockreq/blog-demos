@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -267,7 +267,7 @@ export function PumpfunCustomPairsDemo({ locale }: { locale: Locale }) {
 
       if (isGrad && fields.current.wantGrad) {
         pushEvent({
-          kind: locale === "zh" ? "PumpSwap 毕业" : "PumpSwap graduated",
+          kind: L(locale, "PumpSwap graduated", "PumpSwap 毕业"),
           tags: ["GRAD", "PUMPSWAP", "SOL"],
           title: shortSol(signature),
           body: `pad pump-custom-pair · graduated · sig ${shortSol(signature)} · slot ${slot || "?"}`,
@@ -276,7 +276,7 @@ export function PumpfunCustomPairsDemo({ locale }: { locale: Locale }) {
           tx: signature,
           chain: "SOL",
           metric: "GRAD",
-          metricLabel: locale === "zh" ? "毕业" : "graduated",
+          metricLabel: L(locale, "graduated", "毕业"),
           metric2: String(slot || ""),
           metric2Label: "slot",
         });
@@ -460,15 +460,15 @@ export function PumpfunCustomPairsDemo({ locale }: { locale: Locale }) {
   const watchParams = [
     { label: t(locale, "pump.programLabel"), value: shortSol(program.trim()) || "—", mono: true },
     { label: t(locale, "pump.whitelistLabel"), value: `${whitelist.length} mints` },
-    { label: locale === "zh" ? "模式" : "Mode", value: mode === "sample" ? "Sample" : "Live" },
+    { label: L(locale, "Mode", "模式"), value: mode === "sample" ? "Sample" : "Live" },
     { label: "PumpSwap", value: wantGrad ? "on" : "off" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "pump.custom-pair" },
+    { k: L(locale, "SRC", "源"), v: "pump.custom-pair" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "logsSubscribe+getTransaction" },
-    { k: "WSS", v: ep.wss || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
-    { k: "HTTPS", v: ep.https || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
+    { k: "WSS", v: ep.wss || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
+    { k: "HTTPS", v: ep.https || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
   ];
 
   useEffect(() => {

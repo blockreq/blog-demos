@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -179,19 +179,44 @@ function cardToFeed(
   locale: Locale,
   live: boolean
 ): Omit<FeedEvent, "id"> & { id?: string } {
-  const sideZh = card.side === "lock" ? "锁仓" : "释放";
-  const sideEn = card.side === "lock" ? "LOCK" : "RELEASE";
-  const sideLabel = locale === "zh" ? sideZh : sideEn;
+  const sideLabel = L(
+    locale,
+    card.side === "lock" ? "LOCK" : "RELEASE",
+    card.side === "lock" ? "锁仓" : "释放",
+    {
+      ja: card.side === "lock" ? "ロック" : "リリース",
+      ko: card.side === "lock" ? "락" : "릴리스",
+      "zh-tw": card.side === "lock" ? "鎖倉" : "釋放",
+    },
+  );
   const tok = tokenLabel(card.token);
-  const kind =
-    locale === "zh"
-      ? card.side === "lock"
-        ? "Messier VaultDeposit 锁仓"
-        : "Messier VaultWithdraw 释放"
-      : card.side === "lock"
-        ? "Messier VaultDeposit"
-        : "Messier VaultWithdraw";
-  const rawKind = live ? kind : locale === "zh" ? `历史 ${sideZh}` : `Recent ${card.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`;
+  const kind = L(
+    locale,
+    card.side === "lock" ? "Messier VaultDeposit" : "Messier VaultWithdraw",
+    card.side === "lock" ? "Messier VaultDeposit 锁仓" : "Messier VaultWithdraw 释放",
+    {
+      ja: card.side === "lock" ? "Messier VaultDeposit ロック" : "Messier VaultWithdraw リリース",
+      ko: card.side === "lock" ? "Messier VaultDeposit 락" : "Messier VaultWithdraw 릴리스",
+      "zh-tw": card.side === "lock" ? "Messier VaultDeposit 鎖倉" : "Messier VaultWithdraw 釋放",
+    },
+  );
+  const histSide = L(
+    locale,
+    card.side === "lock" ? "VaultDeposit" : "VaultWithdraw",
+    card.side === "lock" ? "锁仓" : "释放",
+    {
+      ja: card.side === "lock" ? "ロック" : "リリース",
+      ko: card.side === "lock" ? "락" : "릴리스",
+      "zh-tw": card.side === "lock" ? "鎖倉" : "釋放",
+    },
+  );
+  const rawKind = live
+    ? kind
+    : L(locale, `Recent ${card.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`, `历史 ${histSide}`, {
+        ja: `直近 ${histSide}`,
+        ko: `최근 ${histSide}`,
+        "zh-tw": `歷史 ${histSide}`,
+      });
   const rawTitle = `${tok} ${sideLabel}`;
   const rawBody = `pad:${card.pad} · side ${card.side} · token ${card.token || "—"} · amount ${card.amount} · maker ${card.maker || "—"} · vault ${DEFAULT_VAULT} · #${card.blockNumber}`;
   return {
@@ -216,7 +241,7 @@ function cardToFeed(
     metric: card.amount || "—",
     metricLabel: tok,
     metric2: sideLabel,
-    metric2Label: locale === "zh" ? "方向" : "side",
+    metric2Label: L(locale, "side", "方向"),
     highlight: card.highlight,
     links: [
       { label: t(locale, "messier.poolLink"), href: card.messierPoolUrl },
@@ -635,12 +660,12 @@ export function MessierRwaP2pVaultListenDemo({
     { label: "PAD", value: "messier-p2p", mono: true },
     {
       label: "USDC",
-      value: usdcOnly ? (locale === "zh" ? "仅 USDC" : "only") : locale === "zh" ? "关闭" : "off",
+      value: usdcOnly ? (L(locale, "only", "仅 USDC")) : L(locale, "off", "关闭"),
       mono: true,
     },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "Messier P2P / VaultDeposit + VaultWithdraw" },
+    { k: L(locale, "SRC", "源"), v: "Messier P2P / VaultDeposit + VaultWithdraw" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "vault-listen" },
     { k: "WSS", v: ep.wss },
@@ -694,7 +719,7 @@ export function MessierRwaP2pVaultListenDemo({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {locale === "zh" ? "Messier P2P · 金库锁仓雷达" : "Messier P2P · vault lock radar"}
+              {L(locale, "Messier P2P · vault lock radar", "Messier P2P · 金库锁仓雷达")}
             </CardTitle>
             <CardDescription>{t(locale, "messier.settingsHint")}</CardDescription>
           </CardHeader>
@@ -754,9 +779,7 @@ export function MessierRwaP2pVaultListenDemo({
               {hintChip("AERO", HINT_AERODROME, `https://basescan.org/address/${HINT_AERODROME}`)}
             </div>
             <p className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
-              {locale === "zh"
-                ? "提示芯片只读/可粘贴 · 池与交易点开。Aerodrome RWA/USDC 仅 DEX 图芯片，不是主监听。"
-                : "Hint chips read-only / paste · pool & txs open. Aerodrome RWA/USDC is a DEX chart chip only — not the primary listen."}
+              {L(locale, "Hint chips read-only / paste · pool & txs open. Aerodrome RWA/USDC is a DEX chart chip only — not the primary listen.", "提示芯片只读/可粘贴 · 池与交易点开。Aerodrome RWA/USDC 仅 DEX 图芯片，不是主监听。")}
             </p>
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
               <input

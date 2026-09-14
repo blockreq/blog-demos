@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Label,
   Card,
@@ -265,12 +265,8 @@ export function SolanaChangelogSubscriptionFilterDemo({ locale }: { locale: Loca
         const isAlert = /upgrade|deploy|setauthority|bpf/i.test(filterKey || "") || !!matchUpgradeTag(logs, upgradeTags);
         pushEvent({
           kind: isAlert
-            ? locale === "zh"
-              ? "升级窗告警"
-              : "Upgrade-window alert"
-            : locale === "zh"
-              ? "Filter 命中"
-              : "Filter hit",
+            ? L(locale, "Upgrade-window alert", "升级窗告警")
+            : L(locale, "Filter hit", "Filter 命中"),
           tags: isAlert
             ? ["UPGRADE", "ALERT", "SOL", upgradeTag]
             : ["FILTER", "CHANGELOG", "SOL", filterKey || "any"],
@@ -439,14 +435,14 @@ export function SolanaChangelogSubscriptionFilterDemo({ locale }: { locale: Loca
     { label: t(locale, "changelog.mentionsLabel"), value: `${programs.length} programs` },
     { label: t(locale, "changelog.filterKeysLabel"), value: `${filterKeys.length} keys` },
     { label: t(locale, "changelog.upgradeTagsLabel"), value: `${upgradeTags.length} tags` },
-    { label: locale === "zh" ? "模式" : "Mode", value: mode === "sample" ? "Sample" : "Live" },
+    { label: L(locale, "Mode", "模式"), value: mode === "sample" ? "Sample" : "Live" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "sol.changelog-filter" },
+    { k: L(locale, "SRC", "源"), v: "sol.changelog-filter" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "logsSubscribe+getTransaction" },
-    { k: "WSS", v: ep.wss || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
-    { k: "HTTPS", v: ep.https || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
+    { k: "WSS", v: ep.wss || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
+    { k: "HTTPS", v: ep.https || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
   ];
 
   useEffect(() => {

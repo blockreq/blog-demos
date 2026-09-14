@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -201,7 +201,7 @@ export function LongEcoLaunchDemo({ locale }: { locale: Locale }) {
       };
       if (pair) pairs.current.set(pair.toLowerCase(), rec);
       pushEvent({
-        kind: locale === "zh" ? "生态配对开盘" : "eco pair landed",
+        kind: L(locale, "eco pair landed", "生态配对开盘"),
         tags,
         title: shortAddr(hit?.memeSide || pair),
         body: hit
@@ -212,9 +212,9 @@ export function LongEcoLaunchDemo({ locale }: { locale: Locale }) {
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
         metric: hit?.symbol || shortAddr(hit?.ecoSide || token0),
-        metricLabel: locale === "zh" ? "生态侧" : "ecoSide",
+        metricLabel: L(locale, "ecoSide", "生态侧"),
         metric2: shortAddr(hit?.memeSide || token1),
-        metric2Label: locale === "zh" ? "meme侧" : "memeSide",
+        metric2Label: L(locale, "memeSide", "meme侧"),
       });
     },
     [locale, pushEvent]
@@ -233,7 +233,7 @@ export function LongEcoLaunchDemo({ locale }: { locale: Locale }) {
       const tags = ["LP", "ECO"];
       if (known.symbol) tags.push(known.symbol);
       pushEvent({
-        kind: locale === "zh" ? "首次 LP" : "first LP",
+        kind: L(locale, "first LP", "首次 LP"),
         tags,
         title: shortAddr(known.memeSide || pool),
         body: known.symbol
@@ -244,9 +244,9 @@ export function LongEcoLaunchDemo({ locale }: { locale: Locale }) {
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
         metric: known.symbol || undefined,
-        metricLabel: locale === "zh" ? "生态侧" : "ecoSide",
+        metricLabel: L(locale, "ecoSide", "生态侧"),
         metric2: shortAddr(known.memeSide),
-        metric2Label: locale === "zh" ? "meme侧" : "memeSide",
+        metric2Label: L(locale, "memeSide", "meme侧"),
       });
     },
     [locale, pushEvent]
@@ -372,14 +372,14 @@ export function LongEcoLaunchDemo({ locale }: { locale: Locale }) {
 
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听 · 未限定）" : "(wide · unset)") },
+    { label: "Factory", value: factory.trim() || (L(locale, "(wide · unset)", "（宽听 · 未限定）")) },
     { label: "Eco", value: String(ecoMap.current.size || parseEco(ecoText).size) },
     { label: "Pair", value: subPair ? "on" : "off" },
     { label: "Mint", value: subMint ? "on" : "off" },
     { label: "Filter", value: onlyEco ? "eco-only" : "all" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "long-eco.rh / stream" },
+    { k: L(locale, "SRC", "源"), v: "long-eco.rh / stream" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "long-eco-watch" },
     { k: "WSS", v: ep.wss },

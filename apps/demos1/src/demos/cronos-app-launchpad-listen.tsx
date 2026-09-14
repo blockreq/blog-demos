@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -198,7 +198,7 @@ export function CronosAppLaunchpadDemo({
         { address: [token0, token1].filter(isAddr), topics: [TOPIC_TRANSFER] },
       ]);
       pushEvent({
-        kind: locale === "zh" ? "池子开了" : "Pool open",
+        kind: L(locale, "Pool open", "池子开了"),
         tags: ["NEW", "CRO", "LAUNCHPAD", "pad:app-launchpad"],
         title: shortAddr(pair),
         body: `pad:app-launchpad · factory ${shortAddr(factoryAddr)} · ${labelToken(token0)} / ${labelToken(token1)} · #${bn}`,
@@ -232,12 +232,8 @@ export function CronosAppLaunchpadDemo({
       }
       pushEvent({
         kind: isFirst
-          ? locale === "zh"
-            ? "首流动性"
-            : "First liquidity"
-          : locale === "zh"
-            ? "Mint"
-            : "Mint",
+          ? L(locale, "First liquidity", "首流动性")
+          : L(locale, "Mint", "Mint"),
         tags: isFirst ? ["FIRST", "MINT", "CRO", "LAUNCHPAD"] : ["MINT", "CRO"],
         title: shortAddr(pair),
         body: `pad:app-launchpad · pair ${shortAddr(pair)} · ${labelToken(rec.token0)}=${amount0.toString()} · ${labelToken(rec.token1)}=${amount1.toString()} · firstMintTx ${shortAddr(tx)} · #${bn}`,
@@ -270,7 +266,7 @@ export function CronosAppLaunchpadDemo({
         // Only emit sparse transfer chips when we already have a tracked pair context
         if (pairs.current.size === 0) return;
         pushEvent({
-          kind: locale === "zh" ? "早期转账" : "Early transfer",
+          kind: L(locale, "Early transfer", "早期转账"),
           tags: ["XFER", "CRO"],
           title: shortAddr(to),
           body: `token ${shortAddr(String(r.address || ""))} → ${shortAddr(to)} · #${bn}`,
@@ -281,7 +277,7 @@ export function CronosAppLaunchpadDemo({
           metric: shortAddr(to),
           metricLabel: "to",
           metric2: `#${bn}`,
-          metric2Label: locale === "zh" ? "区块" : "Block",
+          metric2Label: L(locale, "Block", "区块"),
         });
       }
     },
@@ -388,14 +384,14 @@ export function CronosAppLaunchpadDemo({
   const watchParams = [
     {
       label: "LAUNCHPAD_FACTORY",
-      value: factory.trim() || (locale === "zh" ? "（粘贴工厂）" : "(paste factory)"),
+      value: factory.trim() || (L(locale, "(paste factory)", "（粘贴工厂）")),
       mono: true,
     },
     { label: "PairCreated", value: shortAddr(topicPair), mono: true },
     { label: "Mint", value: shortAddr(topicMint), mono: true },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "cronos.app.launchpad" },
+    { k: L(locale, "SRC", "源"), v: "cronos.app.launchpad" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "pair+first-mint" },
     { k: "WSS", v: ep.wss },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -238,7 +238,7 @@ export function AnzaAgaveRpcCompatWatchDemo({ locale }: { locale: Locale }) {
       const lagMs = lastSubAt ? Date.now() - lastSubAt : 0;
       const subLag = lastSubAt ? `${lagMs}ms` : "n/a";
       pushEvent({
-        kind: locale === "zh" ? "tip/slot 探针" : "tip/slot probe",
+        kind: L(locale, "tip/slot probe", "tip/slot 探针"),
         tags: ["PROBE", "AGAVE", "SOL", fields.current.releaseTag.trim() || "rel"],
         title: fields.current.releaseTag.trim() || "release",
         body: `pad agave-compat · releaseTag ${fields.current.releaseTag.trim()} · tipSlot ${slot} · programDiff tipΔ${delta >= 0 ? "+" : ""}${delta} · subLag ${subLag} · checks ${activeChecksLabel(checksNow)} · bh ${shortSol(bh?.blockhash)}`,
@@ -287,12 +287,8 @@ export function AnzaAgaveRpcCompatWatchDemo({ locale }: { locale: Locale }) {
       pushEvent({
         kind:
           programDiff === "pre≠post"
-            ? locale === "zh"
-              ? "pre/post 差"
-              : "pre/post diff"
-            : locale === "zh"
-              ? "sub 健康"
-              : "sub healthy",
+            ? L(locale, "pre/post diff", "pre/post 差")
+            : L(locale, "sub healthy", "sub 健康"),
         tags:
           programDiff === "pre≠post"
             ? ["DIFF", "AGAVE", "SOL", fields.current.releaseTag.trim() || "rel"]
@@ -473,14 +469,14 @@ export function AnzaAgaveRpcCompatWatchDemo({ locale }: { locale: Locale }) {
     { label: t(locale, "agave.releaseTagLabel"), value: releaseTag.trim() || "—" },
     { label: t(locale, "agave.anchorSlotLabel"), value: anchorSlot.trim() || "—" },
     { label: t(locale, "agave.programsLabel"), value: `${programs.length} programs` },
-    { label: locale === "zh" ? "模式" : "Mode", value: mode === "sample" ? "Sample" : "Live" },
+    { label: L(locale, "Mode", "模式"), value: mode === "sample" ? "Sample" : "Live" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "anza.agave-compat" },
+    { k: L(locale, "SRC", "源"), v: "anza.agave-compat" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "getSlot+getLatestBlockhash+logsSubscribe" },
-    { k: "WSS", v: ep.wss || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
-    { k: "HTTPS", v: ep.https || (locale === "zh" ? "（空 · 待就绪）" : "(empty · pending ready)") },
+    { k: "WSS", v: ep.wss || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
+    { k: "HTTPS", v: ep.https || (L(locale, "(empty · pending ready)", "（空 · 待就绪）")) },
   ];
 
   useEffect(() => {

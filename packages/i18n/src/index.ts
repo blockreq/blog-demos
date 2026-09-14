@@ -1,12 +1,53 @@
-export type Locale = "en" | "zh";
+import type { Dict } from "./types";
+import { ja } from "./locales/ja";
+import { ko } from "./locales/ko";
+import { zhTw } from "./locales/zhTw";
+import { INLINE_L } from "./locales/inline-l";
 
-export const LOCALES: Locale[] = ["en", "zh"];
+export type Locale = "en" | "zh" | "ja" | "ko" | "zh-tw";
+
+export const LOCALES: Locale[] = ["en", "zh", "ja", "ko", "zh-tw"];
+
+/** UI labels for LocaleToggle (path-driven). */
+export const LOCALE_LABELS: Record<Locale, string> = {
+  zh: "中文",
+  en: "EN",
+  ja: "日本語",
+  ko: "한국어",
+  "zh-tw": "繁中",
+};
+
+/** BCP 47 tags for hreflang / <html lang>. */
+export const LOCALE_HTML_LANG: Record<Locale, string> = {
+  en: "en",
+  zh: "zh-Hans",
+  ja: "ja",
+  ko: "ko",
+  "zh-tw": "zh-Hant",
+};
+
+export const LOCALE_HREFLANG: Record<Locale, string> = {
+  en: "en",
+  zh: "zh",
+  ja: "ja",
+  ko: "ko",
+  "zh-tw": "zh-TW",
+};
 
 export function isLocale(v: string): v is Locale {
-  return v === "en" || v === "zh";
+  return (LOCALES as string[]).includes(v);
 }
 
-type Dict = Record<string, string>;
+export function localeFromPath(pathname: string): Locale {
+  const parts = pathname.split("/").filter(Boolean);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+    if (part && isLocale(part)) return part;
+  }
+  return "en";
+}
+
+export type { Dict };
 
 const en: Dict = {
   "index.pill": "DEMOS1 // PUBLIC LISTEN TOOLS",
@@ -68,6 +109,7 @@ const en: Dict = {
   "shell.demoData": "",
   "shell.freshJustNow": "Just now",
   "shell.freshAgo": "{n}s ago",
+  "shell.freshAgoMin": "{n}m ago",
   "shell.freshUpdated": "Updated {rel}",
   "shell.freshStamp": "Updated",
   "shell.stale": "STALE",
@@ -684,6 +726,14 @@ const en: Dict = {
   "layout.multi-market": "Multi-market",
   "layout.single-token": "Single token",
   "future.singleNote": "Future: single-token chart + tape (structure stub only).",
+  "index.filterAll": "All",
+  "index.filterPlaceholder": "Filter product / slug…",
+  "shell.freshNa": "n/a",
+  "index.openJa": "日本語",
+  "index.openKo": "한국어",
+  "index.openZhTw": "繁中",
+  "addr.copiedTitle": "Copied",
+  "addr.copiedBody": "Address copied to clipboard",
 };
 
 const zh: Dict = {
@@ -746,6 +796,7 @@ const zh: Dict = {
   "shell.demoData": "",
   "shell.freshJustNow": "刚刚",
   "shell.freshAgo": "{n}s 前",
+  "shell.freshAgoMin": "{n}m 前",
   "shell.freshUpdated": "更新于 {rel}",
   "shell.freshStamp": "更新于",
   "shell.stale": "陈旧",
@@ -1362,12 +1413,56 @@ const zh: Dict = {
   "layout.multi-market": "分市场",
   "layout.single-token": "单币",
   "future.singleNote": "预留：单币图表 + 成交带（仅结构占位）。",
+  "index.filterAll": "全部",
+  "index.filterPlaceholder": "筛选产品 / slug…",
+  "shell.freshNa": "暂无",
+  "index.openJa": "日本語",
+  "index.openKo": "한국어",
+  "index.openZhTw": "繁中",
+  "addr.copiedTitle": "已复制",
+  "addr.copiedBody": "地址已复制到剪贴板",
 };
 
-const catalogs: Record<Locale, Dict> = { en, zh };
+const catalogs: Record<Locale, Dict> = { en, zh, ja, ko, "zh-tw": zhTw };
 
 export function t(locale: Locale, key: string): string {
   return catalogs[locale][key] ?? catalogs.en[key] ?? key;
+}
+
+/**
+ * Inline EN/ZH strings used in demos — prefer i18n keys when possible.
+ * zh-tw uses Traditional of the zh string; ja/ko use optional overrides or zh as CJK bridge only when overrides missing? 
+ * Actually: ja/ko fall back through optional args; if omitted, use en then? Acceptance wants no EN shell —
+ * for event crumbs pass ja/ko when available. Default: zh-tw←zhTwMap/opencc-pre; ja/ko←en only if missing
+ * would leak EN — so when ja/ko omitted, prefer zh over en for CJK-ish locales? No — use dedicated maps via third+ args.
+ */
+export function L(
+  locale: Locale,
+  en: string,
+  zh: string,
+  extra?: Partial<Record<"ja" | "ko" | "zh-tw", string>>,
+): string {
+  const hit = INLINE_L[en];
+  switch (locale) {
+    case "zh":
+      return zh;
+    case "zh-tw":
+      return extra?.["zh-tw"] ?? hit?.["zh-tw"] ?? zh;
+    case "ja":
+      return extra?.ja ?? hit?.ja ?? en;
+    case "ko":
+      return extra?.ko ?? hit?.ko ?? en;
+    default:
+      return en;
+  }
+}
+
+export function demoPath(slug: string, locale: Locale): string {
+  return `/demos1/${slug}/${locale}/`;
+}
+
+export function demoAbsoluteUrl(slug: string, locale: Locale): string {
+  return `https://blockreq.com/demos1/${slug}/${locale}/`;
 }
 
 /** Catalog driving `/demos1/` index — slug, titles, blurbs, entry paths. */
@@ -1396,10 +1491,16 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/anoncoin-rh-launch-listen",
     blogZh: "https://blockreq.com/blog/zh/anoncoin-rh-launch-listen",
+    blogJa: "https://blockreq.com/blog/ja/anoncoin-rh-launch-listen",
+    blogKo: "https://blockreq.com/blog/ko/anoncoin-rh-launch-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/anoncoin-rh-launch-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/anoncoin-rh-launch-listen",
     pathEn: "/demos1/anoncoin-rh-launch-listen/en/",
     pathZh: "/demos1/anoncoin-rh-launch-listen/zh/",
+    pathJa: "/demos1/anoncoin-rh-launch-listen/ja/",
+    pathKo: "/demos1/anoncoin-rh-launch-listen/ko/",
+    pathZhTw: "/demos1/anoncoin-rh-launch-listen/zh-tw/",
   },
   {
     slug: "openlaunch-base-eth-subscribe",
@@ -1416,10 +1517,16 @@ export const DEMO_CATALOG = [
     endpointKey: "base" as const,
     blogEn: "https://blockreq.com/blog/en/openlaunch-base-eth-subscribe",
     blogZh: "https://blockreq.com/blog/zh/openlaunch-base-eth-subscribe",
+    blogJa: "https://blockreq.com/blog/ja/openlaunch-base-eth-subscribe",
+    blogKo: "https://blockreq.com/blog/ko/openlaunch-base-eth-subscribe",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/openlaunch-base-eth-subscribe",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/openlaunch-base-eth-subscribe",
     pathEn: "/demos1/openlaunch-base-eth-subscribe/en/",
     pathZh: "/demos1/openlaunch-base-eth-subscribe/zh/",
+    pathJa: "/demos1/openlaunch-base-eth-subscribe/ja/",
+    pathKo: "/demos1/openlaunch-base-eth-subscribe/ko/",
+    pathZhTw: "/demos1/openlaunch-base-eth-subscribe/zh-tw/",
   },
   {
     slug: "equifold-multi-market-listen",
@@ -1436,10 +1543,16 @@ export const DEMO_CATALOG = [
     endpointKey: "base" as const,
     blogEn: "https://blockreq.com/blog/en/equifold-multi-market-listen",
     blogZh: "https://blockreq.com/blog/zh/equifold-multi-market-listen",
+    blogJa: "https://blockreq.com/blog/ja/equifold-multi-market-listen",
+    blogKo: "https://blockreq.com/blog/ko/equifold-multi-market-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/equifold-multi-market-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/equifold-multi-market-listen",
     pathEn: "/demos1/equifold-multi-market-listen/en/",
     pathZh: "/demos1/equifold-multi-market-listen/zh/",
+    pathJa: "/demos1/equifold-multi-market-listen/ja/",
+    pathKo: "/demos1/equifold-multi-market-listen/ko/",
+    pathZhTw: "/demos1/equifold-multi-market-listen/zh-tw/",
   },
   {
     slug: "stock-pair-meme-launch-listen",
@@ -1455,10 +1568,16 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/stock-pair-meme-launch-listen",
     blogZh: "https://blockreq.com/blog/zh/stock-pair-meme-launch-listen",
+    blogJa: "https://blockreq.com/blog/ja/stock-pair-meme-launch-listen",
+    blogKo: "https://blockreq.com/blog/ko/stock-pair-meme-launch-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/stock-pair-meme-launch-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main/examples/robinhood-stock-pairs-launch",
     pathEn: "/demos1/stock-pair-meme-launch-listen/en/",
     pathZh: "/demos1/stock-pair-meme-launch-listen/zh/",
+    pathJa: "/demos1/stock-pair-meme-launch-listen/ja/",
+    pathKo: "/demos1/stock-pair-meme-launch-listen/ko/",
+    pathZhTw: "/demos1/stock-pair-meme-launch-listen/zh-tw/",
   },
   {
     slug: "pons-launchpad-listen",
@@ -1474,9 +1593,15 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/pons-launchpad-listen",
     blogZh: "https://blockreq.com/blog/zh/pons-launchpad-listen",
+    blogJa: "https://blockreq.com/blog/ja/pons-launchpad-listen",
+    blogKo: "https://blockreq.com/blog/ko/pons-launchpad-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/pons-launchpad-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/pons-launchpad-listen/en/",
     pathZh: "/demos1/pons-launchpad-listen/zh/",
+    pathJa: "/demos1/pons-launchpad-listen/ja/",
+    pathKo: "/demos1/pons-launchpad-listen/ko/",
+    pathZhTw: "/demos1/pons-launchpad-listen/zh-tw/",
   },
   {
     slug: "rh-uniswap-v4-direct-launch-listen",
@@ -1493,9 +1618,15 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/rh-uniswap-v4-direct-launch-listen",
     blogZh: "https://blockreq.com/blog/zh/rh-uniswap-v4-direct-launch-listen",
+    blogJa: "https://blockreq.com/blog/ja/rh-uniswap-v4-direct-launch-listen",
+    blogKo: "https://blockreq.com/blog/ko/rh-uniswap-v4-direct-launch-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/rh-uniswap-v4-direct-launch-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/rh-uniswap-v4-direct-launch-listen/en/",
     pathZh: "/demos1/rh-uniswap-v4-direct-launch-listen/zh/",
+    pathJa: "/demos1/rh-uniswap-v4-direct-launch-listen/ja/",
+    pathKo: "/demos1/rh-uniswap-v4-direct-launch-listen/ko/",
+    pathZhTw: "/demos1/rh-uniswap-v4-direct-launch-listen/zh-tw/",
   },
   {
     slug: "base-launch-spike-listen",
@@ -1512,9 +1643,15 @@ export const DEMO_CATALOG = [
     endpointKey: "base" as const,
     blogEn: "https://blockreq.com/blog/en/base-launch-spike-listen",
     blogZh: "https://blockreq.com/blog/zh/base-launch-spike-listen",
+    blogJa: "https://blockreq.com/blog/ja/base-launch-spike-listen",
+    blogKo: "https://blockreq.com/blog/ko/base-launch-spike-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/base-launch-spike-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/base-launch-spike-listen/en/",
     pathZh: "/demos1/base-launch-spike-listen/zh/",
+    pathJa: "/demos1/base-launch-spike-listen/ja/",
+    pathKo: "/demos1/base-launch-spike-listen/ko/",
+    pathZhTw: "/demos1/base-launch-spike-listen/zh-tw/",
   },
   {
     slug: "rh-basket-factory-listen",
@@ -1531,9 +1668,15 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/rh-basket-factory-listen",
     blogZh: "https://blockreq.com/blog/zh/rh-basket-factory-listen",
+    blogJa: "https://blockreq.com/blog/ja/rh-basket-factory-listen",
+    blogKo: "https://blockreq.com/blog/ko/rh-basket-factory-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/rh-basket-factory-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/rh-basket-factory-listen/en/",
     pathZh: "/demos1/rh-basket-factory-listen/zh/",
+    pathJa: "/demos1/rh-basket-factory-listen/ja/",
+    pathKo: "/demos1/rh-basket-factory-listen/ko/",
+    pathZhTw: "/demos1/rh-basket-factory-listen/zh-tw/",
   },
   {
     slug: "long-eco-launch-listen",
@@ -1550,9 +1693,15 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/long-eco-launch-listen",
     blogZh: "https://blockreq.com/blog/zh/long-eco-launch-listen",
+    blogJa: "https://blockreq.com/blog/ja/long-eco-launch-listen",
+    blogKo: "https://blockreq.com/blog/ko/long-eco-launch-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/long-eco-launch-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/long-eco-launch-listen/en/",
     pathZh: "/demos1/long-eco-launch-listen/zh/",
+    pathJa: "/demos1/long-eco-launch-listen/ja/",
+    pathKo: "/demos1/long-eco-launch-listen/ko/",
+    pathZhTw: "/demos1/long-eco-launch-listen/zh-tw/",
   },
   {
     slug: "arc-mainnet-day1-listen",
@@ -1569,9 +1718,15 @@ export const DEMO_CATALOG = [
     endpointKey: "arc" as const,
     blogEn: "https://blockreq.com/blog/en/arc-mainnet-day1-listen",
     blogZh: "https://blockreq.com/blog/zh/arc-mainnet-day1-listen",
+    blogJa: "https://blockreq.com/blog/ja/arc-mainnet-day1-listen",
+    blogKo: "https://blockreq.com/blog/ko/arc-mainnet-day1-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/arc-mainnet-day1-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/arc-mainnet-day1-listen/en/",
     pathZh: "/demos1/arc-mainnet-day1-listen/zh/",
+    pathJa: "/demos1/arc-mainnet-day1-listen/ja/",
+    pathKo: "/demos1/arc-mainnet-day1-listen/ko/",
+    pathZhTw: "/demos1/arc-mainnet-day1-listen/zh-tw/",
   },
   {
     slug: "base-stock-token-swap-listen",
@@ -1588,9 +1743,15 @@ export const DEMO_CATALOG = [
     endpointKey: "base" as const,
     blogEn: "https://blockreq.com/blog/en/base-stock-token-swap-listen",
     blogZh: "https://blockreq.com/blog/zh/base-stock-token-swap-listen",
+    blogJa: "https://blockreq.com/blog/ja/base-stock-token-swap-listen",
+    blogKo: "https://blockreq.com/blog/ko/base-stock-token-swap-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/base-stock-token-swap-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/base-stock-token-swap-listen/en/",
     pathZh: "/demos1/base-stock-token-swap-listen/zh/",
+    pathJa: "/demos1/base-stock-token-swap-listen/ja/",
+    pathKo: "/demos1/base-stock-token-swap-listen/ko/",
+    pathZhTw: "/demos1/base-stock-token-swap-listen/zh-tw/",
   },
   {
     slug: "rh-any-quote-launch-listen",
@@ -1607,9 +1768,15 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/rh-any-quote-launch-listen",
     blogZh: "https://blockreq.com/blog/zh/rh-any-quote-launch-listen",
+    blogJa: "https://blockreq.com/blog/ja/rh-any-quote-launch-listen",
+    blogKo: "https://blockreq.com/blog/ko/rh-any-quote-launch-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/rh-any-quote-launch-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/rh-any-quote-launch-listen/en/",
     pathZh: "/demos1/rh-any-quote-launch-listen/zh/",
+    pathJa: "/demos1/rh-any-quote-launch-listen/ja/",
+    pathKo: "/demos1/rh-any-quote-launch-listen/ko/",
+    pathZhTw: "/demos1/rh-any-quote-launch-listen/zh-tw/",
   },
   {
     slug: "pumpfun-custom-pairs-listen",
@@ -1626,9 +1793,15 @@ export const DEMO_CATALOG = [
     endpointKey: "solana" as const,
     blogEn: "https://blockreq.com/blog/en/pumpfun-custom-pairs-listen",
     blogZh: "https://blockreq.com/blog/zh/pumpfun-custom-pairs-listen",
+    blogJa: "https://blockreq.com/blog/ja/pumpfun-custom-pairs-listen",
+    blogKo: "https://blockreq.com/blog/ko/pumpfun-custom-pairs-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/pumpfun-custom-pairs-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/pumpfun-custom-pairs-listen/en/",
     pathZh: "/demos1/pumpfun-custom-pairs-listen/zh/",
+    pathJa: "/demos1/pumpfun-custom-pairs-listen/ja/",
+    pathKo: "/demos1/pumpfun-custom-pairs-listen/ko/",
+    pathZhTw: "/demos1/pumpfun-custom-pairs-listen/zh-tw/",
   },
   {
     slug: "monad-o1-launchpad-listen",
@@ -1645,9 +1818,15 @@ export const DEMO_CATALOG = [
     endpointKey: "monad" as const,
     blogEn: "https://blockreq.com/blog/en/monad-o1-launchpad-listen",
     blogZh: "https://blockreq.com/blog/zh/monad-o1-launchpad-listen",
+    blogJa: "https://blockreq.com/blog/ja/monad-o1-launchpad-listen",
+    blogKo: "https://blockreq.com/blog/ko/monad-o1-launchpad-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/monad-o1-launchpad-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/monad-o1-launchpad-listen/en/",
     pathZh: "/demos1/monad-o1-launchpad-listen/zh/",
+    pathJa: "/demos1/monad-o1-launchpad-listen/ja/",
+    pathKo: "/demos1/monad-o1-launchpad-listen/ko/",
+    pathZhTw: "/demos1/monad-o1-launchpad-listen/zh-tw/",
   },
   {
     slug: "solana-changelog-subscription-filter",
@@ -1664,9 +1843,15 @@ export const DEMO_CATALOG = [
     endpointKey: "solana" as const,
     blogEn: "https://blockreq.com/blog/en/solana-changelog-subscription-filter",
     blogZh: "https://blockreq.com/blog/zh/solana-changelog-subscription-filter",
+    blogJa: "https://blockreq.com/blog/ja/solana-changelog-subscription-filter",
+    blogKo: "https://blockreq.com/blog/ko/solana-changelog-subscription-filter",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/solana-changelog-subscription-filter",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/solana-changelog-subscription-filter/en/",
     pathZh: "/demos1/solana-changelog-subscription-filter/zh/",
+    pathJa: "/demos1/solana-changelog-subscription-filter/ja/",
+    pathKo: "/demos1/solana-changelog-subscription-filter/ko/",
+    pathZhTw: "/demos1/solana-changelog-subscription-filter/zh-tw/",
   },
   {
     slug: "anza-agave-rpc-compat-watch",
@@ -1683,9 +1868,15 @@ export const DEMO_CATALOG = [
     endpointKey: "solana" as const,
     blogEn: "https://blockreq.com/blog/en/anza-agave-rpc-compat-watch",
     blogZh: "https://blockreq.com/blog/zh/anza-agave-rpc-compat-watch",
+    blogJa: "https://blockreq.com/blog/ja/anza-agave-rpc-compat-watch",
+    blogKo: "https://blockreq.com/blog/ko/anza-agave-rpc-compat-watch",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/anza-agave-rpc-compat-watch",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/anza-agave-rpc-compat-watch/en/",
     pathZh: "/demos1/anza-agave-rpc-compat-watch/zh/",
+    pathJa: "/demos1/anza-agave-rpc-compat-watch/ja/",
+    pathKo: "/demos1/anza-agave-rpc-compat-watch/ko/",
+    pathZhTw: "/demos1/anza-agave-rpc-compat-watch/zh-tw/",
   },
   {
     slug: "brew-bnb-double-pair-listen",
@@ -1702,9 +1893,15 @@ export const DEMO_CATALOG = [
     endpointKey: "bsc" as const,
     blogEn: "https://blockreq.com/blog/en/brew-bnb-double-pair-listen",
     blogZh: "https://blockreq.com/blog/zh/brew-bnb-double-pair-listen",
+    blogJa: "https://blockreq.com/blog/ja/brew-bnb-double-pair-listen",
+    blogKo: "https://blockreq.com/blog/ko/brew-bnb-double-pair-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/brew-bnb-double-pair-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/brew-bnb-double-pair-listen/en/",
     pathZh: "/demos1/brew-bnb-double-pair-listen/zh/",
+    pathJa: "/demos1/brew-bnb-double-pair-listen/ja/",
+    pathKo: "/demos1/brew-bnb-double-pair-listen/ko/",
+    pathZhTw: "/demos1/brew-bnb-double-pair-listen/zh-tw/",
   },
   {
     slug: "arbitrum-rwa-flow-listen",
@@ -1721,9 +1918,15 @@ export const DEMO_CATALOG = [
     endpointKey: "arbitrum" as const,
     blogEn: "https://blockreq.com/blog/en/arbitrum-rwa-flow-listen",
     blogZh: "https://blockreq.com/blog/zh/arbitrum-rwa-flow-listen",
+    blogJa: "https://blockreq.com/blog/ja/arbitrum-rwa-flow-listen",
+    blogKo: "https://blockreq.com/blog/ko/arbitrum-rwa-flow-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/arbitrum-rwa-flow-listen",
     stackblitz: "https://stackblitz.com/github/blockreq/blog-demos/tree/main/apps/demos1",
     pathEn: "/demos1/arbitrum-rwa-flow-listen/en/",
     pathZh: "/demos1/arbitrum-rwa-flow-listen/zh/",
+    pathJa: "/demos1/arbitrum-rwa-flow-listen/ja/",
+    pathKo: "/demos1/arbitrum-rwa-flow-listen/ko/",
+    pathZhTw: "/demos1/arbitrum-rwa-flow-listen/zh-tw/",
   },
 
   {
@@ -1740,10 +1943,16 @@ export const DEMO_CATALOG = [
     endpointKey: "cronos" as const,
     blogEn: "https://blockreq.com/blog/en/cronos-app-launchpad-listen",
     blogZh: "https://blockreq.com/blog/zh/cronos-app-launchpad-listen",
+    blogJa: "https://blockreq.com/blog/ja/cronos-app-launchpad-listen",
+    blogKo: "https://blockreq.com/blog/ko/cronos-app-launchpad-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/cronos-app-launchpad-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/cronos-app-launchpad-listen/src/main.tsx&startScript=dev:cronos-app-launchpad-listen&ctl=1",
     pathEn: "/demos1/cronos-app-launchpad-listen/en/",
     pathZh: "/demos1/cronos-app-launchpad-listen/zh/",
+    pathJa: "/demos1/cronos-app-launchpad-listen/ja/",
+    pathKo: "/demos1/cronos-app-launchpad-listen/ko/",
+    pathZhTw: "/demos1/cronos-app-launchpad-listen/zh-tw/",
   },
   {
     slug: "ethereum-uniswap-v4-stablepair-hook-listen",
@@ -1759,10 +1968,16 @@ export const DEMO_CATALOG = [
     endpointKey: "ethereum" as const,
     blogEn: "https://blockreq.com/blog/en/ethereum-uniswap-v4-stablepair-hook-listen",
     blogZh: "https://blockreq.com/blog/zh/ethereum-uniswap-v4-stablepair-hook-listen",
+    blogJa: "https://blockreq.com/blog/ja/ethereum-uniswap-v4-stablepair-hook-listen",
+    blogKo: "https://blockreq.com/blog/ko/ethereum-uniswap-v4-stablepair-hook-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/ethereum-uniswap-v4-stablepair-hook-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/ethereum-uniswap-v4-stablepair-hook-listen/src/main.tsx&startScript=dev:ethereum-uniswap-v4-stablepair-hook-listen&ctl=1",
     pathEn: "/demos1/ethereum-uniswap-v4-stablepair-hook-listen/en/",
     pathZh: "/demos1/ethereum-uniswap-v4-stablepair-hook-listen/zh/",
+    pathJa: "/demos1/ethereum-uniswap-v4-stablepair-hook-listen/ja/",
+    pathKo: "/demos1/ethereum-uniswap-v4-stablepair-hook-listen/ko/",
+    pathZhTw: "/demos1/ethereum-uniswap-v4-stablepair-hook-listen/zh-tw/",
   },
   {
     slug: "base-laptop-sniper-liquidity-listen",
@@ -1778,10 +1993,16 @@ export const DEMO_CATALOG = [
     endpointKey: "base" as const,
     blogEn: "https://blockreq.com/blog/en/base-laptop-sniper-liquidity-listen",
     blogZh: "https://blockreq.com/blog/zh/base-laptop-sniper-liquidity-listen",
+    blogJa: "https://blockreq.com/blog/ja/base-laptop-sniper-liquidity-listen",
+    blogKo: "https://blockreq.com/blog/ko/base-laptop-sniper-liquidity-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/base-laptop-sniper-liquidity-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/base-laptop-sniper-liquidity-listen/src/main.tsx&startScript=dev:base-laptop-sniper-liquidity-listen&ctl=1",
     pathEn: "/demos1/base-laptop-sniper-liquidity-listen/en/",
     pathZh: "/demos1/base-laptop-sniper-liquidity-listen/zh/",
+    pathJa: "/demos1/base-laptop-sniper-liquidity-listen/ja/",
+    pathKo: "/demos1/base-laptop-sniper-liquidity-listen/ko/",
+    pathZhTw: "/demos1/base-laptop-sniper-liquidity-listen/zh-tw/",
   },
 
   {
@@ -1798,10 +2019,16 @@ export const DEMO_CATALOG = [
     endpointKey: "ethereum" as const,
     blogEn: "https://blockreq.com/blog/en/multiplr-eth-leverage-launchpad-listen",
     blogZh: "https://blockreq.com/blog/zh/multiplr-eth-leverage-launchpad-listen",
+    blogJa: "https://blockreq.com/blog/ja/multiplr-eth-leverage-launchpad-listen",
+    blogKo: "https://blockreq.com/blog/ko/multiplr-eth-leverage-launchpad-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/multiplr-eth-leverage-launchpad-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/multiplr-eth-leverage-launchpad-listen/src/main.tsx&startScript=dev:multiplr-eth-leverage-launchpad-listen&ctl=1",
     pathEn: "/demos1/multiplr-eth-leverage-launchpad-listen/en/",
     pathZh: "/demos1/multiplr-eth-leverage-launchpad-listen/zh/",
+    pathJa: "/demos1/multiplr-eth-leverage-launchpad-listen/ja/",
+    pathKo: "/demos1/multiplr-eth-leverage-launchpad-listen/ko/",
+    pathZhTw: "/demos1/multiplr-eth-leverage-launchpad-listen/zh-tw/",
   },
 
 
@@ -1820,10 +2047,16 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/harmonic-rhc-agent-launch-listen",
     blogZh: "https://blockreq.com/blog/zh/harmonic-rhc-agent-launch-listen",
+    blogJa: "https://blockreq.com/blog/ja/harmonic-rhc-agent-launch-listen",
+    blogKo: "https://blockreq.com/blog/ko/harmonic-rhc-agent-launch-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/harmonic-rhc-agent-launch-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/harmonic-rhc-agent-launch-listen/src/main.tsx&startScript=dev:harmonic-rhc-agent-launch-listen&ctl=1",
     pathEn: "/demos1/harmonic-rhc-agent-launch-listen/en/",
     pathZh: "/demos1/harmonic-rhc-agent-launch-listen/zh/",
+    pathJa: "/demos1/harmonic-rhc-agent-launch-listen/ja/",
+    pathKo: "/demos1/harmonic-rhc-agent-launch-listen/ko/",
+    pathZhTw: "/demos1/harmonic-rhc-agent-launch-listen/zh-tw/",
   },
 
   {
@@ -1840,10 +2073,16 @@ export const DEMO_CATALOG = [
     endpointKey: "base" as const,
     blogEn: "https://blockreq.com/blog/en/longshot-base-football-market-listen",
     blogZh: "https://blockreq.com/blog/zh/longshot-base-football-market-listen",
+    blogJa: "https://blockreq.com/blog/ja/longshot-base-football-market-listen",
+    blogKo: "https://blockreq.com/blog/ko/longshot-base-football-market-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/longshot-base-football-market-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/longshot-base-football-market-listen/src/main.tsx&startScript=dev:longshot-base-football-market-listen&ctl=1",
     pathEn: "/demos1/longshot-base-football-market-listen/en/",
     pathZh: "/demos1/longshot-base-football-market-listen/zh/",
+    pathJa: "/demos1/longshot-base-football-market-listen/ja/",
+    pathKo: "/demos1/longshot-base-football-market-listen/ko/",
+    pathZhTw: "/demos1/longshot-base-football-market-listen/zh-tw/",
   },
 
 
@@ -1861,10 +2100,16 @@ export const DEMO_CATALOG = [
     endpointKey: "robinhood" as const,
     blogEn: "https://blockreq.com/blog/en/companypad-rhc-company-market-listen",
     blogZh: "https://blockreq.com/blog/zh/companypad-rhc-company-market-listen",
+    blogJa: "https://blockreq.com/blog/ja/companypad-rhc-company-market-listen",
+    blogKo: "https://blockreq.com/blog/ko/companypad-rhc-company-market-listen",
+    blogZhTw: "https://blockreq.com/blog/zh-tw/companypad-rhc-company-market-listen",
     stackblitz:
       "https://stackblitz.com/github/blockreq/blog-demos/tree/main?file=examples/companypad-rhc-company-market-listen/src/main.tsx&startScript=dev:companypad-rhc-company-market-listen&ctl=1",
     pathEn: "/demos1/companypad-rhc-company-market-listen/en/",
     pathZh: "/demos1/companypad-rhc-company-market-listen/zh/",
+    pathJa: "/demos1/companypad-rhc-company-market-listen/ja/",
+    pathKo: "/demos1/companypad-rhc-company-market-listen/ko/",
+    pathZhTw: "/demos1/companypad-rhc-company-market-listen/zh-tw/",
   },
 
   {
@@ -1977,4 +2222,14 @@ export function demoBlogUrl(slug: string, locale: Locale) {
 
 export function demoSiteUrl(demo?: { siteUrl?: string } | null) {
   return demo?.siteUrl || SITE_URL;
+}
+
+/** hreflang link descriptors for a demo slug (x-default → en). */
+export function demoHreflangLinks(slug: string): { hreflang: string; href: string }[] {
+  const links = LOCALES.map((locale) => ({
+    hreflang: LOCALE_HREFLANG[locale],
+    href: demoAbsoluteUrl(slug, locale),
+  }));
+  links.push({ hreflang: "x-default", href: demoAbsoluteUrl(slug, "en") });
+  return links;
 }

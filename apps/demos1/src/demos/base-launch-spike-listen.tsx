@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -176,7 +176,7 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
         });
       }
       pushEvent({
-        kind: locale === "zh" ? "工厂开盘" : "Factory create",
+        kind: L(locale, "Factory create", "工厂开盘"),
         tags: ["NEW", "BASE"],
         title: shortAddr(pair),
         body: `${shortAddr(token0)} / ${shortAddr(token1)} · #${bn}`,
@@ -185,9 +185,9 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
         tx: String(r.transactionHash || "") || undefined,
         chain: "BASE",
         metric: "0",
-        metricLabel: locale === "zh" ? "早期换手" : "Early swaps",
-        metric2: locale === "zh" ? "开盘" : "OPEN",
-        metric2Label: locale === "zh" ? "信号" : "Signal",
+        metricLabel: L(locale, "Early swaps", "早期换手"),
+        metric2: L(locale, "OPEN", "开盘"),
+        metric2Label: L(locale, "Signal", "信号"),
       });
       // Also subscribe to swaps on this pair for density (topic-wide swap is noisy; prefer address filter).
       if (pair && isAddr(pair) && fields.current.subSwap) {
@@ -213,7 +213,7 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
       if (rec.swapCount >= min && !rec.spiked) {
         rec.spiked = true;
         pushEvent({
-          kind: locale === "zh" ? "开盘尖刺" : "Launch spike",
+          kind: L(locale, "Launch spike", "开盘尖刺"),
           tags: ["SPIKE", "BASE"],
           title: shortAddr(pair),
           body: `${shortAddr(rec.token0)} / ${shortAddr(rec.token1)} · swaps ${rec.swapCount}/${fields.current.windowSec}s · #${bn}`,
@@ -222,14 +222,14 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
           tx: String(r.transactionHash || "") || undefined,
           chain: "BASE",
           metric: String(rec.swapCount),
-          metricLabel: locale === "zh" ? "早期换手" : "Early swaps",
-          metric2: locale === "zh" ? "尖刺" : "SPIKE",
-          metric2Label: locale === "zh" ? "信号" : "Signal",
+          metricLabel: L(locale, "Early swaps", "早期换手"),
+          metric2: L(locale, "SPIKE", "尖刺"),
+          metric2Label: L(locale, "Signal", "信号"),
         });
       } else if (!rec.spiked && rec.swapCount > 0 && rec.swapCount % 2 === 0) {
         // Periodic density tick while still under threshold
         pushEvent({
-          kind: locale === "zh" ? "早期换手密" : "Early swap dens",
+          kind: L(locale, "Early swap dens", "早期换手密"),
           tags: ["DENS", "BASE"],
           title: shortAddr(pair),
           body: `swaps ${rec.swapCount} · need ≥${min} · #${bn}`,
@@ -238,7 +238,7 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
           tx: String(r.transactionHash || "") || undefined,
           chain: "BASE",
           metric: String(rec.swapCount),
-          metricLabel: locale === "zh" ? "早期换手" : "Early swaps",
+          metricLabel: L(locale, "Early swaps", "早期换手"),
           metric2: `${rec.swapCount}/${min}`,
           metric2Label: "vs thr",
         });
@@ -353,14 +353,14 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
 
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: locale === "zh" ? "工厂" : "Factory", value: shortAddr(factory) || factory, mono: true },
-    { label: locale === "zh" ? "尖刺阈值" : "Spike thr", value: `≥${minSwaps} swaps` },
-    { label: locale === "zh" ? "窗口" : "Window", value: `${windowSec}s` },
+    { label: L(locale, "Factory", "工厂"), value: shortAddr(factory) || factory, mono: true },
+    { label: L(locale, "Spike thr", "尖刺阈值"), value: `≥${minSwaps} swaps` },
+    { label: L(locale, "Window", "窗口"), value: `${windowSec}s` },
     { label: "PairCreated", value: subPair ? "on" : "off" },
     { label: "Swap dens", value: subSwap ? "on" : "off" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "base.launch.spike" },
+    { k: L(locale, "SRC", "源"), v: "base.launch.spike" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "factory+swap-density" },
     { k: "WSS", v: ep.wss },
@@ -394,16 +394,14 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "工厂 + 尖刺阈值" : "Factory + spike thresholds"}</CardTitle>
+            <CardTitle>{L(locale, "Factory + spike thresholds", "工厂 + 尖刺阈值")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "默认 Base Uniswap V2 工厂。新 PairCreated 后在窗口内计 Swap；达阈值 → 开盘尖刺。"
-                : "Default Base Uniswap V2 factory. After PairCreated, count Swaps in the window; hit threshold → launch spike."}
+              {L(locale, "Default Base Uniswap V2 factory. After PairCreated, count Swaps in the window; hit threshold → launch spike.", "默认 Base Uniswap V2 工厂。新 PairCreated 后在窗口内计 Swap；达阈值 → 开盘尖刺。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="spike-factory">{locale === "zh" ? "工厂" : "Factory"}</Label>
+              <Label htmlFor="spike-factory">{L(locale, "Factory", "工厂")}</Label>
               <Input
                 id="spike-factory"
                 value={factory}
@@ -414,7 +412,7 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="spike-min">{locale === "zh" ? "最少换手数" : "Min early swaps"}</Label>
+                <Label htmlFor="spike-min">{L(locale, "Min early swaps", "最少换手数")}</Label>
                 <Input
                   id="spike-min"
                   value={minSwaps}
@@ -423,7 +421,7 @@ export function BaseLaunchSpikeDemo({ locale }: { locale: Locale }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="spike-win">{locale === "zh" ? "窗口（秒）" : "Window (sec)"}</Label>
+                <Label htmlFor="spike-win">{L(locale, "Window (sec)", "窗口（秒）")}</Label>
                 <Input
                   id="spike-win"
                   value={windowSec}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -103,7 +103,7 @@ function mapTokenLaunchLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     const bn = log.blockNumber ? parseInt(String(log.blockNumber), 16) : 0;
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史发射" : "Recent launch",
+      kind: L(locale, "Recent launch", "历史发射"),
       tags: ["HIST", "RH", "HARMONIC", "PONS", "pad:pons-v2"],
       title: shortAddr(token),
       body: `pad:pons-v2 · token ${shortAddr(token)} · curve ${shortAddr(curve)} · deployer ${shortAddr(deployer)} · pair ${shortAddr(pairToken)} · thr ${threshold.toString()} · #${bn}`,
@@ -115,7 +115,7 @@ function mapTokenLaunchLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
       metric: shortAddr(curve),
       metricLabel: "curve",
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -272,7 +272,7 @@ export function HarmonicRhcAgentLaunchDemo({
   const emitLaunchCard = useCallback(
     (card: LaunchCard, kindZh: string, kindEn: string, extraTags: string[] = []) => {
       pushEvent({
-        kind: locale === "zh" ? kindZh : kindEn,
+        kind: L(locale, kindEn, kindZh),
         tags: ["NEW", "RH", "HARMONIC", "AGENT", `pad:${card.pad}`, ...extraTags],
         title: shortAddr(card.token || card.poolId || card.launchTx),
         body: `pad:${card.pad} · token ${shortAddr(card.token)} · curve ${shortAddr(card.curve)} · deployer ${shortAddr(card.deployer)} · pairToken ${shortAddr(card.pairToken)} · threshold ${card.threshold} · poolId ${card.poolId ? shortAddr(card.poolId) : "—"} · launchTx ${shortAddr(card.launchTx)} · #${card.blockNumber}`,
@@ -283,7 +283,7 @@ export function HarmonicRhcAgentLaunchDemo({
         metric: shortAddr(card.curve || card.deployer),
         metricLabel: card.curve ? "curve" : "deployer",
         metric2: `#${card.blockNumber}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
         at: card.ts,
       });
     },
@@ -540,12 +540,12 @@ export function HarmonicRhcAgentLaunchDemo({
     },
     {
       label: "HARMONIC_TOKEN",
-      value: harmonicToken.trim() || (locale === "zh" ? "（粘贴）" : "(paste)"),
+      value: harmonicToken.trim() || (L(locale, "(paste)", "（粘贴）")),
       mono: true,
     },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "harmonic.rhc / pons+hookr" },
+    { k: L(locale, "SRC", "源"), v: "harmonic.rhc / pons+hookr" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "agent-launch-listen" },
     { k: "WSS", v: ep.wss },
@@ -579,7 +579,7 @@ export function HarmonicRhcAgentLaunchDemo({
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "发射路径 · Pons / Hookr / V4" : "Launch path · Pons / Hookr / V4"}</CardTitle>
+            <CardTitle>{L(locale, "Launch path · Pons / Hookr / V4", "发射路径 · Pons / Hookr / V4")}</CardTitle>
             <CardDescription>{t(locale, "harmonic.settingsHint")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -643,7 +643,7 @@ export function HarmonicRhcAgentLaunchDemo({
                 onChange={(e) => setHookrTopic(e.target.value)}
                 onBlur={saveFields}
                 spellCheck={false}
-                placeholder={locale === "zh" ? "可编辑 · 空则不订" : "editable · empty = skip"}
+                placeholder={L(locale, "editable · empty = skip", "可编辑 · 空则不订")}
               />
             </div>
             <div className="space-y-1.5">
@@ -667,7 +667,7 @@ export function HarmonicRhcAgentLaunchDemo({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="harm-tok">HARMONIC token {locale === "zh" ? "（粘贴）" : "(paste)"}</Label>
+              <Label htmlFor="harm-tok">HARMONIC token {L(locale, "(paste)", "（粘贴）")}</Label>
               <Input
                 id="harm-tok"
                 value={harmonicToken}
@@ -678,7 +678,7 @@ export function HarmonicRhcAgentLaunchDemo({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="harm-vault">Agent vault {locale === "zh" ? "（粘贴）" : "(paste)"}</Label>
+              <Label htmlFor="harm-vault">Agent vault {L(locale, "(paste)", "（粘贴）")}</Label>
               <Input
                 id="harm-vault"
                 value={agentVault}
@@ -689,7 +689,7 @@ export function HarmonicRhcAgentLaunchDemo({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="harm-lp">LP manager {locale === "zh" ? "（粘贴）" : "(paste)"}</Label>
+              <Label htmlFor="harm-lp">LP manager {L(locale, "(paste)", "（粘贴）")}</Label>
               <Input
                 id="harm-lp"
                 value={lpManager}
