@@ -182,23 +182,23 @@ export function AnonStreamLayout({
                 <div className="grid grid-cols-[90px_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 text-[13px]">
                   {selected.address ? (
                     <>
-                      <span className="text-[var(--color-muted-foreground)]">Token</span>
+                      <span className="text-[var(--color-muted-foreground)]">{t(locale, "feed.fieldToken")}</span>
                       <Addr value={selected.address} className="w-full text-[12px]" />
                     </>
                   ) : null}
                   {selected.maker ? (
                     <>
-                      <span className="text-[var(--color-muted-foreground)]">Maker</span>
+                      <span className="text-[var(--color-muted-foreground)]">{t(locale, "feed.fieldMaker")}</span>
                       <Addr value={selected.maker} className="w-full text-[12px]" />
                     </>
                   ) : null}
                   {selected.tx ? (
                     <>
-                      <span className="text-[var(--color-muted-foreground)]">Tx</span>
+                      <span className="text-[var(--color-muted-foreground)]">{t(locale, "feed.fieldTx")}</span>
                       <Addr value={selected.tx} className="w-full text-[12px]" />
                     </>
                   ) : null}
-                  <span className="text-[var(--color-muted-foreground)]">Meta</span>
+                  <span className="text-[var(--color-muted-foreground)]">{t(locale, "feed.fieldMeta")}</span>
                   <span className="min-w-0 truncate font-mono text-[12px] text-[#C8CDDF]" title={scrubDemoText(selected.body)}>{scrubDemoText(selected.body)}</span>
                 </div>
                 {selected.links?.length ? (
