@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -86,7 +86,7 @@ export function BaseLaptopSniperLiquidityDemo({
     () => ({
       status: "empty" as const,
       events: [] as FeedEvent[],
-      reason: locale === "zh" ? "粘贴 TOKEN / PAIR_OR_POOL 后开始侦测" : "Paste TOKEN / PAIR_OR_POOL to start detection",
+      reason: L(locale, "Paste TOKEN / PAIR_OR_POOL to start detection", "粘贴 TOKEN / PAIR_OR_POOL 后开始侦测"),
       fromBlock: 0,
       toBlock: 0,
       windowBlocks: 0,
@@ -178,12 +178,8 @@ export function BaseLaptopSniperLiquidityDemo({
       if (isFirst) firstMintSeen.current = true;
       pushEvent({
         kind: isFirst
-          ? locale === "zh"
-            ? "首池 Mint"
-            : "firstMint"
-          : locale === "zh"
-            ? "Mint"
-            : "mint",
+          ? L(locale, "firstMint", "首池 Mint")
+          : L(locale, "mint", "Mint"),
         tags: isFirst
           ? ["FIRST", "MINT", "BASE", "LAPTOP", "kind:firstMint", "pad:laptop-liq"]
           : ["MINT", "BASE", "LAPTOP", "pad:laptop-liq"],
@@ -211,7 +207,7 @@ export function BaseLaptopSniperLiquidityDemo({
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       const pair = String(r.address || fields.current.pairOrPool);
       pushEvent({
-        kind: locale === "zh" ? "薄 LP 退出" : "thinExit",
+        kind: L(locale, "thinExit", "薄 LP 退出"),
         tags: ["BURN", "BASE", "LAPTOP", "kind:thinExit", "pad:laptop-liq"],
         title: shortAddr(pair),
         body: `pad:laptop-liq · kind=thinExit · pair ${shortAddr(pair)} · burn a0 ${amount0.toString()} a1 ${amount1.toString()} · #${bn}`,
@@ -239,7 +235,7 @@ export function BaseLaptopSniperLiquidityDemo({
       const pair = String(r.address || fields.current.pairOrPool);
       if (swapTimes.current.length >= burstThr) {
         pushEvent({
-          kind: locale === "zh" ? "换手簇" : "swapBurst",
+          kind: L(locale, "swapBurst", "换手簇"),
           tags: ["SWAP", "BURST", "BASE", "LAPTOP", "kind:swapBurst", "pad:laptop-liq"],
           title: shortAddr(pair),
           body: `pad:laptop-liq · kind=swapBurst · pair ${shortAddr(pair)} · swaps ${swapTimes.current.length}/${fields.current.spikeWindow}s · #${bn}`,
@@ -248,7 +244,7 @@ export function BaseLaptopSniperLiquidityDemo({
           tx: String(r.transactionHash || "") || undefined,
           chain: "BASE",
           metric: String(swapTimes.current.length),
-          metricLabel: locale === "zh" ? "窗口换手" : "window swaps",
+          metricLabel: L(locale, "window swaps", "窗口换手"),
           metric2: `${fields.current.spikeWindow}s`,
           metric2Label: "SPIKE_WINDOW",
         });
@@ -280,7 +276,7 @@ export function BaseLaptopSniperLiquidityDemo({
       if (share < topSharePct) return;
       const bn = r.blockNumber ? parseInt(String(r.blockNumber), 16) : 0;
       pushEvent({
-        kind: locale === "zh" ? "持仓集中" : "holderConc",
+        kind: L(locale, "holderConc", "持仓集中"),
         tags: ["XFER", "CONC", "BASE", "LAPTOP", "kind:holderConc", "pad:laptop-liq"],
         title: shortAddr(topAddr),
         body: `pad:laptop-liq · kind=holderConc · token ${shortAddr(fields.current.token)} · top ${shortAddr(topAddr)} · share ${share.toFixed(1)}% · #${bn}`,
@@ -289,7 +285,7 @@ export function BaseLaptopSniperLiquidityDemo({
         tx: String(r.transactionHash || "") || undefined,
         chain: "BASE",
         metric: `${share.toFixed(1)}%`,
-        metricLabel: locale === "zh" ? "顶仓占比" : "top share",
+        metricLabel: L(locale, "top share", "顶仓占比"),
         metric2: shortAddr(topAddr),
         metric2Label: "wallet",
       });
@@ -420,12 +416,12 @@ export function BaseLaptopSniperLiquidityDemo({
   const watchParams = [
     {
       label: "TOKEN",
-      value: token.trim() || (locale === "zh" ? "（粘贴）" : "(paste)"),
+      value: token.trim() || (L(locale, "(paste)", "（粘贴）")),
       mono: true,
     },
     {
       label: "PAIR_OR_POOL",
-      value: pairOrPool.trim() || (locale === "zh" ? "（粘贴）" : "(paste)"),
+      value: pairOrPool.trim() || (L(locale, "(paste)", "（粘贴）")),
       mono: true,
     },
     { label: "SPIKE_WINDOW_SEC", value: spikeWindow },
@@ -434,7 +430,7 @@ export function BaseLaptopSniperLiquidityDemo({
     { label: "BURN_MIN", value: burnMin },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "base.laptop.liq" },
+    { k: L(locale, "SRC", "源"), v: "base.laptop.liq" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "mint|burn|swap|xfer" },
     { k: "WSS", v: ep.wss },
@@ -468,7 +464,7 @@ export function BaseLaptopSniperLiquidityDemo({
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "TOKEN / PAIR + 阈值" : "TOKEN / PAIR + thresholds"}</CardTitle>
+            <CardTitle>{L(locale, "TOKEN / PAIR + thresholds", "TOKEN / PAIR + 阈值")}</CardTitle>
             <CardDescription>{t(locale, "laptop.settingsHint")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

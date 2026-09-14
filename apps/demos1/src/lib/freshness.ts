@@ -1,4 +1,6 @@
-/** Freshness bands for LIVE pill + 「刚刚 / Ns 前」 labels. */
+/** Freshness bands for LIVE pill + relative age labels. */
+import { t, type Locale } from "@blockreq/i18n";
+
 export type FreshnessKind = "fresh" | "warming" | "stale" | "offline";
 
 /** Visual warn when lastUpdate drifts past ~6s; STALE after ~10s. */
@@ -24,28 +26,28 @@ export function freshnessKind(opts: {
   return "stale";
 }
 
-/** Relative age — 「刚刚」 / Just now → 「Ns 前」 / Ns ago (ticks every second). */
+/** Relative age — Just now → Ns ago / Nm ago (ticks every second). */
 export function relativeFreshLabel(
-  locale: "en" | "zh",
+  locale: Locale,
   at: number | null | undefined,
   now = Date.now()
 ): { text: string; just: boolean } {
   const age = ageMs(at, now);
   if (!Number.isFinite(age)) {
-    return { text: locale === "zh" ? "暂无" : "n/a", just: false };
+    return { text: t(locale, "shell.freshNa"), just: false };
   }
   const s = Math.floor(age / 1000);
-  if (s < 2) return { text: locale === "zh" ? "刚刚" : "Just now", just: true };
-  if (s < 60) return { text: locale === "zh" ? `${s}s 前` : `${s}s ago`, just: false };
+  if (s < 2) return { text: t(locale, "shell.freshJustNow"), just: true };
+  if (s < 60) return { text: t(locale, "shell.freshAgo").replace("{n}", String(s)), just: false };
   const m = Math.floor(s / 60);
-  return { text: locale === "zh" ? `${m}m 前` : `${m}m ago`, just: false };
+  return { text: t(locale, "shell.freshAgoMin").replace("{n}", String(m)), just: false };
 }
 
 export function updatedFreshLabel(
-  locale: "en" | "zh",
+  locale: Locale,
   at: number | null | undefined,
   now = Date.now()
 ): string {
   const rel = relativeFreshLabel(locale, at, now).text;
-  return locale === "zh" ? `更新于 ${rel}` : `Updated ${rel}`;
+  return t(locale, "shell.freshUpdated").replace("{rel}", rel);
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -198,7 +198,7 @@ export function StockPairDemo({ locale }: { locale: Locale }) {
       };
       if (pair) pairs.current.set(pair.toLowerCase(), rec);
       pushEvent({
-        kind: locale === "zh" ? "币股配对开盘" : "pair landed",
+        kind: L(locale, "pair landed", "币股配对开盘"),
         tags,
         title: shortAddr(pair),
         body: hit
@@ -209,7 +209,7 @@ export function StockPairDemo({ locale }: { locale: Locale }) {
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
         metric: hit?.symbol,
-        metricLabel: locale === "zh" ? "股票" : "Stock",
+        metricLabel: L(locale, "Stock", "股票"),
       });
     },
     [locale, pushEvent]
@@ -228,7 +228,7 @@ export function StockPairDemo({ locale }: { locale: Locale }) {
       const tags = ["LP", "STOCK"];
       if (known.symbol) tags.push(known.symbol);
       pushEvent({
-        kind: locale === "zh" ? "首次 LP" : "first LP",
+        kind: L(locale, "first LP", "首次 LP"),
         tags,
         title: shortAddr(pool),
         body: known.symbol
@@ -239,7 +239,7 @@ export function StockPairDemo({ locale }: { locale: Locale }) {
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
         metric: known.symbol || undefined,
-        metricLabel: locale === "zh" ? "股票" : "Stock",
+        metricLabel: L(locale, "Stock", "股票"),
       });
     },
     [locale, pushEvent]
@@ -367,14 +367,14 @@ export function StockPairDemo({ locale }: { locale: Locale }) {
 
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听 · 未限定）" : "(wide · unset)") },
+    { label: "Factory", value: factory.trim() || (L(locale, "(wide · unset)", "（宽听 · 未限定）")) },
     { label: "Stocks", value: String(stockMap.current.size || parseStocks(stocksText).size) },
     { label: "Pair", value: subPair ? "on" : "off" },
     { label: "Mint", value: subMint ? "on" : "off" },
     { label: "Filter", value: onlyStock ? "stock-only" : "all" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "stock-pair.rh / stream" },
+    { k: L(locale, "SRC", "源"), v: "stock-pair.rh / stream" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "stock-pair-watch" },
     { k: "WSS", v: ep.wss },

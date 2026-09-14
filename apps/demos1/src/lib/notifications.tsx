@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { t, type Locale } from "@blockreq/i18n";
+import { localeFromPath, t, type Locale } from "@blockreq/i18n";
 import { cn } from "@blockreq/ui";
 import type { FeedEvent } from "../components/feed-types";
 
@@ -83,11 +83,7 @@ let seq = 0;
 
 function pathLocale(): Locale {
   if (typeof window === "undefined") return "en";
-  const parts = window.location.pathname.split("/").filter(Boolean);
-  const last = parts[parts.length - 1] || "";
-  const maybe = parts[parts.length - 2] || last;
-  if (last === "zh" || maybe === "zh") return "zh";
-  return "en";
+  return localeFromPath(window.location.pathname);
 }
 
 function readBrowserPref(): boolean {

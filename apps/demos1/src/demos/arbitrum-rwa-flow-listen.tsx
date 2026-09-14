@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -96,12 +96,8 @@ function mapTransferHist(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     return {
       id: `hist:${log.transactionHash}:${log.logIndex ?? i}`,
       kind: isMint
-        ? locale === "zh"
-          ? "历史 mint"
-          : "Recent mint"
-        : locale === "zh"
-          ? "历史 Transfer"
-          : "Recent Transfer",
+        ? L(locale, "Recent mint", "历史 mint")
+        : L(locale, "Recent Transfer", "历史 Transfer"),
       tags: ["HIST", "ARB", isMint ? "MINT" : "XFER"],
       title: shortAddr(token),
       body: `pad rwa-flow · ${shortAddr(token)} · #${bn}`,
@@ -258,12 +254,8 @@ export function ArbitrumRwaFlowDemo({
       const kind = isMint ? "mint" : "transfer";
       const kindLabel =
         kind === "mint"
-          ? locale === "zh"
-            ? "mint 铸币"
-            : "mint"
-          : locale === "zh"
-            ? "Transfer"
-            : "transfer";
+          ? L(locale, "mint", "mint 铸币")
+          : L(locale, "transfer", "Transfer");
       const counterparty = isMint ? to : from;
       pushEvent({
         kind: kindLabel,
@@ -275,7 +267,7 @@ export function ArbitrumRwaFlowDemo({
         tx: tx || undefined,
         chain: "ARB",
         metric: formatRaw(amount),
-        metricLabel: locale === "zh" ? "数量" : "Amount",
+        metricLabel: L(locale, "Amount", "数量"),
         metric2: kind,
         metric2Label: "kind",
       });
@@ -298,7 +290,7 @@ export function ArbitrumRwaFlowDemo({
       const tx = String(r.transactionHash || "");
       const hit = s0 || s1 || "?";
       pushEvent({
-        kind: locale === "zh" ? "PairCreated 开池" : "pair",
+        kind: L(locale, "pair", "PairCreated 开池"),
         tags: ["PAIR", "RWA", "ARB", hit],
         title: hit,
         body: `pad rwa-flow · kind=pair · ${shortAddr(token0)}/${shortAddr(token1)} · pair ${shortAddr(pair)} · factory ${shortAddr(factory)} · #${bn}`,
@@ -447,7 +439,7 @@ export function ArbitrumRwaFlowDemo({
     { label: "MIN_RAW", value: minRaw },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "arb.rwa-flow" },
+    { k: L(locale, "SRC", "源"), v: "arb.rwa-flow" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "mint|transfer|pair" },
     { k: "WSS", v: ep.wss },

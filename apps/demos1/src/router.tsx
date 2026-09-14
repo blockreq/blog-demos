@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Outlet,
   createRootRoute,
@@ -7,16 +7,7 @@ import {
   Link,
   redirect,
 } from "@tanstack/react-router";
-import {
-  DEMO_CATALOG,
-  demoBlogUrl,
-  demoSiteUrl,
-  getDemo,
-  isLocale,
-  publishedDemos,
-  t,
-  type Locale,
-} from "@blockreq/i18n";
+import { DEMO_CATALOG, demoBlogUrl, demoSiteUrl, getDemo, isLocale, publishedDemos, t, demoHreflangLinks, LOCALE_HTML_LANG, type Locale } from "@blockreq/i18n";
 import {
   Badge,
   Card,
@@ -140,7 +131,7 @@ function IndexPage() {
           >
             {lanes.map((l) => (
               <ToggleGroupItem key={l} value={l}>
-                {l === "all" ? (locale === "zh" ? "全部" : "All") : l}
+                {l === "all" ? t(locale, "index.filterAll") : l}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -148,7 +139,7 @@ function IndexPage() {
             <Input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder={locale === "zh" ? "筛选产品 / slug…" : "Filter product / slug…"}
+              placeholder={t(locale, "index.filterPlaceholder")}
               className="h-9"
             />
           </div>
@@ -247,6 +238,26 @@ function IndexPage() {
   );
 }
 
+function HreflangHead({ slug, locale }: { slug: string; locale: Locale }) {
+  useEffect(() => {
+    document.documentElement.lang = LOCALE_HTML_LANG[locale];
+    const nodes: HTMLLinkElement[] = [];
+    for (const { hreflang, href } of demoHreflangLinks(slug)) {
+      const link = document.createElement("link");
+      link.rel = "alternate";
+      link.hreflang = hreflang;
+      link.href = href;
+      link.setAttribute("data-demos1-hreflang", "1");
+      document.head.appendChild(link);
+      nodes.push(link);
+    }
+    return () => {
+      for (const n of nodes) n.remove();
+    };
+  }, [slug, locale]);
+  return null;
+}
+
 function DemoPage() {
   const { slug, locale: localeParam } = demoRoute.useParams();
   if (!isLocale(localeParam) || !getDemo(slug)) {
@@ -266,6 +277,7 @@ function DemoPage() {
 
   return (
     <>
+      <HreflangHead slug={slug} locale={locale} />
       {/* Layout is chosen by catalog.layout via the demo component itself — not a tabbed feel page. */}
       {slug === "anoncoin-rh-launch-listen" && <AnoncoinDemo locale={locale} />}
       {slug === "openlaunch-base-eth-subscribe" && <OpenLaunchDemo locale={locale} />}

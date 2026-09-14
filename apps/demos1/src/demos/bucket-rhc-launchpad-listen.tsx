@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -172,7 +172,7 @@ function mapLaunchedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     const foundingTag = decoded.founding ? "FOUNDING" : "STD";
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史 Launched" : "Recent Launched",
+      kind: L(locale, "Recent Launched", "历史 Launched"),
       tags: ["HIST", "RH", "BUCKET", "LAUNCHED", "pad:bucket", foundingTag, "RADAR"],
       title: shortAddr(decoded.token),
       body: `pad:bucket · token ${shortAddr(decoded.token)} · creator ${shortAddr(decoded.creator)} · curve ${shortAddr(decoded.curve)} · tierId ${decoded.tierId || "—"} · id ${decoded.id || "—"} · founding ${decoded.founding ? "yes" : "no"} · #${bn}`,
@@ -184,7 +184,7 @@ function mapLaunchedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
       metric: decoded.founding ? "FOUNDING" : decoded.id || shortAddr(decoded.curve),
       metricLabel: decoded.founding ? "founding" : "id",
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -302,7 +302,7 @@ export function BucketRhcLaunchpadListenDemo({
     (card: LaunchCard, kindZh: string, kindEn: string, extraTags: string[] = []) => {
       const foundingTag = card.founding ? "FOUNDING" : "STD";
       pushEvent({
-        kind: locale === "zh" ? kindZh : kindEn,
+        kind: L(locale, kindEn, kindZh),
         tags: ["NEW", "RH", "BUCKET", "LAUNCHED", `pad:${card.pad}`, foundingTag, ...extraTags],
         title: shortAddr(card.token),
         body: `pad:${card.pad} · token ${shortAddr(card.token)} · creator ${shortAddr(card.creator)} · curve ${shortAddr(card.curve)} · tierId ${card.tierId || "—"} · id ${card.id || "—"} · founding ${card.founding ? "yes" : "no"} · launchTx ${shortAddr(card.launchTx)} · #${card.blockNumber}`,
@@ -313,7 +313,7 @@ export function BucketRhcLaunchpadListenDemo({
         metric: card.founding ? "FOUNDING" : card.id || shortAddr(card.curve),
         metricLabel: card.founding ? "founding" : "id",
         metric2: `#${card.blockNumber}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
         at: card.ts,
       });
     },
@@ -328,7 +328,7 @@ export function BucketRhcLaunchpadListenDemo({
       highlight: boolean
     ) => {
       pushEvent({
-        kind: locale === "zh" ? "Graduated 毕业" : "Graduated",
+        kind: L(locale, "Graduated", "Graduated 毕业"),
         tags: [
           "NEW",
           "RH",
@@ -347,7 +347,7 @@ export function BucketRhcLaunchpadListenDemo({
         metric: shortAddr(grad.poolId) || shortAddr(grad.lock),
         metricLabel: "poolId",
         metric2: highlight ? "FOLLOW" : `#${bn}`,
-        metric2Label: highlight ? "follow" : locale === "zh" ? "区块" : "Block",
+        metric2Label: highlight ? "follow" : L(locale, "Block", "区块"),
         at: Date.now(),
       });
     },
@@ -558,9 +558,7 @@ export function BucketRhcLaunchpadListenDemo({
       label: "FOLLOW_TOKEN",
       value: followToken.trim()
         ? shortAddr(followToken)
-        : locale === "zh"
-          ? "点卡片跟 Graduated"
-          : "click card → Graduated",
+        : L(locale, "click card → Graduated", "点卡片跟 Graduated"),
       mono: true,
     },
     {
@@ -570,7 +568,7 @@ export function BucketRhcLaunchpadListenDemo({
     },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "bucket.markets / factory Launched" },
+    { k: L(locale, "SRC", "源"), v: "bucket.markets / factory Launched" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "launchpad-listen" },
     { k: "WSS", v: ep.wss },
@@ -620,7 +618,7 @@ export function BucketRhcLaunchpadListenDemo({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {locale === "zh" ? "发射盘 · Launched / Graduated" : "Launchpad · Launched / Graduated"}
+              {L(locale, "Launchpad · Launched / Graduated", "发射盘 · Launched / Graduated")}
             </CardTitle>
             <CardDescription>{t(locale, "bucket.settingsHint")}</CardDescription>
           </CardHeader>
@@ -647,7 +645,7 @@ export function BucketRhcLaunchpadListenDemo({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="bk-follow">
-                FOLLOW_TOKEN {locale === "zh" ? "（点卡片跟 Graduated）" : "(click card → Graduated)"}
+                FOLLOW_TOKEN {L(locale, "(click card → Graduated)", "（点卡片跟 Graduated）")}
               </Label>
               <Input
                 id="bk-follow"
@@ -672,7 +670,7 @@ export function BucketRhcLaunchpadListenDemo({
                   reconnectIfRunning();
                 }}
                 spellCheck={false}
-                placeholder={locale === "zh" ? "可编辑 · 空则不跟 Graduated" : "editable · empty = skip Graduated"}
+                placeholder={L(locale, "editable · empty = skip Graduated", "可编辑 · 空则不跟 Graduated")}
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -686,9 +684,7 @@ export function BucketRhcLaunchpadListenDemo({
               {hintChip("INFINITY", SAMPLE_INFINITY)}
             </div>
             <p className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
-              {locale === "zh"
-                ? "提示芯片只读/可粘贴 · 点复制。launch.bucketmarkets.com"
-                : "Hint chips read-only / paste · click to copy. launch.bucketmarkets.com"}
+              {L(locale, "Hint chips read-only / paste · click to copy. launch.bucketmarkets.com", "提示芯片只读/可粘贴 · 点复制。launch.bucketmarkets.com")}
             </p>
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
               <input type="checkbox" checked={demoHits} onChange={(e) => setDemoHits(e.target.checked)} className="h-4 w-4" />

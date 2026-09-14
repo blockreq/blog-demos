@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -162,7 +162,7 @@ function mapAdvancedLaunchedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[
     const bn = log.blockNumber ? parseInt(String(log.blockNumber), 16) : 0;
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史 AdvancedLaunched" : "Recent AdvancedLaunched",
+      kind: L(locale, "Recent AdvancedLaunched", "历史 AdvancedLaunched"),
       tags: ["HIST", "BASE", "BASESTONK", "ADVANCEDLAUNCHED", "pad:basestonk", "RADAR"],
       title: shortAddr(decoded.token) || "—",
       body: `pad:basestonk · token ${shortAddr(decoded.token)} · creator ${shortAddr(decoded.creator)} · poolId ${shortAddr(decoded.poolId)} · pairToken ${shortAddr(decoded.pairToken)} · sqrtPriceX96 ${decoded.sqrtPriceX96 || "—"} · taxBps ${decoded.taxBps || "—"} · burnBps ${decoded.burnBps || "—"} · liquidityBps ${decoded.liquidityBps || "—"} · payees ${decoded.payees || "—"} · #${bn}`,
@@ -172,9 +172,9 @@ function mapAdvancedLaunchedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[
       chain: "BASE",
       at: now - i * 400,
       metric: decoded.taxBps ? `${decoded.taxBps} bps` : shortAddr(decoded.pairToken),
-      metricLabel: decoded.taxBps ? "tax" : locale === "zh" ? "配对" : "pair",
+      metricLabel: decoded.taxBps ? "tax" : L(locale, "pair", "配对"),
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -294,7 +294,7 @@ export function BasestonkAdvancedLauncherListenDemo({
           ? ` · rewardsDistributor ${shortAddr(card.rewardsDistributor || "")} · rewardsBps ${card.rewardsBps || "—"}`
           : "";
       pushEvent({
-        kind: locale === "zh" ? kindZh : kindEn,
+        kind: L(locale, kindEn, kindZh),
         tags: [
           "NEW",
           "BASE",
@@ -311,7 +311,7 @@ export function BasestonkAdvancedLauncherListenDemo({
         tx: card.launchTx || undefined,
         chain: "BASE",
         metric: card.taxBps ? `${card.taxBps} bps` : shortAddr(card.pairToken),
-        metricLabel: card.taxBps ? "tax" : locale === "zh" ? "配对" : "pair",
+        metricLabel: card.taxBps ? "tax" : L(locale, "pair", "配对"),
         metric2: card.burnBps
           ? `burn ${card.burnBps}`
           : card.liquidityBps
@@ -321,9 +321,7 @@ export function BasestonkAdvancedLauncherListenDemo({
           ? "burn"
           : card.liquidityBps
             ? "liq"
-            : locale === "zh"
-              ? "区块"
-              : "Block",
+            : L(locale, "Block", "区块"),
         at: card.ts,
       });
     },
@@ -380,7 +378,7 @@ export function BasestonkAdvancedLauncherListenDemo({
         rewardsBps: decoded.rewardsBps,
       });
       pushEvent({
-        kind: locale === "zh" ? "BaseStonk RewardsEnabled" : "BaseStonk RewardsEnabled",
+        kind: L(locale, "BaseStonk RewardsEnabled", "BaseStonk RewardsEnabled"),
         tags: ["NEW", "BASE", "BASESTONK", "REWARDSENABLED", "pad:basestonk", "REWARDS"],
         title: shortAddr(decoded.token) || "—",
         body: `pad:basestonk · token ${shortAddr(decoded.token)} · distributor ${shortAddr(decoded.distributor)} · rewardsBps ${decoded.rewardsBps || "—"} · tx ${shortAddr(tx)} · #${bn}`,
@@ -391,7 +389,7 @@ export function BasestonkAdvancedLauncherListenDemo({
         metric: decoded.rewardsBps ? `${decoded.rewardsBps} bps` : "rewards",
         metricLabel: "rewards",
         metric2: `#${bn}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
     },
     [locale, pushEvent]
@@ -551,15 +549,13 @@ export function BasestonkAdvancedLauncherListenDemo({
       label: "REWARDS_ENABLED_TOPIC0",
       value: subRewards
         ? shortAddr(rewardsEnabledTopic || DEFAULT_REWARDS_ENABLED_TOPIC0)
-        : locale === "zh"
-          ? "关闭"
-          : "off",
+        : L(locale, "off", "关闭"),
       mono: true,
     },
     { label: "PAD", value: "basestonk", mono: true },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "BaseStonk / AdvancedLauncherV2 AdvancedLaunched" },
+    { k: L(locale, "SRC", "源"), v: "BaseStonk / AdvancedLauncherV2 AdvancedLaunched" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "advanced-launcher-listen" },
     { k: "WSS", v: ep.wss },
@@ -609,9 +605,7 @@ export function BasestonkAdvancedLauncherListenDemo({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {locale === "zh"
-                ? "BaseStonk · AdvancedLaunched"
-                : "BaseStonk · AdvancedLaunched"}
+              {L(locale, "BaseStonk · AdvancedLaunched", "BaseStonk · AdvancedLaunched")}
             </CardTitle>
             <CardDescription>{t(locale, "basestonk.settingsHint")}</CardDescription>
           </CardHeader>
@@ -651,9 +645,7 @@ export function BasestonkAdvancedLauncherListenDemo({
                 }}
                 className="h-4 w-4"
               />
-              {locale === "zh"
-                ? "可选 RewardsEnabled topic0 芯片"
-                : "Optional RewardsEnabled topic0 chip"}
+              {L(locale, "Optional RewardsEnabled topic0 chip", "可选 RewardsEnabled topic0 芯片")}
             </label>
             {subRewards ? (
               <div className="space-y-1.5">
@@ -675,9 +667,7 @@ export function BasestonkAdvancedLauncherListenDemo({
               {hintChip("BSTONK", SAMPLE_BSTONK)}
             </div>
             <p className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
-              {locale === "zh"
-                ? "提示芯片只读/可粘贴 · 点复制。BaseStonk AdvancedLauncherV2"
-                : "Hint chips read-only / paste · click to copy. BaseStonk AdvancedLauncherV2"}
+              {L(locale, "Hint chips read-only / paste · click to copy. BaseStonk AdvancedLauncherV2", "提示芯片只读/可粘贴 · 点复制。BaseStonk AdvancedLauncherV2")}
             </p>
             <label className="inline-flex items-center gap-2 border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.06)] px-2.5 py-2 text-sm text-[var(--color-warn)]">
               <input

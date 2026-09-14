@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -201,7 +201,7 @@ export function RhBasketFactoryDemo({ locale }: { locale: Locale }) {
           : shortAddr(decoded.basket);
       const compsLabel = formatComponents(comps);
       pushEvent({
-        kind: locale === "zh" ? "篮筐创建" : "Basket created",
+        kind: L(locale, "Basket created", "篮筐创建"),
         tags: ["NEW", "BASKET", "RH"],
         title,
         body: `basket ${shortAddr(decoded.basket)} · creator ${shortAddr(decoded.creator)} · comps ${compsLabel} · #${bn}`,
@@ -210,9 +210,9 @@ export function RhBasketFactoryDemo({ locale }: { locale: Locale }) {
         tx: String(r.transactionHash || "") || undefined,
         chain: "RH",
         metric: decoded.symbol || shortAddr(decoded.basket),
-        metricLabel: locale === "zh" ? "符号" : "Symbol",
+        metricLabel: L(locale, "Symbol", "符号"),
         metric2: compsLabel,
-        metric2Label: locale === "zh" ? "成分" : "Components",
+        metric2Label: L(locale, "Components", "成分"),
       });
     },
     [locale, pushEvent]
@@ -333,7 +333,7 @@ export function RhBasketFactoryDemo({ locale }: { locale: Locale }) {
     { label: "Topic0", value: shortAddr(topic0.trim() || DEFAULT_TOPIC), mono: true },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "basket.rh / factory" },
+    { k: L(locale, "SRC", "源"), v: "basket.rh / factory" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "basket-factory-listen" },
     { k: "WSS", v: ep.wss },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -180,12 +180,8 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       if (recent.length >= 2) tags.push("BURST");
       const kind =
         index === 1
-          ? locale === "zh"
-            ? "首个市场"
-            : "First market"
-          : locale === "zh"
-            ? "又开一个"
-            : "Next market";
+          ? L(locale, "First market", "首个市场")
+          : L(locale, "Next market", "又开一个");
       const epLabel = fields.current.endpoint === "rh" ? "RH" : "BASE";
       pushEvent({
         kind,
@@ -314,7 +310,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const coinMeta = focusRec
     ? `${shortAddr(focusRec.base)} · ${focusRec.count} markets · ${endpoint === "rh" ? "RH" : "Base"}`
     : fixtureCoin
-      ? `${shortAddr(fixtureCoin.addr)} · ${locale === "zh" ? "多市场分叉" : "multi-market fork"}`
+      ? `${shortAddr(fixtureCoin.addr)} · ${L(locale, "multi-market fork", "多市场分叉")}`
       : t(locale, "equifold.metaIdle");
 
   const columns = useMemo(() => {
@@ -364,13 +360,13 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       : "NEONCAT";
   const watchParams = [
     { label: "Endpoint", value: ep.label },
-    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（宽听）" : "(wide)") },
+    { label: "Factory", value: factory.trim() || (L(locale, "(wide)", "（宽听）")) },
     { label: "Topic0", value: shortAddr(topic0), mono: true },
     { label: "Burst", value: `${burstSec}s` },
     { label: "Token", value: tokenLabel },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "equifold.markets" },
+    { k: L(locale, "SRC", "源"), v: "equifold.markets" },
     { k: "TOKEN", v: tokenLabel },
     { k: "VENUES", v: "3 · demo" },
     { k: "CHAIN", v: ep.label },
@@ -405,11 +401,9 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardTitle>{L(locale, "Optional knobs", "可选参数")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "可切换 Base / Robinhood。一般不用改。"
-                : "Toggle Base / Robinhood. Leave factory empty for wide listen."}
+              {L(locale, "Toggle Base / Robinhood. Leave factory empty for wide listen.", "可切换 Base / Robinhood。一般不用改。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

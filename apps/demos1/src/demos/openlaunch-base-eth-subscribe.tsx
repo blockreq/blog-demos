@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -165,7 +165,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       rec.clustered = true;
       const i = rec.init;
       pushEvent({
-        kind: locale === "zh" ? "一笔开盘" : "One-shot open",
+        kind: L(locale, "One-shot open", "一笔开盘"),
         tags: ["ONE-TX"],
         title: shortAddr(tx),
         body: `${shortAddr(i.currency0)} / ${shortAddr(i.currency1)} · #${bn}`,
@@ -194,7 +194,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         address: String(r.address || "").toLowerCase(),
       };
       pushEvent({
-        kind: locale === "zh" ? "池子开了" : "Pool open",
+        kind: L(locale, "Pool open", "池子开了"),
         tags: ["BASE"],
         title: shortAddr(poolId),
         body: `${shortAddr(currency0)} / ${shortAddr(currency1)} · #${bn}`,
@@ -220,7 +220,7 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
         tokenish,
       };
       pushEvent({
-        kind: locale === "zh" ? "锁仓/开盘" : "Lock / launch",
+        kind: L(locale, "Lock / launch", "锁仓/开盘"),
         tags: ["LOCK"],
         title: shortAddr(String(r.address || "")),
         body: `${shortAddr(tokenish || "?")} · #${bn}`,
@@ -347,13 +347,13 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
   const running = status === "connecting" || status === "listening";
   const watchParams = [
     { label: "PoolManager", value: shortAddr(poolManager) || poolManager, mono: true },
-    { label: "Factory", value: factory.trim() || (locale === "zh" ? "（可选）" : "(optional)") },
+    { label: "Factory", value: factory.trim() || (L(locale, "(optional)", "（可选）")) },
     { label: "Init topic", value: shortAddr(topicInit), mono: true },
     { label: "Lock topic", value: shortAddr(topicLock), mono: true },
     { label: "Cluster", value: cluster ? "same-tx" : "off" },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "openlaunch.base" },
+    { k: L(locale, "SRC", "源"), v: "openlaunch.base" },
     { k: "CHAIN", v: "Base" },
     { k: "METHOD", v: "tx-listen" },
     { k: "WINDOW", v: "one-shot" },
@@ -388,11 +388,9 @@ export function OpenLaunchDemo({ locale }: { locale: Locale }) {
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "可选参数" : "Optional knobs"}</CardTitle>
+            <CardTitle>{L(locale, "Optional knobs", "可选参数")}</CardTitle>
             <CardDescription>
-              {locale === "zh"
-                ? "一般不用改。粘贴工厂地址可更安静。"
-                : "Leave empty for the default wide listen."}
+              {L(locale, "Leave empty for the default wide listen.", "一般不用改。粘贴工厂地址可更安静。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

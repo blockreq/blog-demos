@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Locale } from "@blockreq/i18n";
+import { L, type Locale } from "@blockreq/i18n";
 import { scrubDemoText, type FeedEvent } from "../components/feed-types";
+
+function locList(locale: Locale, en: string[], zh: string[]): string[] {
+  return en.map((e, i) => L(locale, e, zh[i] ?? e));
+}
+
 
 /** Query / catalog / local toggle — default OFF for normal visitors. */
 export function readDemoHitsFromUrl(): boolean {
@@ -38,9 +43,7 @@ function fakeAddr(seed: string) {
 export function buildAnonFixtures(locale: Locale, n = 4): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["新开盘", "LP 到位", "新开盘", "新开盘"]
-      : ["New launch", "LP ready", "New launch", "New launch"];
+    locList(locale, ["New launch", "LP ready", "New launch", "New launch"], ["新开盘", "LP 到位", "新开盘", "新开盘"]);
   const syms = ["GHOSTX", "VOIDPEPE", "NEONANON", "SHADOW"];
   return Array.from({ length: n }, (_, i) => {
     const addr = fakeAddr(`anon${i}${syms[i % syms.length]}`);
@@ -64,7 +67,7 @@ export function buildAnonFixtures(locale: Locale, n = 4): FeedEvent[] {
 
 export function buildOpenFixtures(locale: Locale, n = 3): FeedEvent[] {
   const now = Date.now();
-  const kind = locale === "zh" ? "一枪开盘" : "One-shot launch";
+  const kind = L(locale, "One-shot launch", "一枪开盘");
   const names = ["PIXELMOON", "BASEBEAM", "OPENSHOT"];
   return Array.from({ length: n }, (_, i) => {
     const addr = fakeAddr(`open${i}${names[i % names.length]}`);
@@ -82,9 +85,9 @@ export function buildOpenFixtures(locale: Locale, n = 3): FeedEvent[] {
       chain: "BASE",
       at: now - i * 2200,
       metric: `$${px}`,
-      metricLabel: locale === "zh" ? "价格" : "Price",
+      metricLabel: L(locale, "Price", "价格"),
       metric2: `$${vol}`,
-      metric2Label: locale === "zh" ? "成交额" : "Volume",
+      metric2Label: L(locale, "Volume", "成交额"),
     };
   });
 }
@@ -120,12 +123,8 @@ export function buildEquiFixtures(
     const market = fakeAddr(`eqmkt${i}${m.quote}`);
     const kind =
       m.tag === "FIRST"
-        ? locale === "zh"
-          ? "首个市场"
-          : "First market"
-        : locale === "zh"
-          ? "又开一个"
-          : "Next market";
+        ? L(locale, "First market", "首个市场")
+        : L(locale, "Next market", "又开一个");
     const tags =
       m.tag === "FIRST" ? ["FIRST"] : ["NEXT", `N=${m.idx}`, ...(m.idx >= 3 ? ["BURST"] : [])];
     const px = (0.00012 * (i + 1)).toFixed(5);
@@ -142,9 +141,9 @@ export function buildEquiFixtures(
       chain: "BASE",
       at: now - i * 900,
       metric: `$${px}`,
-      metricLabel: locale === "zh" ? "价格" : "Price",
+      metricLabel: L(locale, "Price", "价格"),
       metric2: `$${Number(vol).toLocaleString()}`,
-      metric2Label: locale === "zh" ? "量" : "Vol",
+      metric2Label: L(locale, "Vol", "量"),
     };
   });
   return { coinLabel, coinAddr, events };
@@ -154,9 +153,7 @@ export function buildEquiFixtures(
 export function buildStockFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["币股配对开盘", "首次 LP", "币股配对开盘", "配对资产", "开盘簇"]
-      : ["pair landed", "first LP", "pair landed", "paired asset", "paired open cluster"];
+    locList(locale, ["pair landed", "first LP", "pair landed", "paired asset", "paired open cluster"], ["币股配对开盘", "首次 LP", "币股配对开盘", "配对资产", "开盘簇"]);
   const syms = ["AAPL", "TSLA", "NVDA", "MSFT", "AMZN"];
   return Array.from({ length: n }, (_, i) => {
     const addr = fakeAddr(`stock${i}${syms[i % syms.length]}`);
@@ -173,21 +170,21 @@ export function buildStockFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "RH",
       at: now - i * 1600,
       metric: syms[i % syms.length],
-      metricLabel: locale === "zh" ? "股票" : "Stock",
+      metricLabel: L(locale, "Stock", "股票"),
     };
   });
 }
 
 export function buildPonsFixtures(locale: Locale, n = 4): FeedEvent[] {
   const now = Date.now();
-  const kind = locale === "zh" ? "Pons 发射" : "Pons launch";
+  const kind = L(locale, "Pons launch", "Pons 发射");
   const names = ["PONCAT", "CURVEPEPE", "GRADX", "LAUNCHY"];
   return Array.from({ length: n }, (_, i) => {
     const addr = fakeAddr(`pons${i}${names[i % names.length]}`);
     const curve = fakeAddr(`curve${i}`);
     return {
       id: rid(),
-      kind: i === 1 && locale === "zh" ? "Pons 毕业" : i === 1 ? "Pons graduated" : kind,
+      kind: i === 1 ? L(locale, "Pons graduated", "Pons 毕业") : kind,
       tags: i === 1 ? ["GRAD", "PONS"] : ["NEW", "PONS"],
       title: names[i % names.length],
       body: `${short(addr)} · curve ${short(curve)} · #${12_600_000 + i * 13}`,
@@ -199,7 +196,7 @@ export function buildPonsFixtures(locale: Locale, n = 4): FeedEvent[] {
       metric: short(curve),
       metricLabel: "curve",
       metric2: `#${12_600_000 + i * 13}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -230,7 +227,7 @@ export function useDemoHits(opts?: { catalogFlag?: boolean }) {
 
 export function buildRhV4DirectFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
-  const kind = locale === "zh" ? "V4 直开" : "V4 direct open";
+  const kind = L(locale, "V4 direct open", "V4 直开");
   const names = ["RHDIRECT", "POOLNOW", "NOBOND", "V4FLASH", "INITX"];
   return Array.from({ length: n }, (_, i) => {
     const poolId = fakeAddr(`rhv4${i}${names[i % names.length]}`);
@@ -238,7 +235,7 @@ export function buildRhV4DirectFixtures(locale: Locale, n = 5): FeedEvent[] {
     const c1 = fakeAddr(`c1rh${i}`);
     return {
       id: rid(),
-      kind: i === 2 && locale === "zh" ? "流动性到位" : i === 2 ? "Liquidity in" : kind,
+      kind: i === 2 ? L(locale, "Liquidity in", "流动性到位") : kind,
       tags: i === 2 ? ["LP", "V4", "DIRECT"] : ["NEW", "V4", "DIRECT"],
       title: names[i % names.length],
       body: `${short(c0)} / ${short(c1)} · pool ${short(poolId)} · #${12_700_000 + i * 19}`,
@@ -250,7 +247,7 @@ export function buildRhV4DirectFixtures(locale: Locale, n = 5): FeedEvent[] {
       metric: short(poolId),
       metricLabel: "poolId",
       metric2: `#${12_700_000 + i * 19}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -258,9 +255,7 @@ export function buildRhV4DirectFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildBaseSpikeFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["工厂开盘", "开盘尖刺", "工厂开盘", "早期换手密", "开盘尖刺"]
-      : ["Factory create", "Launch spike", "Factory create", "Early swap dens", "Launch spike"];
+    locList(locale, ["Factory create", "Launch spike", "Factory create", "Early swap dens", "Launch spike"], ["工厂开盘", "开盘尖刺", "工厂开盘", "早期换手密", "开盘尖刺"]);
   const names = ["SPIKEX", "BASEBURST", "DENSECAT", "OPENFAST", "TIPPY"];
   return Array.from({ length: n }, (_, i) => {
     const pair = fakeAddr(`spike${i}${names[i % names.length]}`);
@@ -278,16 +273,16 @@ export function buildBaseSpikeFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "BASE",
       at: now - i * 1500,
       metric: String(swaps),
-      metricLabel: locale === "zh" ? "早期换手" : "Early swaps",
-      metric2: spike ? (locale === "zh" ? "尖刺" : "SPIKE") : (locale === "zh" ? "开盘" : "OPEN"),
-      metric2Label: locale === "zh" ? "信号" : "Signal",
+      metricLabel: L(locale, "Early swaps", "早期换手"),
+      metric2: spike ? (L(locale, "SPIKE", "尖刺")) : (L(locale, "OPEN", "开盘")),
+      metric2Label: L(locale, "Signal", "信号"),
     };
   });
 }
 
 export function buildBasketFixtures(locale: Locale, n = 4): FeedEvent[] {
   const now = Date.now();
-  const kind = locale === "zh" ? "篮筐创建" : "Basket created";
+  const kind = L(locale, "Basket created", "篮筐创建");
   const baskets = [
     { name: "Tech Trio", symbol: "TRIO", comps: "TSLA+AMZN+NFLX" },
     { name: "Mega Cap", symbol: "MEGA", comps: "AAPL+MSFT+GOOG" },
@@ -309,9 +304,9 @@ export function buildBasketFixtures(locale: Locale, n = 4): FeedEvent[] {
       chain: "RH",
       at: now - i * 1900,
       metric: b.symbol,
-      metricLabel: locale === "zh" ? "符号" : "Symbol",
+      metricLabel: L(locale, "Symbol", "符号"),
       metric2: b.comps,
-      metric2Label: locale === "zh" ? "成分" : "Components",
+      metric2Label: L(locale, "Components", "成分"),
     };
   });
 }
@@ -319,9 +314,7 @@ export function buildBasketFixtures(locale: Locale, n = 4): FeedEvent[] {
 export function buildLongEcoFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["生态配对开盘", "生态配对开盘", "首次 LP", "生态配对", "开盘簇"]
-      : ["eco pair landed", "eco pair landed", "first LP", "eco pair", "eco open cluster"];
+    locList(locale, ["eco pair landed", "eco pair landed", "first LP", "eco pair", "eco open cluster"], ["生态配对开盘", "生态配对开盘", "首次 LP", "生态配对", "开盘簇"]);
   const ecos = ["USDC", "WETH", "LONG", "RHUSD", "cbBTC"];
   return Array.from({ length: n }, (_, i) => {
     const eco = fakeAddr(`eco${i}${ecos[i % ecos.length]}`);
@@ -338,9 +331,9 @@ export function buildLongEcoFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "RH",
       at: now - i * 1700,
       metric: ecos[i % ecos.length],
-      metricLabel: locale === "zh" ? "生态侧" : "ecoSide",
+      metricLabel: L(locale, "ecoSide", "生态侧"),
       metric2: short(meme),
-      metric2Label: locale === "zh" ? "meme侧" : "memeSide",
+      metric2Label: L(locale, "memeSide", "meme侧"),
     };
   });
 }
@@ -349,9 +342,7 @@ export function buildLongEcoFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildArcDay1Fixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["Factory PairCreated", "早期 Swap 密度", "Factory PairCreated", "早期 Swap 密度", "Factory PairCreated"]
-      : ["Factory PairCreated", "Early Swap density", "Factory PairCreated", "Early Swap density", "Factory PairCreated"];
+    locList(locale, ["Factory PairCreated", "Early Swap density", "Factory PairCreated", "Early Swap density", "Factory PairCreated"], ["Factory PairCreated", "早期 Swap 密度", "Factory PairCreated", "早期 Swap 密度", "Factory PairCreated"]);
   const names = ["ARCPAD", "DAY1X", "OPENARC", "PAIRNOW", "DENSARC"];
   return Array.from({ length: n }, (_, i) => {
     const pair = fakeAddr(`arc${i}${names[i % names.length]}`);
@@ -368,16 +359,16 @@ export function buildArcDay1Fixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "ARC",
       at: now - i * 1600,
       metric: dens ? String(3 + i) : short(pair),
-      metricLabel: dens ? (locale === "zh" ? "早期换手" : "Early swaps") : "pair",
+      metricLabel: dens ? (L(locale, "Early swaps", "早期换手")) : "pair",
       metric2: dens ? "DENS" : "OPEN",
-      metric2Label: locale === "zh" ? "信号" : "Signal",
+      metric2Label: L(locale, "Signal", "信号"),
     };
   });
 }
 
 export function buildBaseStockSwapFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
-  const kind = locale === "zh" ? "股币大单" : "Stock big print";
+  const kind = L(locale, "Stock big print", "股币大单");
   const syms = ["AAPL", "TSLA", "NVDA", "MSFT", "COIN"];
   const venues = ["V2", "V3", "V2", "V3", "V2"];
   return Array.from({ length: n }, (_, i) => {
@@ -395,7 +386,7 @@ export function buildBaseStockSwapFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "BASE",
       at: now - i * 1400,
       metric: `$${size}`,
-      metricLabel: locale === "zh" ? "大单" : "Print",
+      metricLabel: L(locale, "Print", "大单"),
       metric2: venues[i % venues.length],
       metric2Label: "venue",
     };
@@ -405,9 +396,7 @@ export function buildBaseStockSwapFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildAnyQuoteFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["任意报价 Initialize", "任意报价 PairCreated", "任意报价 Initialize", "任意报价 PairCreated", "任意报价 Initialize"]
-      : ["any-quote Initialize", "any-quote PairCreated", "any-quote Initialize", "any-quote PairCreated", "any-quote Initialize"];
+    locList(locale, ["any-quote Initialize", "any-quote PairCreated", "any-quote Initialize", "any-quote PairCreated", "any-quote Initialize"], ["任意报价 Initialize", "任意报价 PairCreated", "任意报价 Initialize", "任意报价 PairCreated", "任意报价 Initialize"]);
   const quotes = ["USDC", "WETH", "RHUSD", "cbBTC", "USDC"];
   return Array.from({ length: n }, (_, i) => {
     const launch = fakeAddr(`aqlaunch${i}${quotes[i % quotes.length]}`);
@@ -424,9 +413,9 @@ export function buildAnyQuoteFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "RH",
       at: now - i * 1700,
       metric: quotes[i % quotes.length],
-      metricLabel: locale === "zh" ? "报价侧" : "quoteSide",
+      metricLabel: L(locale, "quoteSide", "报价侧"),
       metric2: short(launch),
-      metric2Label: locale === "zh" ? "发射侧" : "launchSide",
+      metric2Label: L(locale, "launchSide", "发射侧"),
     };
   });
 }
@@ -435,9 +424,7 @@ export function buildAnyQuoteFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildPumpCustomPairFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["Create", "CustomPair", "Create", "PumpSwap 毕业", "CustomPair"]
-      : ["Create", "CustomPair", "Create", "PumpSwap graduated", "CustomPair"];
+    locList(locale, ["Create", "CustomPair", "Create", "PumpSwap graduated", "CustomPair"], ["Create", "CustomPair", "Create", "PumpSwap 毕业", "CustomPair"]);
   const quotes = [
     { tag: "WSOL", mint: "So11111111111111111111111111111111111111112" },
     { tag: "USDC", mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
@@ -477,9 +464,7 @@ export function buildPumpCustomPairFixtures(locale: Locale, n = 5): FeedEvent[] 
 export function buildMonadO1Fixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["Factory PairCreated", "早期 Swap 密度", "Factory PairCreated", "早期 Swap 密度", "Factory PairCreated"]
-      : ["Factory PairCreated", "Early Swap density", "Factory PairCreated", "Early Swap density", "Factory PairCreated"];
+    locList(locale, ["Factory PairCreated", "Early Swap density", "Factory PairCreated", "Early Swap density", "Factory PairCreated"], ["Factory PairCreated", "早期 Swap 密度", "Factory PairCreated", "早期 Swap 密度", "Factory PairCreated"]);
   const names = ["O1PAD", "DAY0X", "MONADOPEN", "PAIRO1", "DENSO1"];
   return Array.from({ length: n }, (_, i) => {
     const pair = fakeAddr(`monado1${i}${names[i % names.length]}`);
@@ -496,9 +481,9 @@ export function buildMonadO1Fixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "MONAD",
       at: now - i * 1600,
       metric: dens ? String(3 + i) : short(pair),
-      metricLabel: dens ? (locale === "zh" ? "早期换手" : "Early swaps") : "pair",
+      metricLabel: dens ? (L(locale, "Early swaps", "早期换手")) : "pair",
       metric2: dens ? "DENS" : "OPEN",
-      metric2Label: locale === "zh" ? "信号" : "Signal",
+      metric2Label: L(locale, "Signal", "信号"),
     };
   });
 }
@@ -522,9 +507,7 @@ export function buildChangelogFilterFixtures(locale: Locale, n = 5): FeedEvent[]
   const filters = ["upgrade", "setAuthority", "deploy", "extendProgram", "close"];
   const upgradeTags = ["v2.1-window", "v2.2-window", "agave-v3", "v2.1-window", "hotfix"];
   const kinds =
-    locale === "zh"
-      ? ["Filter 命中", "升级窗告警", "Filter 命中", "升级窗告警", "Filter 命中"]
-      : ["Filter hit", "Upgrade-window alert", "Filter hit", "Upgrade-window alert", "Filter hit"];
+    locList(locale, ["Filter hit", "Upgrade-window alert", "Filter hit", "Upgrade-window alert", "Filter hit"], ["Filter 命中", "升级窗告警", "Filter 命中", "升级窗告警", "Filter 命中"]);
   return Array.from({ length: n }, (_, i) => {
     const p = programs[i % programs.length];
     const fk = filters[i % filters.length];
@@ -559,9 +542,7 @@ export function buildAgaveCompatFixtures(locale: Locale, n = 5): FeedEvent[] {
   const releases = ["v2.1.0", "v2.1.11", "v2.2.0", "v3.0.0-rc", "v2.1.21"];
   const diffs = ["logs+ok", "pre≠post", "fp-match", "sub-lag", "capabilityΔ"];
   const kinds =
-    locale === "zh"
-      ? ["tip/slot 探针", "pre/post 差", "tip/slot 探针", "sub 健康", "兼容清单"]
-      : ["tip/slot probe", "pre/post diff", "tip/slot probe", "sub healthy", "compat checklist"];
+    locList(locale, ["tip/slot probe", "pre/post diff", "tip/slot probe", "sub healthy", "compat checklist"], ["tip/slot 探针", "pre/post 差", "tip/slot 探针", "sub 健康", "兼容清单"]);
   return Array.from({ length: n }, (_, i) => {
     const releaseTag = releases[i % releases.length];
     const tipSlot = 312_500_000 + i * 41;
@@ -594,9 +575,7 @@ export function buildAgaveCompatFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildBrewDoublePairFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["双池进度", "双池齐听 twinReady", "双池进度", "双池齐听 twinReady", "双池进度"]
-      : ["Twin progress", "Twin ready", "Twin progress", "Twin ready", "Twin progress"];
+    locList(locale, ["Twin progress", "Twin ready", "Twin progress", "Twin ready", "Twin progress"], ["双池进度", "双池齐听 twinReady", "双池进度", "双池齐听 twinReady", "双池进度"]);
   const names = ["BREW1", "CAPX", "TWINBNB", "POOLY", "DBLP"];
   return Array.from({ length: n }, (_, i) => {
     const token = fakeAddr(`brewtok${i}${names[i % names.length]}`);
@@ -619,7 +598,7 @@ export function buildBrewDoublePairFixtures(locale: Locale, n = 5): FeedEvent[] 
       chain: "BSC",
       at: now - i * 1500,
       metric: twin ? "twinReady" : "1/2",
-      metricLabel: twin ? (locale === "zh" ? "双池齐" : "Twin") : (locale === "zh" ? "池进度" : "Pools"),
+      metricLabel: twin ? (L(locale, "Twin", "双池齐")) : (L(locale, "Pools", "池进度")),
       metric2: "$69000",
       metric2Label: "CAP_USD",
     };
@@ -629,9 +608,7 @@ export function buildBrewDoublePairFixtures(locale: Locale, n = 5): FeedEvent[] 
 export function buildArbRwaFlowFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["mint 铸币", "Transfer", "PairCreated 开池", "mint 铸币", "Transfer"]
-      : ["mint", "transfer", "pair", "mint", "transfer"];
+    locList(locale, ["mint", "transfer", "pair", "mint", "transfer"], ["mint 铸币", "Transfer", "PairCreated 开池", "mint 铸币", "Transfer"]);
   const syms = ["USDY", "USDC", "BUIDL", "USDT", "USDY"];
   const kindTags = ["MINT", "TRANSFER", "PAIR", "MINT", "TRANSFER"];
   return Array.from({ length: n }, (_, i) => {
@@ -653,7 +630,7 @@ export function buildArbRwaFlowFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "ARB",
       at: now - i * 1400,
       metric: kind === "PAIR" ? short(pair) : `${10 + i * 3}K`,
-      metricLabel: kind === "PAIR" ? "pair" : (locale === "zh" ? "数量" : "Amount"),
+      metricLabel: kind === "PAIR" ? "pair" : (L(locale, "Amount", "数量")),
       metric2: kind.toLowerCase(),
       metric2Label: "kind",
     };
@@ -663,9 +640,7 @@ export function buildArbRwaFlowFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildCronosLaunchpadFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["池子开了", "首流动性", "池子开了", "早期转账", "首流动性"]
-      : ["Pool open", "First liquidity", "Pool open", "Early transfer", "First liquidity"];
+    locList(locale, ["Pool open", "First liquidity", "Pool open", "Early transfer", "First liquidity"], ["池子开了", "首流动性", "池子开了", "早期转账", "首流动性"]);
   const names = ["CROAPP", "PADX", "LAUNCHY", "MINT1", "XFERY"];
   return Array.from({ length: n }, (_, i) => {
     const pair = fakeAddr(`cro${i}${names[i % names.length]}`);
@@ -694,9 +669,7 @@ export function buildCronosLaunchpadFixtures(locale: Locale, n = 5): FeedEvent[]
 export function buildEthV4StablePairFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["Swap", "peg 偏离", "费率", "LP 变动", "Swap"]
-      : ["swap", "peg drift", "fee", "lp", "swap"];
+    locList(locale, ["swap", "peg drift", "fee", "lp", "swap"], ["Swap", "peg 偏离", "费率", "LP 变动", "Swap"]);
   const kindTags = ["swap", "peg", "fee", "lp", "swap"];
   const pools = ["USDC/USDT", "USDC/USDG", "USDC/USDT", "USDC/USDG", "USDC/USDT"];
   return Array.from({ length: n }, (_, i) => {
@@ -725,9 +698,7 @@ export function buildEthV4StablePairFixtures(locale: Locale, n = 5): FeedEvent[]
 export function buildBaseLaptopFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["首池 Mint", "换手簇", "持仓集中", "薄 LP 退出", "首池 Mint"]
-      : ["firstMint", "swapBurst", "holderConc", "thinExit", "firstMint"];
+    locList(locale, ["firstMint", "swapBurst", "holderConc", "thinExit", "firstMint"], ["首池 Mint", "换手簇", "持仓集中", "薄 LP 退出", "首池 Mint"]);
   const kindTags = ["firstMint", "swapBurst", "holderConc", "thinExit", "firstMint"];
   const names = ["LAPTOP", "LPT1", "SNIPX", "THINLP", "BURST"];
   return Array.from({ length: n }, (_, i) => {
@@ -744,7 +715,7 @@ export function buildBaseLaptopFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "BASE",
       at: now - i * 1400,
       metric: kindTags[i % kindTags.length] === "holderConc" ? "42%" : String(4 + i * 2),
-      metricLabel: kindTags[i % kindTags.length] === "holderConc" ? (locale === "zh" ? "顶仓占比" : "top share") : (locale === "zh" ? "信号" : "signal"),
+      metricLabel: kindTags[i % kindTags.length] === "holderConc" ? (L(locale, "top share", "顶仓占比")) : (L(locale, "signal", "信号")),
       metric2: kindTags[i % kindTags.length],
       metric2Label: "kind",
     };
@@ -754,9 +725,7 @@ export function buildBaseLaptopFixtures(locale: Locale, n = 5): FeedEvent[] {
 export function buildMultiplrLeverageFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["杠杆开池", "曲线早打印", "V3 毕业", "ETH2x 转账爆发", "杠杆开池"]
-      : ["Leverage open", "Curve print", "V3 graduate", "ETH2x transfer burst", "Leverage open"];
+    locList(locale, ["Leverage open", "Curve print", "V3 graduate", "ETH2x transfer burst", "Leverage open"], ["杠杆开池", "曲线早打印", "V3 毕业", "ETH2x 转账爆发", "杠杆开池"]);
   const tagsList = [
     ["NEW", "LAUNCH"],
     ["TRADE", "CURVE"],
@@ -782,7 +751,7 @@ export function buildMultiplrLeverageFixtures(locale: Locale, n = 5): FeedEvent[
       metric: short(quote),
       metricLabel: "quote",
       metric2: `#${23_600_000 + i * 11}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -790,9 +759,7 @@ export function buildMultiplrLeverageFixtures(locale: Locale, n = 5): FeedEvent[
 export function buildHarmonicRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
   const now = Date.now();
   const kinds =
-    locale === "zh"
-      ? ["Pons 发射", "HARMONIC 命中发射", "Hookr 发射", "V4 Initialize", "Pons 发射"]
-      : ["Pons launch", "HARMONIC launch hit", "Hookr launch", "V4 Initialize", "Pons launch"];
+    locList(locale, ["Pons launch", "HARMONIC launch hit", "Hookr launch", "V4 Initialize", "Pons launch"], ["Pons 发射", "HARMONIC 命中发射", "Hookr 发射", "V4 Initialize", "Pons 发射"]);
   const tagsList = [
     ["PONS", "LAUNCH", "pad:pons-v2"],
     ["HARMONIC", "HIT", "LAUNCH", "pad:pons-v2"],
@@ -818,7 +785,7 @@ export function buildHarmonicRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
       metric: short(curve),
       metricLabel: "curve",
       metric2: `#${12_800_000 + i * 17}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -835,7 +802,7 @@ export function buildLongshotFootballFixtures(locale: Locale, n = 6): FeedEvent[
     const kind = kindKeys[i % kindKeys.length];
     return {
       id: rid(),
-      kind: locale === "zh" ? kindsZh[i % kindsZh.length] : kindsEn[i % kindsEn.length],
+      kind: L(locale, kindsEn[i % kindsEn.length], kindsZh[i % kindsZh.length]),
       tags: [
         "BASE",
         "LONGSHOT",
@@ -854,7 +821,7 @@ export function buildLongshotFootballFixtures(locale: Locale, n = 6): FeedEvent[
       metric: kind,
       metricLabel: "kind",
       metric2: `#${29_200_000 + i * 9}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -887,7 +854,7 @@ export function buildCompanypadRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
       metric: metricId,
       metricLabel: "metricId",
       metric2: `#${4_660_000 + i * 11}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -927,7 +894,7 @@ export function buildBucketRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
       metric: founding ? "FOUNDING" : String(100 + i),
       metricLabel: founding ? "founding" : "id",
       metric2: `#${4_670_000 + i * 13}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -958,7 +925,7 @@ export function buildCrossrateRhcFixtures(locale: Locale, n = 5): FeedEvent[] {
       chain: "RH",
       at: now - i * 1200,
       metric: currency,
-      metricLabel: locale === "zh" ? "货币" : "FX",
+      metricLabel: L(locale, "FX", "货币"),
       metric2: `${taxBps} bps`,
       metric2Label: "tax",
     };
@@ -1051,9 +1018,9 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
   ];
   return Array.from({ length: n }, (_, i) => {
     const row = rows[i % rows.length];
-    const sideLabel = row.side === "lock" ? (locale === "zh" ? "锁仓" : "LOCK") : locale === "zh" ? "释放" : "RELEASE";
+    const sideLabel = row.side === "lock" ? (L(locale, "LOCK", "锁仓")) : L(locale, "RELEASE", "释放");
     const tokenLabel = row.highlight ? "$RWA" : short(row.token);
-    const rawKind = row.side === "lock" ? (locale === "zh" ? "锁仓" : "VaultDeposit") : (locale === "zh" ? "释放" : "VaultWithdraw");
+    const rawKind = row.side === "lock" ? (L(locale, "VaultDeposit", "锁仓")) : (L(locale, "VaultWithdraw", "释放"));
     const rawTitle = `${tokenLabel} ${sideLabel}`;
     const rawBody = `pad:messier-p2p · side ${row.side} · token ${row.token} · amount ${row.amount} · maker ${row.maker} · vault ${vault} · #${row.block}`;
     return {
@@ -1078,11 +1045,11 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
       metric: row.amount,
       metricLabel: tokenLabel,
       metric2: sideLabel,
-      metric2Label: locale === "zh" ? "方向" : "side",
+      metric2Label: L(locale, "side", "方向"),
       highlight: row.highlight,
       links: [
-        { label: locale === "zh" ? "Messier 池" : "Messier pool", href: poolUrl },
-        { label: locale === "zh" ? "BaseScan 交易" : "BaseScan tx", href: `https://basescan.org/tx/${row.tx}` },
+        { label: L(locale, "Messier pool", "Messier 池"), href: poolUrl },
+        { label: L(locale, "BaseScan tx", "BaseScan 交易"), href: `https://basescan.org/tx/${row.tx}` },
       ],
     };
   });

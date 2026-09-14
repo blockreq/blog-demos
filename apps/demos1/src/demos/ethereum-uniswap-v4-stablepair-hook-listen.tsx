@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -90,7 +90,7 @@ function mapStableSwapLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
     const bn = log.blockNumber ? parseInt(String(log.blockNumber), 16) : 0;
     return {
       id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
-      kind: locale === "zh" ? "历史 Swap" : "Recent swap",
+      kind: L(locale, "Recent swap", "历史 Swap"),
       tags: ["HIST", "V4", "ETH"],
       title: shortAddr(poolId),
       body: `pad:stablepair-hook · pool ${shortAddr(poolId)} · #${bn}`,
@@ -102,7 +102,7 @@ function mapStableSwapLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
       metric: shortAddr(poolId),
       metricLabel: "poolId",
       metric2: `#${bn}`,
-      metric2Label: locale === "zh" ? "区块" : "Block",
+      metric2Label: L(locale, "Block", "区块"),
     };
   });
 }
@@ -231,16 +231,10 @@ export function EthUniswapV4StablePairHookDemo({
 
       const kindLabel =
         kind === "peg"
-          ? locale === "zh"
-            ? "peg 偏离"
-            : "peg drift"
+          ? L(locale, "peg drift", "peg 偏离")
           : kind === "fee"
-            ? locale === "zh"
-              ? "费率"
-              : "fee"
-            : locale === "zh"
-              ? "Swap"
-              : "swap";
+            ? L(locale, "fee", "费率")
+            : L(locale, "swap", "Swap");
 
       pushEvent({
         kind: kindLabel,
@@ -275,7 +269,7 @@ export function EthUniswapV4StablePairHookDemo({
       const tx = String(r.transactionHash || "");
       const hookAddr = fields.current.hook.trim() || DEFAULT_HOOK;
       pushEvent({
-        kind: locale === "zh" ? "LP 变动" : "lp",
+        kind: L(locale, "lp", "LP 变动"),
         tags: ["V4", "STABLEPAIR", "LP", "ETH", "kind:lp", "pad:stablepair-hook"],
         title: shortAddr(poolId),
         body: `pad:stablepair-hook · kind=lp · poolId ${shortAddr(poolId)} · hook ${shortAddr(hookAddr)} · liquidityDelta ${liquidityDelta.toString()} · #${bn}`,
@@ -286,7 +280,7 @@ export function EthUniswapV4StablePairHookDemo({
         metric: liquidityDelta.toString(),
         metricLabel: "liquidityDelta",
         metric2: `#${bn}`,
-        metric2Label: locale === "zh" ? "区块" : "Block",
+        metric2Label: L(locale, "Block", "区块"),
       });
     },
     [locale, pushEvent]
@@ -409,7 +403,7 @@ export function EthUniswapV4StablePairHookDemo({
     { label: "LP_DELTA_MIN", value: lpDeltaMin },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "eth.uniswap.v4.stablepair" },
+    { k: L(locale, "SRC", "源"), v: "eth.uniswap.v4.stablepair" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "swap+modliq·poolId" },
     { k: "WSS", v: ep.wss },
@@ -443,7 +437,7 @@ export function EthUniswapV4StablePairHookDemo({
       <SettingsPanel open={showSettings}>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>{locale === "zh" ? "StablePair / PoolManager" : "StablePair / PoolManager"}</CardTitle>
+            <CardTitle>{L(locale, "StablePair / PoolManager", "StablePair / PoolManager")}</CardTitle>
             <CardDescription>{t(locale, "ethv4.settingsHint")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

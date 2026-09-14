@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { t, demoBlogUrl, demoSiteUrl, type Locale } from "@blockreq/i18n";
+import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
   Label,
@@ -235,7 +235,7 @@ export function BrewBnbDoublePairDemo({
 
       if (!rec.twinReady) {
         pushEvent({
-          kind: locale === "zh" ? "双池进度" : "Twin progress",
+          kind: L(locale, "Twin progress", "双池进度"),
           tags: ["PART", "BREW", "BSC", quoteChip].filter(Boolean),
           title: shortAddr(launchToken),
           body: `pad brew-double-pair · launch ${shortAddr(launchId)} · pools ${rec.pools.length}/2 · cap $${cap} · ${shortAddr(poolA)} · #${bn}`,
@@ -244,7 +244,7 @@ export function BrewBnbDoublePairDemo({
           tx: tx || undefined,
           chain: "BSC",
           metric: `${rec.pools.length}/2`,
-          metricLabel: locale === "zh" ? "池进度" : "Pools",
+          metricLabel: L(locale, "Pools", "池进度"),
           metric2: `$${cap}`,
           metric2Label: "CAP_USD",
         });
@@ -256,7 +256,7 @@ export function BrewBnbDoublePairDemo({
       twinEmitted.current.add(dedupeKey);
 
       pushEvent({
-        kind: locale === "zh" ? "双池齐听 twinReady" : "Twin ready",
+        kind: L(locale, "Twin ready", "双池齐听 twinReady"),
         tags: ["TWIN", "READY", "BREW", "BSC", quoteChip].filter(Boolean),
         title: shortAddr(launchToken),
         body: `pad brew-double-pair · launchId ${shortAddr(launchId)} · token ${shortAddr(launchToken)} · capUsd $${cap} · poolA ${shortAddr(poolA)} · poolB ${shortAddr(poolB)} · ${shortAddr(token0)}/${shortAddr(token1)} · #${bn}`,
@@ -265,7 +265,7 @@ export function BrewBnbDoublePairDemo({
         tx: tx || undefined,
         chain: "BSC",
         metric: "twinReady",
-        metricLabel: locale === "zh" ? "双池齐" : "Twin",
+        metricLabel: L(locale, "Twin", "双池齐"),
         metric2: `$${cap}`,
         metric2Label: "CAP_USD",
       });
@@ -383,10 +383,10 @@ export function BrewBnbDoublePairDemo({
   const watchParams = [
     { label: t(locale, "brew.factoryLabel"), value: factory.trim() || DEFAULT_FACTORY, mono: true },
     { label: "CAP_USD", value: `$${capUsd.trim() || DEFAULT_CAP}` },
-    { label: locale === "zh" ? "报价提示" : "Quote hints", value: String(parseQuoteHint(quoteHint).size) },
+    { label: L(locale, "Quote hints", "报价提示"), value: String(parseQuoteHint(quoteHint).size) },
   ];
   const sourceItems = [
-    { k: locale === "zh" ? "源" : "SRC", v: "brew.double-pair" },
+    { k: L(locale, "SRC", "源"), v: "brew.double-pair" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "paircreated-twin-cap" },
     { k: "WSS", v: ep.wss },
