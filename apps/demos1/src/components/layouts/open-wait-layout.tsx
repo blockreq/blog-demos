@@ -6,7 +6,6 @@ import { displayTags, scrubDemoText, type FeedEvent } from "../feed-types";
 import { toFeelState } from "../../lib/ui-state";
 import type { ConnStatus } from "@blockreq/ui";
 import { HeartbeatStrip } from "../feed-empty";
-import { ToolGuideBanner } from "../tool-guide";
 import { WatchTargetPanel, type WatchParam } from "../watch-target-panel";
 import { RecentHistoryPanel } from "../recent-history-panel";
 import { LiveToggle } from "../live-toggle";
@@ -32,7 +31,6 @@ export function OpenWaitLayout({
   watchParams,
   sourceItems,
   endpointSlot,
-  guide,
   watching,
   stripTitle,
   stripSub,
@@ -97,8 +95,7 @@ export function OpenWaitLayout({
           : heroIdle || t(locale, "openlaunch.hero.idle");
 
   return (
-    <div className="demo-shell flex min-h-[calc(100vh-8rem)] flex-col gap-3">
-      <ToolGuideBanner locale={locale} stepHint={guide || t(locale, "openlaunch.guide")} />
+    <div className="demo-shell flex min-h-[calc(100vh-8rem)] min-w-0 flex-col gap-3 overflow-x-hidden">
       {banner}
       {endpointSlot}
       <SourceStrip items={sourceItems} />
