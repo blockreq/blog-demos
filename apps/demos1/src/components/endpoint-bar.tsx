@@ -13,9 +13,9 @@ async function copyText(text: string) {
 }
 
 /**
- * Editable HTTPS + WSS endpoints (defaults from PUBLIC_ENDPOINTS).
+ * Editable HTTPS + WSS endpoints.
  * Parent owns persistence via useEditableEndpoints; Apply commits draft.
- * Soft chrome — no Free 3M / signup hard-sell; Config slot owns collapse.
+ * Soft chrome — Config slot owns collapse. No public-node marketing copy.
  */
 export function EndpointBar({
   locale,
@@ -66,9 +66,6 @@ export function EndpointBar({
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Badge variant="ok">{chainLabel}</Badge>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-          {t(locale, "endpoint.public")}
-        </span>
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         <div className="min-w-0">
@@ -159,14 +156,8 @@ export function EndpointBar({
           >
             {t(locale, "endpoint.reset")}
           </Button>
-          <span className="font-mono text-[10px] text-[var(--color-muted-foreground)]">
-            {t(locale, "endpoint.editHint")}
-          </span>
         </div>
       ) : null}
-      <p className="mt-2 text-[11px] leading-snug text-[var(--color-muted-foreground)]">
-        {t(locale, "endpoint.hint")}
-      </p>
     </div>
   );
 }

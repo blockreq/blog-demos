@@ -320,6 +320,7 @@ function DemoPage() {
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
         siteUrl={siteUrl}
+        docsLabel={t(locale, "shell.docs")}
         blogLabel={t(locale, "shell.blog")}
         siteLabel={t(locale, "shell.site")}
         friendLinksLabel={t(locale, "shell.friendLinks")}

@@ -1,11 +1,14 @@
 const SITE = "https://blockreq.com/";
+const BLOG = "https://blockreq.com/blog/";
+const DOCS = "https://docs.blockreq.com/";
 const SIGNUP = "https://blockreq.com/pricing";
 
 export function DemoCta({
   title,
-  blogUrl,
+  blogUrl: _blogUrl,
   siteUrl = SITE,
   blogLabel = "Blog",
+  docsLabel = "Docs",
   siteLabel = "Site",
   friendLinksLabel = "Links",
   primarySiteLabel,
@@ -15,10 +18,12 @@ export function DemoCta({
   quotaLabel,
 }: {
   title: string;
-  blogUrl: string;
+  /** @deprecated friend Blog uses BLOG constant — kept so old call sites compile */
+  blogUrl?: string;
   /** Optional primary/demo site CTA (e.g. messier). Friend Site always uses blockreq.com. */
   siteUrl?: string;
   blogLabel?: string;
+  docsLabel?: string;
   /** Friend Site label (Blog/Site / 官网) */
   siteLabel?: string;
   friendLinksLabel?: string;
@@ -34,6 +39,7 @@ export function DemoCta({
   /** @deprecated use subtitle — kept so old call sites compile during rollout */
   freeLabel?: string;
 }) {
+  void _blogUrl;
   void readLabel;
   void quotaLabel;
   const showPrimarySite = Boolean(primarySiteLabel && siteUrl);
@@ -57,7 +63,15 @@ export function DemoCta({
               {friendLinksLabel}
             </span>
             <a
-              href={blogUrl}
+              href={DOCS}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-9 min-w-0 items-center justify-center border border-[var(--color-line)] bg-[var(--color-panel)] px-3 text-sm font-bold text-[var(--color-foreground)] hover:border-[rgba(0,240,255,0.45)]"
+            >
+              {docsLabel}
+            </a>
+            <a
+              href={BLOG}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-9 min-w-0 items-center justify-center border border-[var(--color-line)] bg-[var(--color-panel)] px-3 text-sm font-bold text-[var(--color-foreground)] hover:border-[rgba(0,240,255,0.45)]"

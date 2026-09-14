@@ -106,6 +106,10 @@ export function EquiSplitLayout({
       />
       <ToolBlurb text={guide} />
 
+      <div className="flex flex-wrap items-center gap-3 border border-[rgba(0,240,255,0.18)] bg-[rgba(0,240,255,0.03)] px-3 py-2.5">
+        <BrowserNotifControls locale={locale} />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-3">
         <div className="min-w-0">
           <p className="type-display truncate">{coinTitle}</p>
@@ -119,7 +123,6 @@ export function EquiSplitLayout({
             onPause={onPause}
             onResume={onResume}
           />
-          <BrowserNotifControls locale={locale} />
           <Badge>{t(locale, "equifold.badge")}</Badge>
           <FreshnessChip locale={locale} at={lastUpdateAt} live={running} />
         </div>
