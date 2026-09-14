@@ -110,8 +110,7 @@ export function EquiSplitLayout({
             onResume={onResume}
           />
           <Badge>{t(locale, "equifold.badge")}</Badge>
-          <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
-          <FreshnessChip locale={locale} at={lastUpdateAt} live={running} />
+<FreshnessChip locale={locale} at={lastUpdateAt} live={running} />
         </div>
       </div>
 
@@ -187,9 +186,6 @@ export function EquiSplitLayout({
             <div className="flex items-center justify-between border-b border-[var(--color-line)] px-3 py-2.5">
               <h3 className="text-[15px] font-extrabold text-[var(--color-neon-cyan)]">{col.title}</h3>
               <div className="flex items-center gap-2">
-                {col.events.some((e) => e.tags.includes("DEMO")) ? (
-                  <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
-                ) : null}
                 <span className="font-mono text-[12px] font-bold text-[var(--color-foreground)]">
                   {col.events.length}
                 </span>

@@ -128,8 +128,7 @@ export function OpenWaitLayout({
             onResume={onResume}
           />
           <Badge variant="ok">{chainBadge}</Badge>
-          <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
-          <FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
+<FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
         </div>
       </div>
 

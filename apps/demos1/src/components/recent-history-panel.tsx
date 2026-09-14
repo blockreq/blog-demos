@@ -82,7 +82,6 @@ export function RecentHistoryPanel({
         <h3 className="font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
           {heading}
         </h3>
-        {usingSeed ? <span className="demo-seed">{t(locale, "common.seedLabel")}</span> : null}
         {usingRpc ? (
           <Badge variant="secondary" className="text-[9px]">
             {t(locale, "history.windowBadge").replace("{n}", String(history.windowBlocks || 900))}

@@ -15,7 +15,7 @@ import { decodeEventLog, parseAbiItem, type Hex } from "viem";
 import { MonitorChrome } from "../components/monitor-chrome";
 import { AnonStreamLayout } from "../components/layouts/anon-stream-layout";
 import type { FeedEvent } from "../components/feed-types";
-import { EndpointBar } from "../components/endpoint-bar";
+import { EndpointConfigSlot } from "../components/endpoint-config-slot";
 import { DemoHitsBanner } from "../components/demo-hits-panel";
 import { buildBasestonkAdvancedLauncherFixtures, useDemoHits } from "../lib/demo-hits";
 import { useRecentHistory } from "../lib/recent-history";
@@ -202,7 +202,6 @@ export function BasestonkAdvancedLauncherListenDemo({
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [showRpc, setShowRpc] = useState(false);
   const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
   const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
   const ep = useEditableEndpoints(SLUG, "base");
@@ -542,10 +541,10 @@ export function BasestonkAdvancedLauncherListenDemo({
 
   const running = status === "connecting" || status === "listening";
   const watchParams = [
-    { label: "LAUNCHER", value: shortAddr(launcher || DEFAULT_LAUNCHER), mono: true },
+    { label: "LAUNCHER", value: launcher || DEFAULT_LAUNCHER, mono: true },
     {
       label: "ADVANCED_LAUNCHED_TOPIC0",
-      value: shortAddr(advancedLaunchedTopic || DEFAULT_ADVANCED_LAUNCHED_TOPIC0),
+      value: advancedLaunchedTopic || DEFAULT_ADVANCED_LAUNCHED_TOPIC0,
       mono: true,
     },
     {
@@ -740,49 +739,25 @@ export function BasestonkAdvancedLauncherListenDemo({
         latestLabel={t(locale, "basestonk.latest")}
         chainBadge="BASE"
         endpointSlot={
-          <div className="space-y-2">
-            <button
-              type="button"
-              className="w-full border border-[rgba(0,240,255,0.18)] bg-[rgba(0,240,255,0.03)] px-3 py-1.5 text-left font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
-              onClick={() => setShowRpc((v) => !v)}
-            >
-              {showRpc
-                ? locale === "zh"
-                  ? "▾ RPC / 端点（次要）"
-                  : "▾ RPC / endpoints (secondary)"
-                : locale === "zh"
-                  ? "▸ RPC / 端点（折叠 · 已预填公共节点）"
-                  : "▸ RPC / endpoints (collapsed · public prefilled)"}
-            </button>
-            {showRpc ? (
-              <EndpointBar
-                locale={locale}
-                wss={ep.wss}
-                https={ep.https}
-                chainLabel={ep.label}
-                draftWss={ep.draftWss}
-                draftHttps={ep.draftHttps}
-                dirty={ep.dirty}
-                onDraftWss={ep.setWss}
-                onDraftHttps={ep.setHttps}
-                onApply={() => {
-                  ep.commit();
-                  reconnectIfRunning();
-                }}
-                onReset={() => {
-                  ep.reset();
-                  reconnectIfRunning();
-                }}
-              />
-            ) : (
-              <p
-                className="truncate px-1 font-mono text-[10px] text-[var(--color-muted-foreground)]"
-                title={ep.wss}
-              >
-                BASE · {ep.wss.replace(/^wss:\/\//, "")}
-              </p>
-            )}
-          </div>
+          <EndpointConfigSlot
+            locale={locale}
+            wss={ep.wss}
+            https={ep.https}
+            chainLabel={ep.label}
+            draftWss={ep.draftWss}
+            draftHttps={ep.draftHttps}
+            dirty={ep.dirty}
+            onDraftWss={ep.setWss}
+            onDraftHttps={ep.setHttps}
+            onApply={() => {
+              ep.commit();
+              reconnectIfRunning();
+            }}
+            onReset={() => {
+              ep.reset();
+              reconnectIfRunning();
+            }}
+          />
         }
         settings={settings}
         banner={

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
@@ -12,6 +12,7 @@ import {
   updatedFreshLabel,
   type FreshnessKind,
 } from "../lib/freshness";
+import { NotifBell, useDemoNotifs } from "../lib/notifications";
 
 const PRICING = "https://blockreq.com/pricing";
 const SITE = "https://blockreq.com/";
@@ -237,7 +238,7 @@ function AdSlots({ locale }: { locale: Locale }) {
 
 /**
  * Locked product top bar — centered chrome (no back-to-catalog).
- * Center: brand + LIVE/fresh + PUBLIC/Free3M chip; right: ZH/EN.
+ * Center: brand + LIVE/fresh + PUBLIC chip; right: notifs + ZH/EN.
  * Top ad banner under header (whole-block CTA → site). No right ad rail / top Blog·Site·Sign up.
  */
 export function MonitorChrome({
@@ -283,6 +284,22 @@ export function MonitorChrome({
     return "idle";
   }, [feel]);
 
+  const { pushNotif, reportRpcError } = useDemoNotifs();
+  const prevStatus = useRef(status);
+  useEffect(() => {
+    const prev = prevStatus.current;
+    prevStatus.current = status;
+    if (status === "error" && prev !== "error") {
+      pushNotif({
+        tone: "error",
+        title: t(locale, "notif.connFailTitle"),
+        body: t(locale, "notif.connFailBody"),
+        ttlMs: 8000,
+      });
+    }
+  }, [status, locale, pushNotif]);
+  void reportRpcError;
+
   return (
     <>
       <header
@@ -300,7 +317,6 @@ export function MonitorChrome({
               <strong className="tb-title">{title}</strong>
               {tag ? <span className="tb-tag-muted">{tag}</span> : null}
             </div>
-            <span className="tb-demo-tag">{t(locale, "shell.demoData")}</span>
           </div>
 
           <span className="tb-sep" aria-hidden />
@@ -324,7 +340,7 @@ export function MonitorChrome({
               href={PRICING}
               target="_blank"
               rel="noopener noreferrer"
-              title={t(locale, "shell.quotaAfter")}
+              title={t(locale, "shell.publicMsg")}
             >
               <span className="tag">{t(locale, "shell.publicTag")}</span>
               <span aria-hidden>·</span>
@@ -335,6 +351,10 @@ export function MonitorChrome({
         </div>
 
         <div className="tb-side right">
+          <NotifBell
+            localeLabel={t(locale, "notif.bell")}
+            emptyLabel={t(locale, "notif.empty")}
+          />
           <LocaleToggle locale={locale} slug={slug} mode={localeMode} onChange={onLocaleChange} />
         </div>
       </header>

@@ -3,9 +3,6 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { Badge, Button, Input, cn } from "@blockreq/ui";
 
-const DOCS = "https://docs.blockreq.com/build/public-endpoints/";
-const PRICING = "https://blockreq.com/pricing";
-
 async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -18,6 +15,7 @@ async function copyText(text: string) {
 /**
  * Editable HTTPS + WSS endpoints (defaults from PUBLIC_ENDPOINTS).
  * Parent owns persistence via useEditableEndpoints; Apply commits draft.
+ * Soft chrome — no Free 3M / signup hard-sell; Config slot owns collapse.
  */
 export function EndpointBar({
   locale,
@@ -62,31 +60,15 @@ export function EndpointBar({
   return (
     <div
       className={cn(
-        "border border-[rgba(0,240,255,0.28)] bg-[rgba(0,240,255,0.05)] px-3 py-2.5",
+        "border border-[rgba(0,240,255,0.22)] bg-[rgba(0,240,255,0.03)] px-3 py-2.5",
         className
       )}
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Badge variant="ok">{chainLabel}</Badge>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-neon-cyan)]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
           {t(locale, "endpoint.public")}
         </span>
-        <a
-          href={DOCS}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-mono text-[11px] font-bold text-[var(--color-neon-cyan)] underline-offset-2 hover:underline"
-        >
-          {t(locale, "shell.quotaAfter")}
-        </a>
-        <a
-          href={PRICING}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-auto font-mono text-[11px] font-bold text-[var(--color-muted-foreground)] hover:text-[var(--color-neon-cyan)]"
-        >
-          {t(locale, "endpoint.signup")}
-        </a>
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         <div className="min-w-0">
@@ -114,7 +96,10 @@ export function EndpointBar({
               aria-label="WSS endpoint"
             />
           ) : (
-            <code className="addr block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]" title={wss}>
+            <code
+              className="addr block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]"
+              title={wss}
+            >
               {wss}
             </code>
           )}
@@ -144,7 +129,10 @@ export function EndpointBar({
               aria-label="HTTPS endpoint"
             />
           ) : (
-            <code className="addr block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]" title={https}>
+            <code
+              className="addr block truncate rounded-[2px] border border-[var(--color-line)] bg-[#07070E] px-2 py-1.5 font-mono text-[11px] text-[#D0D5E8]"
+              title={https}
+            >
               {https}
             </code>
           )}

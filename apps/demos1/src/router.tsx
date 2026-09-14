@@ -34,6 +34,7 @@ import {
   type DemoTerminalLine,
 } from "@blockreq/ui";
 import { MonitorChrome } from "./components/monitor-chrome";
+import { DemoNotifProvider } from "./lib/notifications";
 import { AnoncoinDemo } from "./demos/anoncoin-rh-launch-listen";
 import { OpenLaunchDemo } from "./demos/openlaunch-base-eth-subscribe";
 import { EquifoldDemo } from "./demos/equifold-multi-market-listen";
@@ -72,9 +73,11 @@ const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
 
 function RootLayout() {
   return (
-    <div className="min-h-screen text-[var(--color-foreground)]">
-      <Outlet />
-    </div>
+    <DemoNotifProvider>
+      <div className="min-h-screen text-[var(--color-foreground)]">
+        <Outlet />
+      </div>
+    </DemoNotifProvider>
   );
 }
 
@@ -173,7 +176,7 @@ function IndexPage() {
               {t(locale, "index.site")}
             </a>
             <span className="font-mono text-[11px] font-bold text-[var(--color-muted-foreground)]">
-              {t(locale, "shell.quotaAfter")}
+              {t(locale, "shell.publicMsg")}
             </span>
           </div>
         </div>
