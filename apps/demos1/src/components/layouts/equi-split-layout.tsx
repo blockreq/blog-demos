@@ -9,6 +9,8 @@ import { LiveToggle } from "../live-toggle";
 import { SourceStrip, type SourceItem } from "../source-strip";
 import type { HistoryState } from "../../lib/recent-history";
 import { FreshnessChip } from "../monitor-chrome";
+import { ToolBlurb } from "../tool-blurb";
+import { BrowserNotifControls, useLiveHitBrowserNotify } from "../../lib/notifications";
 
 export type EquiMarketColumn = {
   id: string;
@@ -40,6 +42,7 @@ export function EquiSplitLayout({
   watchParams,
   sourceItems,
   endpointSlot,
+  guide,
   lastUpdateAt,
 }: {
   locale: Locale;
@@ -58,6 +61,7 @@ export function EquiSplitLayout({
   watchParams: WatchParam[];
   sourceItems: SourceItem[];
   endpointSlot?: ReactNode;
+  guide?: string;
   lastUpdateAt?: number | null;
 }) {
   const listening = running && !connecting;
@@ -76,6 +80,13 @@ export function EquiSplitLayout({
       ? (((maxP - minP) / minP) * 100).toFixed(2)
       : null;
 
+  const topLive = columns.map((c) => c.events[0]).find(Boolean) || null;
+  useLiveHitBrowserNotify({
+    locale,
+    liveEvent: topLive,
+    enabled: running || connecting,
+  });
+
   return (
     <div className="demo-shell flex min-h-[calc(100vh-8rem)] min-w-0 flex-col gap-3 overflow-x-hidden">
       {banner}
@@ -93,6 +104,7 @@ export function EquiSplitLayout({
         }
         trailing={chainControls}
       />
+      <ToolBlurb text={guide} />
 
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-3">
         <div className="min-w-0">
@@ -107,8 +119,9 @@ export function EquiSplitLayout({
             onPause={onPause}
             onResume={onResume}
           />
+          <BrowserNotifControls locale={locale} />
           <Badge>{t(locale, "equifold.badge")}</Badge>
-<FreshnessChip locale={locale} at={lastUpdateAt} live={running} />
+          <FreshnessChip locale={locale} at={lastUpdateAt} live={running} />
         </div>
       </div>
 

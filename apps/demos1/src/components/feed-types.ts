@@ -6,6 +6,8 @@ export type FeedEvent = {
   /** Short primary label for dense rows (pair / token / pool). */
   title?: string;
   address?: string;
+  /** Counterparty / maker (e.g. Messier vault maker). */
+  maker?: string;
   block?: number;
   tx?: string;
   chain?: string;

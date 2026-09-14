@@ -13,6 +13,8 @@ import { SourceStrip, type SourceItem } from "../source-strip";
 import type { HistoryState } from "../../lib/recent-history";
 import { FreshnessChip } from "../monitor-chrome";
 import { Addr } from "../addr";
+import { ToolBlurb } from "../tool-blurb";
+import { BrowserNotifControls, useLiveHitBrowserNotify } from "../../lib/notifications";
 
 /** Single-token / one-shot focus: big stage + price/trade metrics on hit. */
 export function OpenWaitLayout({
@@ -31,6 +33,7 @@ export function OpenWaitLayout({
   watchParams,
   sourceItems,
   endpointSlot,
+  guide,
   watching,
   stripTitle,
   stripSub,
@@ -94,6 +97,12 @@ export function OpenWaitLayout({
           ? heroListening || t(locale, "openlaunch.hero.listening")
           : heroIdle || t(locale, "openlaunch.hero.idle");
 
+  useLiveHitBrowserNotify({
+    locale,
+    liveEvent: events[0] || null,
+    enabled: running || connecting,
+  });
+
   return (
     <div className="demo-shell flex min-h-[calc(100vh-8rem)] min-w-0 flex-col gap-3 overflow-x-hidden">
       {banner}
@@ -110,6 +119,7 @@ export function OpenWaitLayout({
             : t(locale, "tool.sourceReady")
         }
       />
+      <ToolBlurb text={guide} />
 
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-3">
         <div>
@@ -124,8 +134,9 @@ export function OpenWaitLayout({
             onPause={onPause}
             onResume={onResume}
           />
+          <BrowserNotifControls locale={locale} />
           <Badge variant="ok">{chainBadge}</Badge>
-<FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
+          <FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
         </div>
       </div>
 
@@ -175,7 +186,7 @@ export function OpenWaitLayout({
               <div className="mt-2 type-meta text-[13px]">{scrubDemoText(latest.body)}</div>
               {latest.address ? (
                 <div className="mt-2 font-mono text-[12px]">
-                  <Addr value={latest.address} />
+                  <Addr value={latest.address} className="w-full text-[12px]" />
                 </div>
               ) : null}
 

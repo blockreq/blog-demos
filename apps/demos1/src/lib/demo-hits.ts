@@ -1055,7 +1055,7 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
     const tokenLabel = row.highlight ? "$RWA" : short(row.token);
     const rawKind = row.side === "lock" ? (locale === "zh" ? "锁仓" : "VaultDeposit") : (locale === "zh" ? "释放" : "VaultWithdraw");
     const rawTitle = `${tokenLabel} ${sideLabel}`;
-    const rawBody = `pad:messier-p2p · side ${row.side} · token ${short(row.token)} · amount ${row.amount} · maker ${short(row.maker)} · vault ${short(vault)} · #${row.block}`;
+    const rawBody = `pad:messier-p2p · side ${row.side} · token ${row.token} · amount ${row.amount} · maker ${row.maker} · vault ${vault} · #${row.block}`;
     return {
       id: rid(),
       kind: scrubDemoText(rawKind),
@@ -1070,6 +1070,7 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
       title: scrubDemoText(rawTitle),
       body: scrubDemoText(rawBody),
       address: row.token.toLowerCase(),
+      maker: row.maker.toLowerCase(),
       block: row.block,
       tx: row.tx,
       chain: "BASE",

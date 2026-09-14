@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
-import { shortAddr } from "@blockreq/rpc";
 import { Badge, cn } from "@blockreq/ui";
+import { Addr } from "./addr";
 
 export type WatchParam = {
   label: string;
@@ -52,25 +52,29 @@ export function WatchTargetPanel({
         {params.map((p) => {
           const full = p.value;
           const isHex = /^0x[0-9a-fA-F]{16,}$/.test(full);
-          const display = isHex ? shortAddr(full) : full;
+          const useAddr = isHex || p.copyable;
           return (
             <div
               key={p.label}
-              className="grid grid-cols-[7.5rem_1fr] items-baseline gap-2 border border-[rgba(30,30,46,0.85)] bg-[#07070E] px-2 py-1.5"
+              className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-2 border border-[rgba(30,30,46,0.85)] bg-[#07070E] px-2 py-1.5"
             >
               <dt className="font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--color-muted-foreground)]">
                 {p.label}
               </dt>
               <dd
                 className={cn(
-                  "min-w-0 truncate text-[12px]",
+                  "min-w-0 text-[12px]",
                   p.mono !== false && "font-mono text-[#D0D5E8]",
                   (p.mono || full.startsWith("0x")) && "addr"
                 )}
-                title={full}
-                data-full={isHex ? full : undefined}
               >
-                {display}
+                {useAddr ? (
+                  <Addr value={full} className="w-full text-[12px]" />
+                ) : (
+                  <span className="block min-w-0 truncate" title={full}>
+                    {full}
+                  </span>
+                )}
               </dd>
             </div>
           );
