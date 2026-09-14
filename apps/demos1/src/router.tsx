@@ -317,9 +317,11 @@ function DemoPage() {
         title={t(locale, meta.titleKey)}
         blogUrl={blogUrl}
         siteUrl={siteUrl}
-        readLabel={t(locale, "shell.readGuide")}
-        siteLabel={
-          slug === "messier-rwa-p2p-vault-listen" ? t(locale, "messier.cta") : t(locale, "shell.site")
+        blogLabel={t(locale, "shell.blog")}
+        siteLabel={t(locale, "shell.site")}
+        friendLinksLabel={t(locale, "shell.friendLinks")}
+        primarySiteLabel={
+          slug === "messier-rwa-p2p-vault-listen" ? t(locale, "messier.cta") : undefined
         }
         pricingLabel={t(locale, "shell.pricing")}
         quotaLabel={t(locale, "shell.quotaAfter")}
