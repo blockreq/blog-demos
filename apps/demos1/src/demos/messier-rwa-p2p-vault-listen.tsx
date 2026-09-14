@@ -193,7 +193,7 @@ function cardToFeed(
         : "Messier VaultWithdraw";
   const rawKind = live ? kind : locale === "zh" ? `历史 ${sideZh}` : `Recent ${card.side === "lock" ? "VaultDeposit" : "VaultWithdraw"}`;
   const rawTitle = `${tok} ${sideLabel}`;
-  const rawBody = `pad:${card.pad} · side ${card.side} · token ${shortAddr(card.token)} · amount ${card.amount} · maker ${shortAddr(card.maker)} · vault ${shortAddr(DEFAULT_VAULT)} · #${card.blockNumber}`;
+  const rawBody = `pad:${card.pad} · side ${card.side} · token ${card.token || "—"} · amount ${card.amount} · maker ${card.maker || "—"} · vault ${DEFAULT_VAULT} · #${card.blockNumber}`;
   return {
     kind: scrubDemoText(rawKind),
     tags: [
@@ -209,6 +209,7 @@ function cardToFeed(
     title: scrubDemoText(rawTitle),
     body: scrubDemoText(rawBody),
     address: card.token || undefined,
+    maker: card.maker || undefined,
     block: card.blockNumber,
     tx: card.txHash || undefined,
     chain: "BASE",

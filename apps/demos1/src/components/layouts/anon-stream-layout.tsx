@@ -10,6 +10,8 @@ import { SourceStrip, type SourceItem } from "../source-strip";
 import type { HistoryState } from "../../lib/recent-history";
 import { FreshnessChip } from "../monitor-chrome";
 import { Addr } from "../addr";
+import { ToolBlurb } from "../tool-blurb";
+import { BrowserNotifControls, useLiveHitBrowserNotify } from "../../lib/notifications";
 
 function ageLabel(at: number) {
   const s = Math.max(0, Math.floor((Date.now() - at) / 1000));
@@ -35,6 +37,7 @@ export function AnonStreamLayout({
   watchParams,
   sourceItems,
   endpointSlot,
+  guide,
   watching,
   hint,
   emptyTitle,
@@ -71,6 +74,11 @@ export function AnonStreamLayout({
   const listening = running && !connecting;
   const isLiveRow = (id: string) => events.some((e) => e.id === id);
   const liveSelected = !!(selected && isLiveRow(selected.id));
+  useLiveHitBrowserNotify({
+    locale,
+    liveEvent: events[0] || null,
+    enabled: running || connecting,
+  });
 
   return (
     <div className="demo-shell flex min-h-[calc(100vh-8rem)] min-w-0 flex-col gap-3 overflow-x-hidden">
@@ -88,6 +96,7 @@ export function AnonStreamLayout({
             : t(locale, "tool.sourceReady")
         }
       />
+      <ToolBlurb text={guide} />
 
       <div className="flex flex-wrap items-center gap-2">
         <LiveToggle
@@ -97,11 +106,9 @@ export function AnonStreamLayout({
           onPause={onPause}
           onResume={onResume}
         />
+        <BrowserNotifControls locale={locale} />
         <Badge variant="ok">{chainBadge}</Badge>
-<span className="text-xs text-[var(--color-muted-foreground)]">{hint || t(locale, "anoncoin.hint")}</span>
-        <span className="ml-auto font-mono text-[10px] text-[var(--color-neon-cyan)]">
-          {t(locale, "tool.usePublic")}
-        </span>
+        <span className="text-xs text-[var(--color-muted-foreground)]">{hint || t(locale, "anoncoin.hint")}</span>
       </div>
 
       <div className="grid min-w-0 flex-1 gap-3 overflow-x-hidden lg:grid-cols-[1.1fr_0.9fr]">
@@ -169,21 +176,27 @@ export function AnonStreamLayout({
                   </div>
                 )}
 
-                <div className="grid grid-cols-[90px_1fr] gap-x-2.5 gap-y-1.5 text-[13px]">
+                <div className="grid grid-cols-[90px_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 text-[13px]">
                   {selected.address ? (
                     <>
-                      <span className="text-[var(--color-muted-foreground)]">Addr</span>
-                      <Addr value={selected.address} className="break-all text-[12px]" />
+                      <span className="text-[var(--color-muted-foreground)]">Token</span>
+                      <Addr value={selected.address} className="w-full text-[12px]" />
+                    </>
+                  ) : null}
+                  {selected.maker ? (
+                    <>
+                      <span className="text-[var(--color-muted-foreground)]">Maker</span>
+                      <Addr value={selected.maker} className="w-full text-[12px]" />
                     </>
                   ) : null}
                   {selected.tx ? (
                     <>
                       <span className="text-[var(--color-muted-foreground)]">Tx</span>
-                      <Addr value={selected.tx} className="break-all text-[12px]" />
+                      <Addr value={selected.tx} className="w-full text-[12px]" />
                     </>
                   ) : null}
                   <span className="text-[var(--color-muted-foreground)]">Meta</span>
-                  <span className="truncate font-mono text-[12px] text-[#C8CDDF]" title={scrubDemoText(selected.body)}>{scrubDemoText(selected.body)}</span>
+                  <span className="min-w-0 truncate font-mono text-[12px] text-[#C8CDDF]" title={scrubDemoText(selected.body)}>{scrubDemoText(selected.body)}</span>
                 </div>
                 {selected.links?.length ? (
                   <div className="flex flex-wrap gap-2">

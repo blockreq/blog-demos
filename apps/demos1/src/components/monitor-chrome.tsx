@@ -14,7 +14,6 @@ import {
 } from "../lib/freshness";
 import { NotifBell, useDemoNotifs } from "../lib/notifications";
 
-const PRICING = "https://blockreq.com/pricing";
 const SITE = "https://blockreq.com/";
 
 function liveVariant(kind: FreshnessKind): "on" | "warn" | "off" {
@@ -238,7 +237,7 @@ function AdSlots({ locale }: { locale: Locale }) {
 
 /**
  * Locked product top bar — centered chrome (no back-to-catalog).
- * Center: brand + LIVE/fresh + PUBLIC chip; right: notifs + ZH/EN.
+ * Center: brand + LIVE/fresh; right: notifs + ZH/EN.
  * Top ad banner under header (whole-block CTA → site). No right ad rail / top Blog·Site·Sign up.
  */
 export function MonitorChrome({
@@ -332,22 +331,12 @@ export function MonitorChrome({
             <Sparkline live={streaming} tickAt={lastUpdateAt} />
           </div>
 
-          <span className="tb-sep" aria-hidden />
-
-          <div className="tb-group tb-public">
-            <a
-              className="tb-public-chip"
-              href={PRICING}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t(locale, "shell.publicMsg")}
-            >
-              <span className="tag">{t(locale, "shell.publicTag")}</span>
-              <span aria-hidden>·</span>
-              <span>{t(locale, "shell.publicFree")}</span>
-            </a>
-            {trailing}
-          </div>
+          {trailing ? (
+            <>
+              <span className="tb-sep" aria-hidden />
+              <div className="tb-group">{trailing}</div>
+            </>
+          ) : null}
         </div>
 
         <div className="tb-side right">
