@@ -11,7 +11,7 @@ export function DemoCta({
   primarySiteLabel,
   readLabel,
   pricingLabel = "Pricing →",
-  quotaLabel = "Free 3M after signup",
+  quotaLabel = "public endpoints",
 }: {
   title: string;
   blogUrl: string;
@@ -40,7 +40,7 @@ export function DemoCta({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-[var(--color-foreground)]">{title}</p>
           <p className="truncate font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--color-muted-foreground)]">
-            BlockReq public endpoint · {quotaLabel} · no wallet
+            BlockReq · {quotaLabel} · no wallet
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export function DemoCta({
             href={SIGNUP}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 min-w-0 shrink-0 items-center justify-center border border-[rgba(0,240,255,0.55)] bg-[rgba(0,240,255,0.12)] px-5 text-sm font-bold text-[var(--color-neon-cyan)] hover:brightness-110"
+            className="inline-flex min-h-11 min-w-0 shrink-0 items-center justify-center border border-[var(--color-line)] bg-[var(--color-panel)] px-5 text-sm font-bold text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.45)] hover:text-[var(--color-neon-cyan)]"
           >
             {pricingLabel}
           </a>

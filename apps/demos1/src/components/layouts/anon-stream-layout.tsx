@@ -101,8 +101,7 @@ export function AnonStreamLayout({
           onResume={onResume}
         />
         <Badge variant="ok">{chainBadge}</Badge>
-        <span className="demo-seed">{t(locale, "common.seedLabel")}</span>
-        <span className="text-xs text-[var(--color-muted-foreground)]">{hint || t(locale, "anoncoin.hint")}</span>
+<span className="text-xs text-[var(--color-muted-foreground)]">{hint || t(locale, "anoncoin.hint")}</span>
         <span className="ml-auto font-mono text-[10px] text-[var(--color-neon-cyan)]">
           {t(locale, "tool.usePublic")}
         </span>
@@ -142,7 +141,6 @@ export function AnonStreamLayout({
                   <Badge variant={liveSelected ? "hit" : "secondary"}>
                     {liveSelected ? (latestLabel || t(locale, "anoncoin.latest")) : t(locale, "common.lastHit")}
                   </Badge>
-                  {!liveSelected ? <span className="demo-seed">{t(locale, "common.seedLabel")}</span> : null}
                   <FreshnessChip locale={locale} at={selected.at} live={liveSelected || listening} />
                   <span className="type-meta">
                     {liveSelected ? ageLabel(selected.at) : `#${selected.block ?? "—"}`}
