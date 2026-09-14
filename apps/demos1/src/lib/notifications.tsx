@@ -361,38 +361,51 @@ export function BrowserNotifControls({
           ? t(locale, "notif.browserGranted")
           : t(locale, "notif.browserNeedOpen");
 
+  const showNeedOpen =
+    permission !== "unsupported" &&
+    permission !== "denied" &&
+    !(browserPref && permission === "granted");
+
   return (
-    <div
-      className={cn("flex flex-wrap items-center gap-1.5", className)}
-      title={statusLabel}
-    >
-      <button
-        type="button"
-        className={cn(
-          "inline-flex h-8 items-center border px-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em]",
-          browserPref && permission === "granted"
-            ? "border-[rgba(57,255,154,0.45)] bg-[rgba(8,28,18,0.85)] text-[#9CFFC9]"
-            : "border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.45)] hover:text-[var(--color-neon-cyan)]"
-        )}
-        onClick={() => {
-          if (browserPref && permission === "granted") {
-            disableBrowserNotifs();
-          } else {
-            void enableBrowserNotifs();
-          }
-        }}
-      >
-        {browserPref && permission === "granted"
-          ? t(locale, "notif.browserOn")
-          : t(locale, "notif.browserEnable")}
-      </button>
-      <button
-        type="button"
-        className="inline-flex h-8 items-center border border-[var(--color-line)] bg-[var(--color-panel)] px-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.45)] hover:text-[var(--color-neon-cyan)]"
-        onClick={() => testBrowserNotif()}
-      >
-        {t(locale, "notif.browserTest")}
-      </button>
+    <div className={cn("flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1", className)}>
+      <div className="flex flex-wrap items-center gap-1.5" title={statusLabel}>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex h-9 items-center border px-3 font-mono text-[11px] font-bold uppercase tracking-[0.06em]",
+            browserPref && permission === "granted"
+              ? "border-[rgba(57,255,154,0.45)] bg-[rgba(8,28,18,0.85)] text-[#9CFFC9]"
+              : "border-[rgba(0,240,255,0.35)] bg-[rgba(0,240,255,0.06)] text-[var(--color-neon-cyan)] hover:border-[rgba(0,240,255,0.55)]"
+          )}
+          onClick={() => {
+            if (browserPref && permission === "granted") {
+              disableBrowserNotifs();
+            } else {
+              void enableBrowserNotifs();
+            }
+          }}
+        >
+          {browserPref && permission === "granted"
+            ? t(locale, "notif.browserOn")
+            : t(locale, "notif.browserEnable")}
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-9 items-center border border-[var(--color-line)] bg-[var(--color-panel)] px-3 font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.45)] hover:text-[var(--color-neon-cyan)]"
+          onClick={() => testBrowserNotif()}
+        >
+          {t(locale, "notif.browserTest")}
+        </button>
+      </div>
+      {showNeedOpen ? (
+        <p className="font-mono text-[10px] leading-snug text-[var(--color-muted-foreground)]">
+          {t(locale, "notif.browserNeedOpen")}
+        </p>
+      ) : permission === "denied" || permission === "unsupported" ? (
+        <p className="font-mono text-[10px] leading-snug text-[var(--color-muted-foreground)]">
+          {statusLabel}
+        </p>
+      ) : null}
     </div>
   );
 }

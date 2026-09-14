@@ -121,6 +121,10 @@ export function OpenWaitLayout({
       />
       <ToolBlurb text={guide} />
 
+      <div className="flex flex-wrap items-center gap-3 border border-[rgba(0,240,255,0.18)] bg-[rgba(0,240,255,0.03)] px-3 py-2.5">
+        <BrowserNotifControls locale={locale} />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-3">
         <div>
           <p className="type-title">{stripTitle || t(locale, "openlaunch.stripTitle")}</p>
@@ -134,7 +138,6 @@ export function OpenWaitLayout({
             onPause={onPause}
             onResume={onResume}
           />
-          <BrowserNotifControls locale={locale} />
           <Badge variant="ok">{chainBadge}</Badge>
           <FreshnessChip locale={locale} at={latest?.at || seedEvents[0]?.at} live={running} />
         </div>

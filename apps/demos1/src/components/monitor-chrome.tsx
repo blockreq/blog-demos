@@ -236,8 +236,8 @@ function AdSlots({ locale }: { locale: Locale }) {
 }
 
 /**
- * Locked product top bar — centered chrome (no back-to-catalog).
- * Center: brand + LIVE/fresh; right: notifs + ZH/EN.
+ * Locked product top bar — whole row centered to content width (max-w 1280).
+ * Inner: brand + LIVE/fresh + notifs/ZH·EN (no left logo mark).
  * Top ad banner under header (whole-block CTA → site). No right ad rail / top Blog·Site·Sign up.
  */
 export function MonitorChrome({
@@ -306,45 +306,43 @@ export function MonitorChrome({
         data-state={dataState}
         aria-label="Product chrome"
       >
-        <div className="tb-side left" aria-hidden>
-          <span className="tb-mark" />
-        </div>
-
-        <div className="tb-center">
-          <div className="tb-group tb-nav">
-            <div className="tb-brand">
-              <strong className="tb-title">{title}</strong>
-              {tag ? <span className="tb-tag-muted">{tag}</span> : null}
+        <div className="tb-inner">
+          <div className="tb-center">
+            <div className="tb-group tb-nav">
+              <div className="tb-brand">
+                <strong className="tb-title">{title}</strong>
+                {tag ? <span className="tb-tag-muted">{tag}</span> : null}
+              </div>
             </div>
+
+            <span className="tb-sep" aria-hidden />
+
+            <div className="tb-group tb-live">
+              <LivePill live={live} locale={locale} connecting={connecting} lastUpdateAt={lastUpdateAt} />
+              <ConnState locale={locale} feel={feel} />
+              <FreshnessChip locale={locale} at={lastUpdateAt} live={streaming} />
+              <span className={cn("tb-stream", streaming && "on")}>
+                <span className="dot" />
+                <span>{t(locale, "shell.streaming")}</span>
+              </span>
+              <Sparkline live={streaming} tickAt={lastUpdateAt} />
+            </div>
+
+            {trailing ? (
+              <>
+                <span className="tb-sep" aria-hidden />
+                <div className="tb-group">{trailing}</div>
+              </>
+            ) : null}
           </div>
 
-          <span className="tb-sep" aria-hidden />
-
-          <div className="tb-group tb-live">
-            <LivePill live={live} locale={locale} connecting={connecting} lastUpdateAt={lastUpdateAt} />
-            <ConnState locale={locale} feel={feel} />
-            <FreshnessChip locale={locale} at={lastUpdateAt} live={streaming} />
-            <span className={cn("tb-stream", streaming && "on")}>
-              <span className="dot" />
-              <span>{t(locale, "shell.streaming")}</span>
-            </span>
-            <Sparkline live={streaming} tickAt={lastUpdateAt} />
+          <div className="tb-side right">
+            <NotifBell
+              localeLabel={t(locale, "notif.bell")}
+              emptyLabel={t(locale, "notif.empty")}
+            />
+            <LocaleToggle locale={locale} slug={slug} mode={localeMode} onChange={onLocaleChange} />
           </div>
-
-          {trailing ? (
-            <>
-              <span className="tb-sep" aria-hidden />
-              <div className="tb-group">{trailing}</div>
-            </>
-          ) : null}
-        </div>
-
-        <div className="tb-side right">
-          <NotifBell
-            localeLabel={t(locale, "notif.bell")}
-            emptyLabel={t(locale, "notif.empty")}
-          />
-          <LocaleToggle locale={locale} slug={slug} mode={localeMode} onChange={onLocaleChange} />
         </div>
       </header>
       <AdSlots locale={locale} />

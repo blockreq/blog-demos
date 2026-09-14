@@ -98,6 +98,10 @@ export function AnonStreamLayout({
       />
       <ToolBlurb text={guide} />
 
+      <div className="flex flex-wrap items-center gap-3 border border-[rgba(0,240,255,0.18)] bg-[rgba(0,240,255,0.03)] px-3 py-2.5">
+        <BrowserNotifControls locale={locale} />
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <LiveToggle
           locale={locale}
@@ -106,7 +110,6 @@ export function AnonStreamLayout({
           onPause={onPause}
           onResume={onResume}
         />
-        <BrowserNotifControls locale={locale} />
         <Badge variant="ok">{chainBadge}</Badge>
         <span className="text-xs text-[var(--color-muted-foreground)]">{hint || t(locale, "anoncoin.hint")}</span>
       </div>
