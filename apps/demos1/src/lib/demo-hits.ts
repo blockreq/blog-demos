@@ -1055,3 +1055,84 @@ export function buildMessierRwaP2pVaultFixtures(locale: Locale, n = 5): FeedEven
   });
 }
 
+export function buildStonksExchangeBaseLauncherFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const weth = "0x4200000000000000000000000000000000000006";
+  const basecat = "0xb200000000000000000000d9192b6b456483c2e8";
+  const feeLocker = "0x71D1D363176723f85d98B8B430DF33cde89f0A7f";
+  const sampleMetaTx = "0x72d2abe9fef721127c6c5301ee2b8f93d70c3738c9d30f0a5ff60e84955e910a";
+  const sampleCatTx = "0x0f6c917e0c3f7bd2be07d5d1e431691f75177f43287be8b5a87523f5ae67b36d";
+  const hotPost = "https://x.com/Stonks_Exchange/status/2100204805738090962";
+  const site = "https://thestonks.exchange/";
+  const rows: {
+    token: string;
+    tokenId: string;
+    creator: string;
+    quote: string;
+    quoteTag: string;
+    pool: string;
+    fee: string;
+    launchTick: string;
+    totalSupply: string;
+    tx: string;
+    block: number;
+  }[] = [
+    {
+      token: "0xeab2d0296f98c8ddad2bf09ae7ad5e7715ed6f38",
+      tokenId: "6013691",
+      creator: "0x471a3203eefa0104623425a18ec2c36cb471e113",
+      quote: weth,
+      quoteTag: "WETH",
+      pool: "0xf927d3086a01c7bd8d2222bec1f6477caacaed23",
+      fee: "10000",
+      launchTick: "202000",
+      totalSupply: "1000000000000000000000000000",
+      tx: sampleMetaTx,
+      block: 51_386_924,
+    },
+    {
+      token: "0x03fc710a4bb06653c6c6dbc767e85c45dbadd3a8",
+      tokenId: "6008945",
+      creator: "0xf2cc587310db112e3719d3a370a4bc82bcb9b043",
+      quote: basecat,
+      quoteTag: "BASECAT",
+      pool: "0x62dd1911fd1a2e98bafb72df49ce36a2499829bd",
+      fee: "10000",
+      launchTick: "-409600",
+      totalSupply: "1000000000000000000000000000",
+      tx: sampleCatTx,
+      block: 51_382_239,
+    },
+  ];
+  return Array.from({ length: n }, (_, i) => {
+    const row = rows[i % rows.length];
+    const token = i < 2 ? row.token : fakeAddr("sxtok" + i);
+    const quoteTag = row.quoteTag;
+    const supply = "1000000000";
+    return {
+      id: rid(),
+      kind: L(locale, "Stonks Exchange TokenLaunched", "Stonks Exchange TokenLaunched"),
+      tags: ["BASE", "STONKS", "TOKENLAUNCHED", "pad:stonks-exchange", quoteTag, "RADAR"],
+      title: short(token),
+      body: `pad:stonks-exchange · token ${short(token)} · tokenId ${row.tokenId} · creator ${short(row.creator)} · quote ${quoteTag} ${short(row.quote)} · pool ${short(row.pool)} · fee ${row.fee} · launchTick ${row.launchTick} · totalSupply ${supply} · feeLocker ${short(feeLocker)} · #${row.block}`,
+      address: token.toLowerCase(),
+      block: row.block,
+      tx: i < 2 ? row.tx : fakeAddr(`txsx${i}`),
+      chain: "BASE",
+      at: now - i * 1200,
+      metric: quoteTag,
+      metricLabel: L(locale, "quote", "报价"),
+      metric2: "1%",
+      metric2Label: L(locale, "fee", "费率"),
+      highlight: quoteTag === "BASECAT",
+      links: [
+        { label: "thestonks.exchange", href: site },
+        { label: "BaseScan", href: `https://basescan.org/tx/${i < 2 ? row.tx : fakeAddr(`txsx${i}`)}` },
+        ...(quoteTag === "BASECAT"
+          ? [{ label: L(locale, "Hot post · Basecat listed as quote", "热点 · Basecat 已加报价"), href: hotPost }]
+          : []),
+      ],
+    };
+  });
+}
+

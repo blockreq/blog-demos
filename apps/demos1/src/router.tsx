@@ -55,6 +55,7 @@ import { BucketRhcLaunchpadListenDemo } from "./demos/bucket-rhc-launchpad-liste
 import { CrossrateRhcCurrencyLaunchListenDemo } from "./demos/crossrate-rhc-currency-launch-listen";
 import { BasestonkAdvancedLauncherListenDemo } from "./demos/basestonk-advanced-launcher-listen";
 import { MessierRwaP2pVaultListenDemo } from "./demos/messier-rwa-p2p-vault-listen";
+import { StonksExchangeBaseLauncherListenDemo } from "./demos/stonks-exchange-base-launcher-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -327,6 +328,9 @@ function DemoPage() {
       )}
       {slug === "messier-rwa-p2p-vault-listen" && (
         <MessierRwaP2pVaultListenDemo locale={locale} />
+      )}
+      {slug === "stonks-exchange-base-launcher-listen" && (
+        <StonksExchangeBaseLauncherListenDemo locale={locale} />
       )}
       <DemoCta
         title={t(locale, meta.titleKey)}

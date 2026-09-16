@@ -1,3 +1,15 @@
+# demos1 layout choices (2026-09-16 Stonks Exchange TokenLaunched)
+
+Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
+
+| Slug | Layout | Why |
+| --- | --- | --- |
+| `stonks-exchange-base-launcher-listen` | **launch-feed** | Continuous StonkLauncher2 TokenLaunched tape + sticky stock-quote open cards (pad / token / tokenId / creator / quote / pool / fee / launchTick / totalSupply / feeLocker). Optional TokenMetaSet + DevBuy chips. Distinct from BaseStonk AdvancedLauncherV2. single-focus would hide the launch radar tape. |
+
+Reuses MonitorChrome (centered header, BlockReq · 注册每月免费 3M 请求 / Register for 3M free requests monthly CTA), collapsed RPC bar prefilled with **live** BlockReq Base public HTTPS/WSS, and addr hover via shared chrome/feed components. Verified StonkLauncher2 factory `0x4714f6…` + TokenLaunched topic0 only — never BaseStonk `0x74655…`. Zero Solana / placeholder / publicnode endpoints.
+
+---
+
 # demos1 layout choices (2026-09-14 Messier P2P vault)
 
 Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
