@@ -2,7 +2,11 @@ import type { Locale } from "@blockreq/i18n";
 import { t } from "@blockreq/i18n";
 import { cn } from "@blockreq/ui";
 
-/** Quieter primary control — live on by default; Pause / Resume (never 「开始盯」). */
+/**
+ * Quieter primary control — live on by default; Pause / Resume (never 「开始盯」).
+ * 「恢复实时」 only when truly paused/disconnected. Connecting/retrying is not Resume.
+ * Click during connect/retry pauses so the toggle cannot stick.
+ */
 export function LiveToggle({
   locale,
   live,
@@ -24,7 +28,6 @@ export function LiveToggle({
       type="button"
       className={cn("quiet-live", !on && "off", className)}
       data-on={on ? "true" : "false"}
-      disabled={connecting}
       onClick={() => (on ? onPause() : onResume())}
     >
       <span

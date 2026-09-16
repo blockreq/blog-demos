@@ -22,8 +22,9 @@ function ageLabel(at: number) {
 
 /**
  * Dense history/feed table.
- * Priority: liveEvents → rpc history → seedEvents (silent fixtures).
- * Never a blank void; 「暂无记录」+ reason only when all empty.
+ * Priority: liveEvents → HTTPS eth_getLogs history. seedEvents only when the
+ * caller opts in via ?demoHits=1 — never silent fixtures on the default path.
+ * Honest empty: 「暂无记录」+ reason when live + RPC are both empty.
  */
 export function RecentHistoryPanel({
   locale,
@@ -41,7 +42,7 @@ export function RecentHistoryPanel({
   locale: Locale;
   history: HistoryState;
   liveEvents: FeedEvent[];
-  /** First-paint fixture rows when RPC empty */
+  /** Opt-in fixture rows (?demoHits=1 only). Default unused. */
   seedEvents?: FeedEvent[];
   listening: boolean;
   selectedId?: string | null;

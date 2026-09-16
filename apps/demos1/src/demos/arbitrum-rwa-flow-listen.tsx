@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -128,15 +129,14 @@ export function ArbitrumRwaFlowDemo({
   const [minRaw, setMinRaw] = useState(DEFAULT_MIN_RAW);
   const [topicXfer, setTopicXfer] = useState(TOPIC_TRANSFER);
   const [topicPair, setTopicPair] = useState(TOPIC_PAIR);
-  const [status, setStatus] = useState<ConnStatus>("idle");
+  const [status, setStatus] = useState<ConnStatus>("connecting");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(true);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
   const ep = useEditableEndpoints(SLUG, "arbitrum");
   const epRef = useRef(ep);
   epRef.current = ep;
@@ -344,7 +344,6 @@ export function ArbitrumRwaFlowDemo({
       send("eth_subscribe", ["logs", { address: addrs, topics: [tp] }]);
     }
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
@@ -356,7 +355,13 @@ export function ArbitrumRwaFlowDemo({
       return;
     }
     setStatus("connecting");
-    const ws = new WebSocket(wss);
+    const ws = openPublicWs(wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -369,9 +374,16 @@ export function ArbitrumRwaFlowDemo({
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") return;
+      if (msg.id && msg.result && typeof msg.result === "string") {
+        setStatus("listening");
+        return;
+      }
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -394,7 +406,6 @@ export function ArbitrumRwaFlowDemo({
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -566,7 +577,7 @@ export function ArbitrumRwaFlowDemo({
       <AnonStreamLayout
         locale={locale}
         events={events}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         selectedId={selectedId}
         onSelect={setSelectedId}
         onPause={pause}

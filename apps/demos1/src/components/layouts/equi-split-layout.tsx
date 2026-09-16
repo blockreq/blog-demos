@@ -30,7 +30,7 @@ export function EquiSplitLayout({
   coinTitle,
   coinMeta,
   columns,
-  seedEvents,
+  seedEvents = [],
   onPause,
   onResume,
   running,
@@ -49,7 +49,8 @@ export function EquiSplitLayout({
   coinTitle: string;
   coinMeta: string;
   columns: EquiMarketColumn[];
-  seedEvents: FeedEvent[];
+  /** Fixture rows only when ?demoHits=1. Default empty. */
+  seedEvents?: FeedEvent[];
   onPause: () => void;
   onResume: () => void;
   running: boolean;

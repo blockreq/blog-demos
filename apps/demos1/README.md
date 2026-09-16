@@ -6,7 +6,7 @@ Vite + TanStack Router SPA under base path `/demos1/`, served by Cloudflare Work
 
 Shell matches the locked cyberpunk baseline (`demos1-feel-baseline`): near-black `#050508`, panels `#0D0D14`, neon cyan/magenta, hard edges, four states (paused/idle → connecting → listening → hit). ETH/Sol/BNB are secondary accents only. Solana public RPC is not marketed.
 
-**有料 idle (LOCKED):** first paint is dense — source meta + seeded/history rows (labeled 示意数据 / DEMO DATA). Ban CTA 「开始盯」/Start watching. Live on by default; primary control is quieter **暂停实时 / 恢复实时** (Pause live / Resume live). Real history via public `eth_getLogs` within the ~1024-block Free window when possible; else 「暂无记录」+ reason (seeds OK).
+**First paint (LOCKED):** source meta + **real** HTTPS `eth_getLogs` history (public ~900-block window). Live WSS on by default; primary control is quieter **暂停实时 / 恢复实时** (Pause live / Resume live). 「恢复实时」 only when truly paused or disconnected. Empty chain → localized 「暂无记录」+ reason — **never** silent `0x…aaaa` seed cards. Ban CTA 「开始盯」/Start watching.
 
 
 ## First paint / cache
@@ -29,7 +29,7 @@ Slugs: `anoncoin-rh-launch-listen`, `openlaunch-base-eth-subscribe`, `equifold-m
 
 ## Demo / fixture hits (美工)
 
-Default **off**. Enable with `?demoHits=1` on any slug URL, Advanced → “Demo / fixture hits”, or catalog `demoHits: true`. When active, a **DEMO · SIMULATED** banner + Inject button push fixture rows (flash / large hit card / multi-market columns). Live browser listen remains the default path.
+Default **off**. Enable with `?demoHits=1` on any slug URL or Advanced → “Demo / fixture hits” (writes that query). Catalog `demoHits` never auto-enables. When active, a **DEMO · SIMULATED** banner + Inject button push fixture rows (flash / large hit card / multi-market columns). Production cold load is live WSS + real `eth_getLogs` only.
 
 **Equifold idle→hit rename:** idle header stays **NEONCAT**; with `?demoHits=1` enabled, Inject fires fixture hits that switch the header to **FORKBEAM** (not NEONCAT) so 美工 can demo the rename.
 

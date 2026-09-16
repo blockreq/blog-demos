@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -71,7 +72,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [factory, setFactory] = useState("");
   const [topic0, setTopic0] = useState(DEFAULT_TOPIC);
   const [burstSec, setBurstSec] = useState("30");
-  const [status, setStatus] = useState<ConnStatus>("idle");
+  const [status, setStatus] = useState<ConnStatus>("connecting");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
@@ -79,8 +80,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const [showSettings, setShowSettings] = useState(false);
   const [focusToken, setFocusToken] = useState<string | null>(null);
   const [fixtureCoin, setFixtureCoin] = useState<{ label: string; addr: string } | null>(null);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
 
   const seedBundle = useMemo(() => buildEquiFixtures(locale, "idle"), [locale]);
   const seedEvents = seedBundle.events;
@@ -216,13 +216,18 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
     if (isAddr(fac)) filt.address = fac.toLowerCase();
     send("eth_subscribe", ["logs", filt]);
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    const ws = new WebSocket(epRef.current.wss);
+    const ws = openPublicWs(epRef.current.wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -237,7 +242,11 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       }
       if (msg.id && typeof msg.result === "string") return;
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -260,7 +269,6 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -316,7 +324,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
   const columns = useMemo(() => {
     // Keep NEONCAT seed columns until a real live (or injected) event exists.
     // Public history stays in RecentHistoryPanel — do not displace idle demo branding.
-    const pool = events.length > 0 ? events : seedEvents;
+    const pool = events.length > 0 ? events : demoHits ? seedEvents : [];
     const first = pool.filter((ev) => ev.tags.includes("FIRST"));
     const next = pool.filter((ev) => !ev.tags.includes("FIRST"));
     const colFirst = first.length ? first : pool.slice(0, 1);
@@ -326,7 +334,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
       { id: "next", title: t(locale, "equifold.colNext"), events: colNext },
       { id: "all", title: t(locale, "equifold.colAll"), events: pool },
     ];
-  }, [events, seedEvents, locale]);
+  }, [events, seedEvents, locale, demoHits]);
 
   const chainControls = (
     <ToggleGroup
@@ -472,7 +480,7 @@ export function EquifoldDemo({ locale }: { locale: Locale }) {
         coinTitle={coinTitle}
         coinMeta={coinMeta}
         columns={columns}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         onPause={pause}
         onResume={resume}
         running={running}

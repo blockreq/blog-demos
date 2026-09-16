@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -56,15 +57,14 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
   const [topicLiq, setTopicLiq] = useState(TOPIC_MODIFY_LIQ);
   const [subInit, setSubInit] = useState(true);
   const [subLiq, setSubLiq] = useState(true);
-  const [status, setStatus] = useState<ConnStatus>("idle");
+  const [status, setStatus] = useState<ConnStatus>("connecting");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
   const ep = useEditableEndpoints(SLUG, "robinhood");
   const epRef = useRef(ep);
   epRef.current = ep;
@@ -209,13 +209,18 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       send("eth_subscribe", ["logs", filt]);
     }
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    const ws = new WebSocket(epRef.current.wss);
+    const ws = openPublicWs(epRef.current.wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -228,9 +233,16 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") return;
+      if (msg.id && msg.result && typeof msg.result === "string") {
+        setStatus("listening");
+        return;
+      }
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -253,7 +265,6 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -402,7 +413,7 @@ export function RhUniswapV4DirectDemo({ locale }: { locale: Locale }) {
       <AnonStreamLayout
         locale={locale}
         events={events}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         selectedId={selectedId}
         onSelect={setSelectedId}
         onPause={pause}
