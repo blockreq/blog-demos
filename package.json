@@ -25,6 +25,7 @@
     "dev:bucket-rhc-launchpad-listen": "pnpm --filter @blockreq/ex-bucket-rhc-launchpad-listen dev",
     "dev:crossrate-rhc-currency-launch-listen": "pnpm --filter @blockreq/ex-crossrate-rhc-currency-launch-listen dev",
     "dev:basestonk-advanced-launcher-listen": "pnpm --filter @blockreq/ex-basestonk-advanced-launcher-listen dev",
-    "dev:messier-rwa-p2p-vault-listen": "pnpm --filter @blockreq/ex-messier-rwa-p2p-vault-listen dev"
+    "dev:messier-rwa-p2p-vault-listen": "pnpm --filter @blockreq/ex-messier-rwa-p2p-vault-listen dev",
+    "dev:stonks-exchange-base-launcher-listen": "pnpm --filter @blockreq/ex-stonks-exchange-base-launcher-listen dev"
   }
 }
