@@ -403,10 +403,16 @@ export async function fetchPublicRecentLogs(opts: {
   }
   if (logsRes.error) {
     const msg = logsRes.error.message || JSON.stringify(logsRes.error);
-    const reason = /1024|recent blocks|archive/i.test(msg) ? "window" : "rpc";
-    // One retry with a tighter window if tip raced past the public cap.
-    if (reason === "window" && windowBlocks > 512) {
-      return fetchPublicRecentLogs({ ...opts, windowBlocks: 512 });
+    const code = logsRes.error.code;
+    const reason =
+      /1024|recent blocks|archive|cannot serve this request/i.test(msg) || code === -32014
+        ? "window"
+        : "rpc";
+    // Public Free windows vary by chain (Base ~900, BSC public often ~64).
+    const nextWindow =
+      windowBlocks > 512 ? 512 : windowBlocks > 128 ? 128 : windowBlocks > 64 ? 64 : 0;
+    if (reason === "window" && nextWindow) {
+      return fetchPublicRecentLogs({ ...opts, https, windowBlocks: nextWindow });
     }
     return { ok: false, error: msg, reason };
   }
