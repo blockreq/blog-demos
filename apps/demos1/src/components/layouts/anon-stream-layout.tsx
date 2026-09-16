@@ -23,7 +23,7 @@ function ageLabel(at: number) {
 export function AnonStreamLayout({
   locale,
   events,
-  seedEvents,
+  seedEvents = [],
   selectedId,
   onSelect,
   onPause,
@@ -46,7 +46,8 @@ export function AnonStreamLayout({
 }: {
   locale: Locale;
   events: FeedEvent[];
-  seedEvents: FeedEvent[];
+  /** Fixture rows only when ?demoHits=1. Default empty — never fill the sticky card. */
+  seedEvents?: FeedEvent[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onPause: () => void;

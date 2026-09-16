@@ -2,6 +2,8 @@
 
 Product shells are selected per slug via `DEMO_CATALOG[].layout` (not a feel tab).
 
+**Anti-seed / WSS (same Deploy as Flap):** default first paint is live BlockReq public WSS + HTTPS `eth_getLogs` only. Shared layouts never fall back to `seedEvents` unless `?demoHits=1`. Subscribe JSON-RPC errors close+reconnect while the user still wants live — the toggle shows connecting/retry, never a stuck 「恢复实时」 with a dead socket. Quiet window → honest empty, never `0x…aaaa` fixtures.
+
 | Slug | Layout | Why |
 | --- | --- | --- |
 | `flap-bsc-portal-token-created-listen` | **launch-feed** | Continuous Flap Portal TokenCreated tape + sticky open cards (pad / token / creator / nonce / name / symbol / meta / ts / tx / block). Optional LaunchedToDEX graduation chip. Distinct from brew-bnb-double-pair-listen (Brew twin PairCreated). single-focus would hide the launch radar tape. |

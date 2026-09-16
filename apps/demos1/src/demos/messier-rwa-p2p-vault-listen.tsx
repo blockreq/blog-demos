@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -291,15 +292,14 @@ export function MessierRwaP2pVaultListenDemo({
   const [depositTopic, setDepositTopic] = useState(DEFAULT_DEPOSIT_TOPIC0);
   const [withdrawTopic, setWithdrawTopic] = useState(DEFAULT_WITHDRAW_TOPIC0);
   const [usdcOnly, setUsdcOnly] = useState(false);
-  const [status, setStatus] = useState<ConnStatus>("idle");
+  const [status, setStatus] = useState<ConnStatus>("connecting");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
   const ep = useEditableEndpoints(SLUG, "base");
   const epRef = useRef(ep);
   epRef.current = ep;
@@ -481,24 +481,41 @@ export function MessierRwaP2pVaultListenDemo({
     saveFields();
     const addr = (fields.current.vault.trim() || DEFAULT_VAULT).toLowerCase();
     if (!isAddr(addr)) {
+      wantRun.current = false;
+      try {
+        wsRef.current?.close();
+      } catch {
+        /* ignore */
+      }
       setStatus("error");
       return;
     }
     const dep = (fields.current.depositTopic.trim() || DEFAULT_DEPOSIT_TOPIC0).toLowerCase();
     const wd = (fields.current.withdrawTopic.trim() || DEFAULT_WITHDRAW_TOPIC0).toLowerCase();
     if (!isTopic0(dep) || !isTopic0(wd)) {
+      wantRun.current = false;
+      try {
+        wsRef.current?.close();
+      } catch {
+        /* ignore */
+      }
       setStatus("error");
       return;
     }
     send("eth_subscribe", ["logs", { address: addr, topics: [[dep, wd]] }]);
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    const ws = new WebSocket(epRef.current.wss);
+    const ws = openPublicWs(epRef.current.wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -511,9 +528,16 @@ export function MessierRwaP2pVaultListenDemo({
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") return;
+      if (msg.id && msg.result && typeof msg.result === "string") {
+        setStatus("listening");
+        return;
+      }
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -536,7 +560,6 @@ export function MessierRwaP2pVaultListenDemo({
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -824,7 +847,7 @@ export function MessierRwaP2pVaultListenDemo({
       <AnonStreamLayout
         locale={locale}
         events={events}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         selectedId={selectedId}
         onSelect={onSelectCard}
         onPause={pause}

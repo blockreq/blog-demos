@@ -7,7 +7,7 @@ function locList(locale: Locale, en: string[], zh: string[]): string[] {
 }
 
 
-/** Query / catalog / local toggle — default OFF for normal visitors. */
+/** URL query / in-page toggle — default OFF. Catalog never auto-enables. */
 export function readDemoHitsFromUrl(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -207,15 +207,16 @@ function short(a: string) {
 }
 
 /**
- * Opt-in demo/fixture mode. Default off.
- * Enables via `?demoHits=1`, catalog `demoHits: true`, or the in-page toggle.
+ * Opt-in demo/fixture mode. Default off in production.
+ * Enables only via `?demoHits=1` (or the in-page toggle, which writes that query).
+ * Catalog `demoHits` is never an auto-enable — 美工-only, never first paint.
  */
-export function useDemoHits(opts?: { catalogFlag?: boolean }) {
+export function useDemoHits(_opts?: { catalogFlag?: boolean }) {
   const [enabled, setEnabledState] = useState(false);
 
   useEffect(() => {
-    setEnabledState(readDemoHitsFromUrl() || !!opts?.catalogFlag);
-  }, [opts?.catalogFlag]);
+    setEnabledState(readDemoHitsFromUrl());
+  }, []);
 
   const setEnabled = useCallback((on: boolean) => {
     setEnabledState(on);

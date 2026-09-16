@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -282,15 +283,14 @@ export function FlapBscPortalTokenCreatedListenDemo({
   const [tokenCreatedTopic, setTokenCreatedTopic] = useState(DEFAULT_TOKEN_CREATED_TOPIC0);
   const [launchedToDexTopic, setLaunchedToDexTopic] = useState(DEFAULT_LAUNCHED_TO_DEX_TOPIC0);
   const [subDex, setSubDex] = useState(true);
-  const [status, setStatus] = useState<ConnStatus>("idle");
+  const [status, setStatus] = useState<ConnStatus>("connecting");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
   const ep = useEditableEndpoints(SLUG, "bsc");
   const epRef = useRef(ep);
   epRef.current = ep;
@@ -511,11 +511,23 @@ export function FlapBscPortalTokenCreatedListenDemo({
     saveFields();
     const addr = (fields.current.portal.trim() || DEFAULT_PORTAL).toLowerCase();
     if (!isAddr(addr)) {
+      wantRun.current = false;
+      try {
+        wsRef.current?.close();
+      } catch {
+        /* ignore */
+      }
       setStatus("error");
       return;
     }
     const ct = (fields.current.tokenCreatedTopic.trim() || DEFAULT_TOKEN_CREATED_TOPIC0).toLowerCase();
     if (!isTopic0(ct)) {
+      wantRun.current = false;
+      try {
+        wsRef.current?.close();
+      } catch {
+        /* ignore */
+      }
       setStatus("error");
       return;
     }
@@ -525,13 +537,18 @@ export function FlapBscPortalTokenCreatedListenDemo({
       if (isTopic0(dt)) send("eth_subscribe", ["logs", { address: addr, topics: [dt] }]);
     }
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    const ws = new WebSocket(epRef.current.wss);
+    const ws = openPublicWs(epRef.current.wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -544,9 +561,16 @@ export function FlapBscPortalTokenCreatedListenDemo({
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") return;
+      if (msg.id && msg.result && typeof msg.result === "string") {
+        setStatus("listening");
+        return;
+      }
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -569,7 +593,6 @@ export function FlapBscPortalTokenCreatedListenDemo({
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -806,7 +829,7 @@ export function FlapBscPortalTokenCreatedListenDemo({
       <AnonStreamLayout
         locale={locale}
         events={events}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         selectedId={selectedId}
         onSelect={onSelectCard}
         onPause={pause}

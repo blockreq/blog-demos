@@ -24,7 +24,8 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.blockreq.com wss://*.blockreq.com https://blockreq.com wss://blockreq.com",
+  // Wildcard + explicit public RPC hosts — some browsers fail `wss://*.blockreq.com` vs `wss://base-rpc.blockreq.com`.
+  "connect-src 'self' https://*.blockreq.com wss://*.blockreq.com https://blockreq.com wss://blockreq.com https://base-rpc.blockreq.com wss://base-rpc.blockreq.com https://bsc-rpc.blockreq.com wss://bsc-rpc.blockreq.com https://ethereum-rpc.blockreq.com wss://ethereum-rpc.blockreq.com https://robinhood-mainnet-rpc.blockreq.com wss://robinhood-mainnet-rpc.blockreq.com https://arbitrum-one-rpc.blockreq.com wss://arbitrum-one-rpc.blockreq.com https://cronos-rpc.blockreq.com wss://cronos-rpc.blockreq.com",
   "worker-src 'self' blob:",
   FRAME_ANCESTORS,
 ].join("; ");

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PUBLIC_ENDPOINTS,
+  normalizePublicHttpUrl,
+  normalizePublicWsUrl,
   type PublicEndpointKey,
 } from "@blockreq/rpc";
 
@@ -62,8 +64,8 @@ export function useEditableEndpoints(
 
   useEffect(() => {
     const stored = loadStored(slug, endpointKey);
-    const nextHttps = stored?.https || defaults.https;
-    const nextWss = stored?.wss || defaults.wss;
+    const nextHttps = normalizePublicHttpUrl(stored?.https || defaults.https) || defaults.https;
+    const nextWss = normalizePublicWsUrl(stored?.wss || defaults.wss) || defaults.wss;
     setHttpsState(nextHttps);
     setWssState(nextWss);
     setDraftHttps(nextHttps);
@@ -73,8 +75,8 @@ export function useEditableEndpoints(
   const dirty = draftHttps.trim() !== https || draftWss.trim() !== wss;
 
   const commit = useCallback(() => {
-    const nextHttps = draftHttps.trim() || defaults.https;
-    const nextWss = draftWss.trim() || defaults.wss;
+    const nextHttps = normalizePublicHttpUrl(draftHttps.trim() || defaults.https) || defaults.https;
+    const nextWss = normalizePublicWsUrl(draftWss.trim() || defaults.wss) || defaults.wss;
     setHttpsState(nextHttps);
     setWssState(nextWss);
     setDraftHttps(nextHttps);

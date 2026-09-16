@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -204,15 +205,14 @@ export function BucketRhcLaunchpadListenDemo({
   const [launchedTopic, setLaunchedTopic] = useState(DEFAULT_LAUNCHED_TOPIC0);
   const [graduatedTopic, setGraduatedTopic] = useState(DEFAULT_GRADUATED_TOPIC0);
   const [followToken, setFollowToken] = useState("");
-  const [status, setStatus] = useState<ConnStatus>("idle");
+  const [status, setStatus] = useState<ConnStatus>("connecting");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasHit, setHasHit] = useState(false);
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
   const ep = useEditableEndpoints(SLUG, "robinhood");
   const epRef = useRef(ep);
   epRef.current = ep;
@@ -418,6 +418,12 @@ export function BucketRhcLaunchpadListenDemo({
     saveFields();
     const factory = (fields.current.launchFactory.trim() || DEFAULT_LAUNCH_FACTORY).toLowerCase();
     if (!isAddr(factory)) {
+      wantRun.current = false;
+      try {
+        wsRef.current?.close();
+      } catch {
+        /* ignore */
+      }
       setStatus("error");
       return;
     }
@@ -434,13 +440,18 @@ export function BucketRhcLaunchpadListenDemo({
       }
     }
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
     if (!wantRun.current) return;
     setStatus("connecting");
-    const ws = new WebSocket(epRef.current.wss);
+    const ws = openPublicWs(epRef.current.wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -453,9 +464,16 @@ export function BucketRhcLaunchpadListenDemo({
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") return;
+      if (msg.id && msg.result && typeof msg.result === "string") {
+        setStatus("listening");
+        return;
+      }
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -478,7 +496,6 @@ export function BucketRhcLaunchpadListenDemo({
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -520,7 +537,7 @@ export function BucketRhcLaunchpadListenDemo({
   const onSelectCard = useCallback(
     (id: string) => {
       setSelectedId(id);
-      const pool = events.length ? events : history.events.length ? history.events : seedEvents;
+      const pool = events.length ? events : history.events.length ? history.events : demoHits ? seedEvents : [];
       const ev = pool.find((e) => e.id === id);
       if (ev?.address && isAddr(ev.address)) {
         const tok = ev.address.toLowerCase();
@@ -530,7 +547,7 @@ export function BucketRhcLaunchpadListenDemo({
         reconnectIfRunning();
       }
     },
-    [events, history.events, seedEvents, reconnectIfRunning]
+    [events, history.events, seedEvents, reconnectIfRunning, demoHits]
   );
 
   useEffect(() => {
@@ -723,7 +740,7 @@ export function BucketRhcLaunchpadListenDemo({
       <AnonStreamLayout
         locale={locale}
         events={events}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         selectedId={selectedId}
         onSelect={onSelectCard}
         onPause={pause}

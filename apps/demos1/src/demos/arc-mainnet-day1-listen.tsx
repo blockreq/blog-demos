@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { openPublicWs } from "../lib/public-ws";
 import { t, demoBlogUrl, demoSiteUrl, L, type Locale } from "@blockreq/i18n";
 import {
   Input,
@@ -70,8 +71,7 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
   const [listeningSince, setListeningSince] = useState<number | null>(null);
   const [lastPulseAt, setLastPulseAt] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(true);
-  const catalogDemoHits = !!getDemo(SLUG)?.demoHits;
-  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits({ catalogFlag: catalogDemoHits });
+  const { enabled: demoHits, setEnabled: setDemoHits } = useDemoHits();
   const ep = useEditableEndpoints(SLUG, "arc");
   const epRef = useRef(ep);
   epRef.current = ep;
@@ -249,7 +249,6 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
       send("eth_subscribe", ["logs", filt]);
     }
     send("eth_subscribe", ["newHeads"]);
-    setStatus("listening");
   }, []);
 
   const connect = useCallback(() => {
@@ -261,7 +260,13 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
       return;
     }
     setStatus("connecting");
-    const ws = new WebSocket(wss);
+    const ws = openPublicWs(wss);
+    if (!ws) {
+      if (!wantRun.current) return;
+      setTimeout(connect, backoffMs.current);
+      backoffMs.current = Math.min(backoffMs.current * 2, 30000);
+      return;
+    }
     wsRef.current = ws;
     ws.onopen = () => {
       backoffMs.current = 1000;
@@ -274,9 +279,16 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
       } catch {
         return;
       }
-      if (msg.id && msg.result && typeof msg.result === "string") return;
+      if (msg.id && msg.result && typeof msg.result === "string") {
+        setStatus("listening");
+        return;
+      }
       if (msg.id && msg.error) {
-        setStatus("error");
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -299,7 +311,6 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
       backoffMs.current = Math.min(backoffMs.current * 2, 30000);
     };
     ws.onerror = () => {
-      setStatus("error");
       try {
         ws.close();
       } catch {
@@ -463,7 +474,7 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
       <AnonStreamLayout
         locale={locale}
         events={events}
-        seedEvents={seedEvents}
+        seedEvents={demoHits ? seedEvents : []}
         selectedId={selectedId}
         onSelect={setSelectedId}
         onPause={pause}

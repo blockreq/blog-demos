@@ -88,6 +88,26 @@ export const PUBLIC_ENDPOINTS = {
 
 export type PublicEndpointKey = keyof typeof PUBLIC_ENDPOINTS;
 
+/** Coerce pasted HTTPS RPC URLs to WSS so the browser can subscribe. */
+export function normalizePublicWsUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return "";
+  if (u.startsWith("https://")) return `wss://${u.slice("https://".length)}`;
+  if (u.startsWith("http://")) return `ws://${u.slice("http://".length)}`;
+  if (u.startsWith("wss://") || u.startsWith("ws://")) return u;
+  return `wss://${u.replace(/^\/+/, "")}`;
+}
+
+/** Coerce pasted WSS URLs to HTTPS for eth_getLogs / eth_blockNumber. */
+export function normalizePublicHttpUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return "";
+  if (u.startsWith("wss://")) return `https://${u.slice("wss://".length)}`;
+  if (u.startsWith("ws://")) return `http://${u.slice("ws://".length)}`;
+  if (u.startsWith("https://") || u.startsWith("http://")) return u;
+  return `https://${u.replace(/^\/+/, "")}`;
+}
+
 /** Assert we are in a browser (demos must not run RPC on the Worker). */
 export function assertBrowserOnly(label = "@blockreq/rpc") {
   if (typeof window === "undefined" || typeof WebSocket === "undefined") {
@@ -190,7 +210,7 @@ export class BrowserPublicWs {
 
   constructor(url: string) {
     assertBrowserOnly("BrowserPublicWs");
-    this.url = url;
+    this.url = normalizePublicWsUrl(url);
   }
 
   start() {
@@ -217,7 +237,21 @@ export class BrowserPublicWs {
 
   private connect() {
     if (!this.wantRun) return;
-    const ws = new WebSocket(this.url);
+    const url = normalizePublicWsUrl(this.url);
+    if (!url) {
+      this.onError?.("empty wss");
+      return;
+    }
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      this.onError?.(e instanceof Error ? e.message : String(e));
+      if (!this.wantRun) return;
+      window.setTimeout(() => this.connect(), this.backoffMs);
+      this.backoffMs = Math.min(this.backoffMs * 2, 30000);
+      return;
+    }
     this.ws = ws;
     ws.onopen = () => {
       this.backoffMs = 1000;
@@ -237,6 +271,11 @@ export class BrowserPublicWs {
       if (msg.id && msg.error) {
         const err = msg.error as { message?: string };
         this.onRpcError?.(err.message || JSON.stringify(msg.error));
+        try {
+          ws.close();
+        } catch {
+          /* ignore */
+        }
         return;
       }
       if (msg.method !== "eth_subscription") return;
@@ -287,12 +326,14 @@ export type RecentLogsResult = RecentLogsOk | RecentLogsErr;
 async function jsonRpc<T>(
   https: string,
   method: string,
-  params: unknown[]
+  params: unknown[],
+  signal?: AbortSignal
 ): Promise<{ result?: T; error?: { message?: string; code?: number } }> {
   const res = await fetch(https, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal,
   });
   if (!res.ok) {
     return { error: { message: `HTTP ${res.status}`, code: res.status } };
@@ -318,12 +359,17 @@ export async function fetchPublicRecentLogs(opts: {
     return { ok: false, error: e instanceof Error ? e.message : String(e), reason: "browser" };
   }
 
+  const https = normalizePublicHttpUrl(opts.https);
+  if (!https) {
+    return { ok: false, error: "empty https", reason: "rpc" };
+  }
+
   const windowBlocks = Math.max(
     1,
     Math.min(opts.windowBlocks ?? PUBLIC_GETLOGS_SAFE_WINDOW, PUBLIC_GETLOGS_SAFE_WINDOW)
   );
 
-  const tipRes = await jsonRpc<string>(opts.https, "eth_blockNumber", []);
+  const tipRes = await jsonRpc<string>(https, "eth_blockNumber", [], opts.signal);
   if (opts.signal?.aborted) {
     return { ok: false, error: "aborted", reason: "rpc" };
   }
@@ -351,7 +397,7 @@ export async function fetchPublicRecentLogs(opts: {
     filter.address = opts.address.toLowerCase();
   }
 
-  const logsRes = await jsonRpc<JsonRpcLog[]>(opts.https, "eth_getLogs", [filter]);
+  const logsRes = await jsonRpc<JsonRpcLog[]>(https, "eth_getLogs", [filter], opts.signal);
   if (opts.signal?.aborted) {
     return { ok: false, error: "aborted", reason: "rpc" };
   }

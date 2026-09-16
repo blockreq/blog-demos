@@ -22,7 +22,7 @@ export function OpenWaitLayout({
   status,
   hasHit,
   events,
-  seedEvents,
+  seedEvents = [],
   onPause,
   onResume,
   running,
@@ -52,7 +52,8 @@ export function OpenWaitLayout({
   status: ConnStatus;
   hasHit: boolean;
   events: FeedEvent[];
-  seedEvents: FeedEvent[];
+  /** Fixture rows only when ?demoHits=1. Default empty. */
+  seedEvents?: FeedEvent[];
   onPause: () => void;
   onResume: () => void;
   running: boolean;
