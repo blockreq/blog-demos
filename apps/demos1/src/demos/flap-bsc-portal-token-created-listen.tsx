@@ -220,7 +220,7 @@ function mapTokenCreatedLogs(logs: JsonRpcLog[], locale: Locale): FeedEvent[] {
         id: `hist-${log.transactionHash}-${log.logIndex}-${i}`,
         kind: t(locale, "flap.kindHistDex"),
         tags: ["HIST", "BSC", "FLAP", "LAUNCHEDTODEX", "pad:flap", "DEX"],
-        title: decoded.symbol || shortAddr(decoded.token) || "—",
+        title: shortAddr(decoded.token) || "—",
         body: `pad:flap · token ${shortAddr(decoded.token)} · pool ${shortAddr(decoded.pool)} · amount ${compactSupply(decoded.amount) || "—"} · eth ${compactWei(decoded.eth) || "—"} BNB · #${bn}`,
         address: decoded.token || undefined,
         block: bn,
