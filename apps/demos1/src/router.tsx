@@ -56,6 +56,7 @@ import { CrossrateRhcCurrencyLaunchListenDemo } from "./demos/crossrate-rhc-curr
 import { BasestonkAdvancedLauncherListenDemo } from "./demos/basestonk-advanced-launcher-listen";
 import { MessierRwaP2pVaultListenDemo } from "./demos/messier-rwa-p2p-vault-listen";
 import { StonksExchangeBaseLauncherListenDemo } from "./demos/stonks-exchange-base-launcher-listen";
+import { FlapBscPortalTokenCreatedListenDemo } from "./demos/flap-bsc-portal-token-created-listen";
 
 const ACCENT: Record<"eth" | "sol" | "bnb", string> = {
   eth: "border-[rgba(85,124,242,0.55)]",
@@ -331,6 +332,9 @@ function DemoPage() {
       )}
       {slug === "stonks-exchange-base-launcher-listen" && (
         <StonksExchangeBaseLauncherListenDemo locale={locale} />
+      )}
+      {slug === "flap-bsc-portal-token-created-listen" && (
+        <FlapBscPortalTokenCreatedListenDemo locale={locale} />
       )}
       <DemoCta
         title={t(locale, meta.titleKey)}

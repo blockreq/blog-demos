@@ -1136,3 +1136,82 @@ export function buildStonksExchangeBaseLauncherFixtures(locale: Locale, n = 5): 
   });
 }
 
+export function buildFlapBscPortalTokenCreatedFixtures(locale: Locale, n = 5): FeedEvent[] {
+  const now = Date.now();
+  const sampleCreatedTx =
+    "0xbd7c42cb2f39558c15f9714b34b74c2f70213984a3b564954aa878a4f2ef9fac";
+  const sampleDexTx =
+    "0x3ba8fc6e2be1b747b0094e1df69309c65295355606e3af8c92a5239644b6b1e3";
+  const hotPost = "https://x.com/bitecong/status/2100281832634003543";
+  const docs = "https://docs.flap.sh/flap/developers/deployed-contract-addresses";
+  const created = {
+    token: "0xb635e0346a50e57c52652778a07c7a4ddf7d7777",
+    creator: "0xf2e2f0ae68ca7214181ec814b75b24658c4bf1ee",
+    nonce: "3151500",
+    name: "Dogecoin",
+    symbol: "DOGE",
+    meta: "bafkreibh3qxg36pwye2uibqgkgtxqzpecqaxhabi3cu3cfxdjsek33mdrq",
+    tx: sampleCreatedTx,
+    block: 122_268_629,
+  };
+  const dex = {
+    token: "0x2206d69ef31b80fbe1de057c9037cc8e5f2b7777",
+    creator: "0xbd86bde99fd1a9e59a09ad788c920df59aab0225",
+    nonce: "3151433",
+    name: "币安时间",
+    symbol: "币安时间",
+    pool: "0x5c39d3f541186e249af77ce12a2fc1cdaa7ecfeb",
+    tx: sampleDexTx,
+    block: 122_265_999,
+  };
+  return Array.from({ length: n }, (_, i) => {
+    const useDex = i % 2 === 1;
+    const token = i < 2 ? (useDex ? dex.token : created.token) : fakeAddr("flaptok" + i);
+    const tx = i < 2 ? (useDex ? dex.tx : created.tx) : fakeAddr(`txflap${i}`);
+    if (useDex) {
+      return {
+        id: rid(),
+        kind: t(locale, "flap.kindDex"),
+        tags: ["BSC", "FLAP", "LAUNCHEDTODEX", "pad:flap", "DEX"],
+        title: dex.symbol,
+        body: `pad:flap · token ${short(token)} · pool ${short(dex.pool)} · amount 200.00M · eth 1.20M BNB · creator ${short(dex.creator)} · nonce ${dex.nonce} · #${dex.block}`,
+        address: token.toLowerCase(),
+        block: dex.block,
+        tx,
+        chain: "BSC",
+        at: now - i * 1200,
+        metric: "1.20M",
+        metricLabel: t(locale, "flap.metricBnb"),
+        metric2: short(dex.pool),
+        metric2Label: t(locale, "flap.metricPool"),
+        links: [
+          { label: t(locale, "flap.docs"), href: docs },
+          { label: t(locale, "flap.bscscan"), href: `https://bscscan.com/tx/${tx}` },
+          { label: t(locale, "flap.hotPost"), href: hotPost },
+        ],
+      };
+    }
+    return {
+      id: rid(),
+      kind: t(locale, "flap.kindCreated"),
+      tags: ["BSC", "FLAP", "TOKENCREATED", "pad:flap", created.symbol, "RADAR"],
+      title: created.symbol,
+      body: `pad:flap · token ${short(token)} · creator ${short(created.creator)} · nonce ${created.nonce} · name ${created.name} · symbol ${created.symbol} · meta ${created.meta} · #${created.block}`,
+      address: token.toLowerCase(),
+      block: created.block,
+      tx,
+      chain: "BSC",
+      at: now - i * 1200,
+      metric: created.symbol,
+      metricLabel: t(locale, "flap.metricSymbol"),
+      metric2: created.nonce,
+      metric2Label: t(locale, "flap.metricNonce"),
+      links: [
+        { label: t(locale, "flap.docs"), href: docs },
+        { label: t(locale, "flap.bscscan"), href: `https://bscscan.com/tx/${tx}` },
+        { label: t(locale, "flap.hotPost"), href: hotPost },
+      ],
+    };
+  });
+}
+
