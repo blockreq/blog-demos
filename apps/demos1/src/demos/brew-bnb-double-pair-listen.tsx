@@ -31,8 +31,9 @@ import {
 const TOPIC_PAIR =
   "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
 /**
- * Editable sample — PancakeSwap V2 factory on BSC until 运营 provides a verified Brew launch factory.
- * Do not invent a BREW_FACTORY address. Pancake volume needs a BSC-safe eth_getLogs window (64).
+ * Editable PancakeSwap V2 sample on BSC — not an official Brew launch factory.
+ * 运营 confirmed no dedicated BREW_FACTORY exists; do not invent one.
+ * Pancake volume needs a BSC-safe eth_getLogs window (64).
  */
 const DEFAULT_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const DEFAULT_CAP = "69000";

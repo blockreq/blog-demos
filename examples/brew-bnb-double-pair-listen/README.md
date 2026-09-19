@@ -11,7 +11,7 @@ On each hit:
 - **Twin ready** — same token collected ≥2 pools (same-cap twin set)
 - **Quote chip** — optional QUOTE_HINT match (WBNB / USDT / …)
 
-Factory / CAP_USD / quote hints live in UI fields (demo stand-in for `BREW_FACTORY` / `CAP_USD` / `QUOTE_HINT` env). Default factory = PancakeSwap V2 on BSC (sample only until a **verified** Brew launch factory is provided — do not invent one). Recent-history `eth_getLogs` starts at a BSC-safe 64-block window because Pancake volume + public rate limits reject large ranges.
+Factory / CAP_USD / quote hints live in UI fields (demo stand-in for factory / `CAP_USD` / `QUOTE_HINT` env). Default factory = PancakeSwap V2 on BSC — an **editable sample**, not an official Brew launch factory. No dedicated Brew factory is published; do not invent one. Recent-history `eth_getLogs` starts at a BSC-safe 64-block window because Pancake volume + public rate limits reject large ranges.
 
 ## Endpoints (public only)
 
