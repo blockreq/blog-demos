@@ -108,6 +108,9 @@ export function mapInitializeLogs(
   });
 }
 
+/** One extra eth_getLogs pass after a rate-limit fail so recording can recover without reload. */
+export const HISTORY_RATE_LIMIT_REFETCH_MS = 6000;
+
 export function useRecentHistory(opts: {
   locale: Locale;
   https: string;
@@ -133,25 +136,10 @@ export function useRecentHistory(opts: {
       return;
     }
     const ac = new AbortController();
-    setState({ status: "loading", events: [], reason: "" });
-    (async () => {
-      const result = await fetchPublicRecentLogs({
-        https,
-        address: address?.trim() || undefined,
-        topics,
-        windowBlocks,
-        chainHint,
-        signal: ac.signal,
-        onRateLimitRetry: () => {
-          if (ac.signal.aborted) return;
-          setState({
-            status: "loading",
-            events: [],
-            reason: t(locale, "history.retryRateLimit"),
-          });
-        },
-      });
-      if (ac.signal.aborted) return;
+    let refetchTimer: ReturnType<typeof setTimeout> | undefined;
+    let autoRefetchUsed = false;
+
+    const applyResult = (result: RecentLogsResult) => {
       if (!result.ok) {
         setState({
           status: "error",
@@ -180,7 +168,49 @@ export function useRecentHistory(opts: {
         toBlock: result.toBlock,
         windowBlocks: result.windowBlocks,
       });
-    })().catch((e) => {
+    };
+
+    const run = async (isAutoRefetch: boolean) => {
+      setState({
+        status: "loading",
+        events: [],
+        reason: isAutoRefetch ? t(locale, "history.retryRateLimit") : "",
+      });
+      const result = await fetchPublicRecentLogs({
+        https,
+        address: address?.trim() || undefined,
+        topics,
+        windowBlocks,
+        chainHint,
+        signal: ac.signal,
+        onRateLimitRetry: () => {
+          if (ac.signal.aborted) return;
+          setState({
+            status: "loading",
+            events: [],
+            reason: t(locale, "history.retryRateLimit"),
+          });
+        },
+      });
+      if (ac.signal.aborted) return;
+      applyResult(result);
+      if (!result.ok && result.reason === "rateLimit" && !autoRefetchUsed) {
+        autoRefetchUsed = true;
+        refetchTimer = setTimeout(() => {
+          if (ac.signal.aborted) return;
+          void run(true).catch((e) => {
+            if (ac.signal.aborted) return;
+            setState({
+              status: "error",
+              events: [],
+              reason: e instanceof Error ? e.message : String(e),
+            });
+          });
+        }, HISTORY_RATE_LIMIT_REFETCH_MS);
+      }
+    };
+
+    void run(false).catch((e) => {
       if (ac.signal.aborted) return;
       setState({
         status: "error",
@@ -188,7 +218,10 @@ export function useRecentHistory(opts: {
         reason: e instanceof Error ? e.message : String(e),
       });
     });
-    return () => ac.abort();
+    return () => {
+      ac.abort();
+      if (refetchTimer) clearTimeout(refetchTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- map is stable enough per call site; topicKey covers topics
   }, [locale, https, address, topicKey, enabled, windowBlocks, chainHint]);
 

@@ -313,10 +313,27 @@ export const PUBLIC_GETLOGS_BSC_SAFE_WINDOW = 64;
 /** Smallest shrink step before giving up (900→512→128→64→32→16). */
 export const PUBLIC_GETLOGS_MIN_WINDOW = 16;
 
-/** Total eth_getLogs attempts per window on JSON-RPC -32005 / rate-limit. */
-export const RATE_LIMIT_MAX_ATTEMPTS = 3;
-/** Short backoff between rate-limit retries. */
-export const RATE_LIMIT_BACKOFF_MS = 400;
+/**
+ * Total eth_blockNumber / eth_getLogs attempts per window on JSON-RPC -32005 / rate-limit.
+ * Public BSC often needs several multi-second waits; 3×400ms is not enough.
+ */
+export const RATE_LIMIT_MAX_ATTEMPTS = 8;
+/** Base delay for the first rate-limit retry; later waits double (exponential). */
+export const RATE_LIMIT_BACKOFF_MS = 2000;
+export const RATE_LIMIT_BACKOFF_FACTOR = 2;
+/** Cap each wait — public BSC probes needed multi-second gaps before tip/getLogs succeeded. */
+export const RATE_LIMIT_BACKOFF_CAP_MS = 16_000;
+
+/** Exponential delay for rate-limit retry `attempt` (1-based). Base 0 → 0 (tests). */
+export function rateLimitBackoffDelay(
+  attempt: number,
+  baseMs = RATE_LIMIT_BACKOFF_MS,
+  factor = RATE_LIMIT_BACKOFF_FACTOR,
+  capMs = RATE_LIMIT_BACKOFF_CAP_MS
+): number {
+  if (!(baseMs > 0) || attempt < 1) return 0;
+  return Math.min(baseMs * factor ** (attempt - 1), capMs);
+}
 
 /** Optional chain hint so callers can start at a tighter public window. */
 export type PublicLogsChainHint = "bsc";
@@ -432,7 +449,8 @@ export type RateLimitRetryInfo = {
 /**
  * Browser-only eth_getLogs against BlockReq public HTTPS.
  * Respects the public ~1024-block recent window (no Worker proxy).
- * Rate-limit (-32005) retries with short backoff; result-size errors shrink the window.
+ * Rate-limit (-32005 / HTTP 429) retries with exponential backoff;
+ * result-size errors shrink the window.
  */
 export async function fetchPublicRecentLogs(opts: {
   https: string;
@@ -445,8 +463,10 @@ export async function fetchPublicRecentLogs(opts: {
   signal?: AbortSignal;
   /** Total attempts per window on rate-limit (default RATE_LIMIT_MAX_ATTEMPTS). */
   rateLimitAttempts?: number;
-  /** Backoff between rate-limit retries (default RATE_LIMIT_BACKOFF_MS). */
+  /** Base backoff (ms) for exponential rate-limit retries (default RATE_LIMIT_BACKOFF_MS). */
   rateLimitBackoffMs?: number;
+  /** Cap for exponential backoff (default RATE_LIMIT_BACKOFF_CAP_MS). */
+  rateLimitBackoffCapMs?: number;
   /** Fired before sleeping for a rate-limit retry (UI: 限流重试中). */
   onRateLimitRetry?: (info: RateLimitRetryInfo) => void;
 }): Promise<RecentLogsResult> {
@@ -464,6 +484,8 @@ export async function fetchPublicRecentLogs(opts: {
   let windowBlocks = initialGetLogsWindow(opts);
   const maxRateAttempts = Math.max(1, opts.rateLimitAttempts ?? RATE_LIMIT_MAX_ATTEMPTS);
   const backoffMs = opts.rateLimitBackoffMs ?? RATE_LIMIT_BACKOFF_MS;
+  const backoffCapMs = opts.rateLimitBackoffCapMs ?? RATE_LIMIT_BACKOFF_CAP_MS;
+  /** Separate from getLogs so a tip cooldown does not starve eth_getLogs. */
   let tipRateAttempts = 0;
   let logsRateAttempts = 0;
 
@@ -487,7 +509,10 @@ export async function fetchPublicRecentLogs(opts: {
           windowBlocks,
         });
         try {
-          await sleep(backoffMs, opts.signal);
+          await sleep(
+            rateLimitBackoffDelay(tipRateAttempts, backoffMs, RATE_LIMIT_BACKOFF_FACTOR, backoffCapMs),
+            opts.signal
+          );
         } catch {
           return { ok: false, error: "aborted", reason: "rpc" };
         }
@@ -501,6 +526,8 @@ export async function fetchPublicRecentLogs(opts: {
     }
 
     const toBlock = parseInt(tipRes.result, 16);
+    // Fresh tip budget on the next loop (getLogs still has its own counter).
+    tipRateAttempts = 0;
     const fromBlock = Math.max(0, toBlock - windowBlocks);
     const filter: {
       fromBlock: string;
@@ -532,7 +559,10 @@ export async function fetchPublicRecentLogs(opts: {
             windowBlocks,
           });
           try {
-            await sleep(backoffMs, opts.signal);
+            await sleep(
+              rateLimitBackoffDelay(logsRateAttempts, backoffMs, RATE_LIMIT_BACKOFF_FACTOR, backoffCapMs),
+              opts.signal
+            );
           } catch {
             return { ok: false, error: "aborted", reason: "rpc" };
           }

@@ -7,6 +7,10 @@ import {
   nextGetLogsWindow,
   PUBLIC_GETLOGS_BSC_SAFE_WINDOW,
   PUBLIC_GETLOGS_SAFE_WINDOW,
+  RATE_LIMIT_BACKOFF_CAP_MS,
+  RATE_LIMIT_BACKOFF_MS,
+  RATE_LIMIT_MAX_ATTEMPTS,
+  rateLimitBackoffDelay,
 } from "./index.ts";
 
 const TIP = "0x1000"; // 4096
@@ -40,6 +44,21 @@ describe("getLogs window helpers", () => {
     assert.equal(classifyLogRpcError(-32005, "Rate limit reached"), "rateLimit");
     assert.equal(classifyLogRpcError(429, "HTTP 429"), "rateLimit");
     assert.equal(classifyLogRpcError(undefined, "rate limit"), "rateLimit");
+    assert.equal(classifyLogRpcError(429, "Too Many Requests"), "rateLimit");
+  });
+
+  it("uses exponential backoff: 2s × 2^(n-1) capped at 16s; base 0 stays 0", () => {
+    assert.equal(RATE_LIMIT_MAX_ATTEMPTS, 8);
+    assert.equal(RATE_LIMIT_BACKOFF_MS, 2000);
+    assert.equal(RATE_LIMIT_BACKOFF_CAP_MS, 16_000);
+    assert.equal(rateLimitBackoffDelay(1), 2000);
+    assert.equal(rateLimitBackoffDelay(2), 4000);
+    assert.equal(rateLimitBackoffDelay(3), 8000);
+    assert.equal(rateLimitBackoffDelay(4), 16_000);
+    assert.equal(rateLimitBackoffDelay(5), 16_000);
+    assert.equal(rateLimitBackoffDelay(8), 16_000);
+    assert.equal(rateLimitBackoffDelay(1, 0), 0);
+    assert.equal(rateLimitBackoffDelay(3, 0), 0);
   });
 
   it("classifies too-many-results / size / query-limit as window", () => {
@@ -147,6 +166,97 @@ describe("fetchPublicRecentLogs", () => {
     assert.equal(result.reason, "rateLimit");
     assert.match(result.error, /rate limit/i);
     assert.equal(getLogsCalls, 3);
+  });
+
+  it("defaults to 8 getLogs attempts before rateLimit fail", async () => {
+    let getLogsCalls = 0;
+    globalThis.fetch = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || "{}")) as RpcBody;
+      if (body.method === "eth_blockNumber") {
+        return jsonRes({ jsonrpc: "2.0", id: 1, result: TIP });
+      }
+      getLogsCalls += 1;
+      return jsonRes({
+        jsonrpc: "2.0",
+        id: 1,
+        error: { code: -32005, message: "Rate limit reached" },
+      });
+    }) as typeof fetch;
+
+    const result = await fetchPublicRecentLogs({
+      https: "https://example.invalid/rpc",
+      topics: ["0x01"],
+      windowBlocks: 64,
+      rateLimitBackoffMs: 0,
+    });
+
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.reason, "rateLimit");
+    assert.equal(getLogsCalls, RATE_LIMIT_MAX_ATTEMPTS);
+  });
+
+  it("retries HTTP 429 from jsonRpc (!res.ok → code 429) then succeeds", async () => {
+    let getLogsCalls = 0;
+    globalThis.fetch = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || "{}")) as RpcBody;
+      if (body.method === "eth_blockNumber") {
+        return jsonRes({ jsonrpc: "2.0", id: 1, result: TIP });
+      }
+      getLogsCalls += 1;
+      if (getLogsCalls < 2) {
+        return new Response("Too Many Requests", { status: 429 });
+      }
+      return jsonRes({ jsonrpc: "2.0", id: 1, result: [SAMPLE_LOG] });
+    }) as typeof fetch;
+
+    const result = await fetchPublicRecentLogs({
+      https: "https://example.invalid/rpc",
+      topics: ["0x01"],
+      windowBlocks: 64,
+      rateLimitBackoffMs: 0,
+    });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(getLogsCalls, 2);
+    assert.equal(result.logs.length, 1);
+  });
+
+  it("gives getLogs a full attempt budget after tip rate-limit then success", async () => {
+    let tipCalls = 0;
+    let getLogsCalls = 0;
+    globalThis.fetch = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || "{}")) as RpcBody;
+      if (body.method === "eth_blockNumber") {
+        tipCalls += 1;
+        if (tipCalls <= 2) {
+          return new Response("rate limited", { status: 429 });
+        }
+        return jsonRes({ jsonrpc: "2.0", id: 1, result: TIP });
+      }
+      getLogsCalls += 1;
+      return jsonRes({
+        jsonrpc: "2.0",
+        id: 1,
+        error: { code: -32005, message: "Rate limit reached" },
+      });
+    }) as typeof fetch;
+
+    const result = await fetchPublicRecentLogs({
+      https: "https://example.invalid/rpc",
+      topics: ["0x01"],
+      windowBlocks: 64,
+      rateLimitAttempts: 3,
+      rateLimitBackoffMs: 0,
+    });
+
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.reason, "rateLimit");
+    assert.equal(getLogsCalls, 3, "getLogs must not inherit tip's spent attempts");
+    // 2 failing tips + 3 successful tips (one per getLogs attempt)
+    assert.equal(tipCalls, 5);
   });
 
   it("shrinks too-many-results through 32 then 16", async () => {
