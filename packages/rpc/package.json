@@ -7,6 +7,9 @@
   "dependencies": {
     "viem": "^2.31.0"
   },
-  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types --test src/fetch-public-recent-logs.test.ts"
+  },
   "devDependencies": { "typescript": "^5.8.3" }
 }

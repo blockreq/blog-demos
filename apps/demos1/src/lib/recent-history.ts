@@ -8,6 +8,7 @@ import {
   wordAddr,
   type JsonRpcLog,
   type LogsTopic,
+  type PublicLogsChainHint,
   type RecentLogsResult,
 } from "@blockreq/rpc";
 import type { FeedEvent } from "../components/feed-types";
@@ -35,6 +36,7 @@ function emptyReason(
   if (!result.ok) {
     if (result.reason === "window") return t(locale, "history.errWindow");
     if (result.reason === "browser") return t(locale, "history.errBrowser");
+    if (result.reason === "rateLimit") return t(locale, "history.errRateLimit");
     return t(locale, "history.errRpc");
   }
   return t(locale, "history.emptyWindow").replace("{n}", "900");
@@ -113,8 +115,10 @@ export function useRecentHistory(opts: {
   topics: LogsTopic[];
   map: (logs: JsonRpcLog[]) => FeedEvent[];
   enabled?: boolean;
+  windowBlocks?: number;
+  chainHint?: PublicLogsChainHint;
 }): HistoryState {
-  const { locale, https, address, topics, map, enabled = true } = opts;
+  const { locale, https, address, topics, map, enabled = true, windowBlocks, chainHint } = opts;
   const [state, setState] = useState<HistoryState>({
     status: "loading",
     events: [],
@@ -135,7 +139,17 @@ export function useRecentHistory(opts: {
         https,
         address: address?.trim() || undefined,
         topics,
+        windowBlocks,
+        chainHint,
         signal: ac.signal,
+        onRateLimitRetry: () => {
+          if (ac.signal.aborted) return;
+          setState({
+            status: "loading",
+            events: [],
+            reason: t(locale, "history.retryRateLimit"),
+          });
+        },
       });
       if (ac.signal.aborted) return;
       if (!result.ok) {
@@ -176,7 +190,7 @@ export function useRecentHistory(opts: {
     });
     return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- map is stable enough per call site; topicKey covers topics
-  }, [locale, https, address, topicKey, enabled]);
+  }, [locale, https, address, topicKey, enabled, windowBlocks, chainHint]);
 
   return state;
 }

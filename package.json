@@ -7,6 +7,7 @@
     "dev": "pnpm --filter @blockreq/demos1 dev",
     "preview": "pnpm --filter @blockreq/demos1 preview",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @blockreq/rpc test",
     "dev:brew-bnb-double-pair-listen": "pnpm --filter @blockreq/ex-brew-bnb-double-pair-listen dev",
     "dev:arbitrum-rwa-flow-listen": "pnpm --filter @blockreq/ex-arbitrum-rwa-flow-listen dev",
     "build:examples-brew-arb": "pnpm --filter @blockreq/ex-brew-bnb-double-pair-listen --filter @blockreq/ex-arbitrum-rwa-flow-listen build",

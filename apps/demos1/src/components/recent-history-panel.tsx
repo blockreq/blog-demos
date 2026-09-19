@@ -110,7 +110,7 @@ export function RecentHistoryPanel({
           </Table>
           <FeedSkeletonRows rows={dense ? 3 : 4} dense={dense} />
           <p className="px-3 py-2 font-mono text-[11px] text-[var(--color-muted-foreground)]">
-            {t(locale, "history.loading")}
+            {history.reason || t(locale, "history.loading")}
           </p>
         </div>
       ) : showEmpty ? (
