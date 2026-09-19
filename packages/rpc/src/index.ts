@@ -305,6 +305,21 @@ export class BrowserPublicWs {
 export const PUBLIC_GETLOGS_MAX_BLOCKS = 1024;
 /** Safe default window — tip can move between eth_blockNumber and eth_getLogs. */
 export const PUBLIC_GETLOGS_SAFE_WINDOW = 900;
+/**
+ * Known-safe eth_getLogs lookback on busy public BSC (Pancake-volume factories).
+ * Probe: W=64 can succeed where 900-block windows + rate-limit fail immediately.
+ */
+export const PUBLIC_GETLOGS_BSC_SAFE_WINDOW = 64;
+/** Smallest shrink step before giving up (900→512→128→64→32→16). */
+export const PUBLIC_GETLOGS_MIN_WINDOW = 16;
+
+/** Total eth_getLogs attempts per window on JSON-RPC -32005 / rate-limit. */
+export const RATE_LIMIT_MAX_ATTEMPTS = 3;
+/** Short backoff between rate-limit retries. */
+export const RATE_LIMIT_BACKOFF_MS = 400;
+
+/** Optional chain hint so callers can start at a tighter public window. */
+export type PublicLogsChainHint = "bsc";
 
 export type RecentLogsOk = {
   ok: true;
@@ -318,7 +333,7 @@ export type RecentLogsErr = {
   ok: false;
   error: string;
   /** Machine-ish reason for UI empty-state copy */
-  reason: "window" | "rpc" | "empty" | "browser";
+  reason: "window" | "rpc" | "empty" | "browser" | "rateLimit";
 };
 
 export type RecentLogsResult = RecentLogsOk | RecentLogsErr;
@@ -341,9 +356,83 @@ async function jsonRpc<T>(
   return (await res.json()) as { result?: T; error?: { message?: string; code?: number } };
 }
 
+/** JSON-RPC -32005 / HTTP 429 / "Rate limit reached" — retry, do not shrink. */
+export function isRateLimitRpcError(code?: number, message?: string): boolean {
+  if (code === -32005 || code === 429) return true;
+  const msg = message || "";
+  return /rate\s*limit|ratelimit|too many requests|\b429\b/i.test(msg);
+}
+
+/**
+ * Archive / 1024-block / "too many results" / response-size / query-limit —
+ * shrink the lookback window and retry.
+ */
+export function isWindowLimitRpcError(code?: number, message?: string): boolean {
+  if (code === -32014) return true;
+  const msg = message || "";
+  return /1024|recent blocks|archive|cannot serve this request|too many (?:results|logs)|query returned more than|response size|query (?:timeout|limit)|block range|try with this block range|eth_getLogs is limited|exceed(?:s|ed)?(?: max)? (?:query |result )?limit|more than \d+ (?:results|logs)/i.test(
+    msg
+  );
+}
+
+export function classifyLogRpcError(
+  code?: number,
+  message?: string
+): "rateLimit" | "window" | "rpc" {
+  if (isRateLimitRpcError(code, message)) return "rateLimit";
+  if (isWindowLimitRpcError(code, message)) return "window";
+  return "rpc";
+}
+
+/** Shrink ladder: 900→512→128→64→32→16. */
+export function nextGetLogsWindow(windowBlocks: number): number {
+  if (windowBlocks > 512) return 512;
+  if (windowBlocks > 128) return 128;
+  if (windowBlocks > 64) return 64;
+  if (windowBlocks > 32) return 32;
+  if (windowBlocks > PUBLIC_GETLOGS_MIN_WINDOW) return PUBLIC_GETLOGS_MIN_WINDOW;
+  return 0;
+}
+
+export function initialGetLogsWindow(opts: {
+  windowBlocks?: number;
+  chainHint?: PublicLogsChainHint;
+}): number {
+  const fallback =
+    opts.chainHint === "bsc" ? PUBLIC_GETLOGS_BSC_SAFE_WINDOW : PUBLIC_GETLOGS_SAFE_WINDOW;
+  return Math.max(1, Math.min(opts.windowBlocks ?? fallback, PUBLIC_GETLOGS_SAFE_WINDOW));
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    };
+    if (!signal) return;
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export type RateLimitRetryInfo = {
+  attempt: number;
+  maxAttempts: number;
+  windowBlocks: number;
+};
+
 /**
  * Browser-only eth_getLogs against BlockReq public HTTPS.
  * Respects the public ~1024-block recent window (no Worker proxy).
+ * Rate-limit (-32005) retries with short backoff; result-size errors shrink the window.
  */
 export async function fetchPublicRecentLogs(opts: {
   https: string;
@@ -351,7 +440,15 @@ export async function fetchPublicRecentLogs(opts: {
   topics: LogsTopic[];
   /** Blocks to look back; clamped to PUBLIC_GETLOGS_SAFE_WINDOW */
   windowBlocks?: number;
+  /** `bsc` starts at PUBLIC_GETLOGS_BSC_SAFE_WINDOW unless windowBlocks is set. */
+  chainHint?: PublicLogsChainHint;
   signal?: AbortSignal;
+  /** Total attempts per window on rate-limit (default RATE_LIMIT_MAX_ATTEMPTS). */
+  rateLimitAttempts?: number;
+  /** Backoff between rate-limit retries (default RATE_LIMIT_BACKOFF_MS). */
+  rateLimitBackoffMs?: number;
+  /** Fired before sleeping for a rate-limit retry (UI: 限流重试中). */
+  onRateLimitRetry?: (info: RateLimitRetryInfo) => void;
 }): Promise<RecentLogsResult> {
   try {
     assertBrowserOnly("fetchPublicRecentLogs");
@@ -364,87 +461,127 @@ export async function fetchPublicRecentLogs(opts: {
     return { ok: false, error: "empty https", reason: "rpc" };
   }
 
-  const windowBlocks = Math.max(
-    1,
-    Math.min(opts.windowBlocks ?? PUBLIC_GETLOGS_SAFE_WINDOW, PUBLIC_GETLOGS_SAFE_WINDOW)
-  );
+  let windowBlocks = initialGetLogsWindow(opts);
+  const maxRateAttempts = Math.max(1, opts.rateLimitAttempts ?? RATE_LIMIT_MAX_ATTEMPTS);
+  const backoffMs = opts.rateLimitBackoffMs ?? RATE_LIMIT_BACKOFF_MS;
+  let tipRateAttempts = 0;
+  let logsRateAttempts = 0;
 
-  const tipRes = await jsonRpc<string>(https, "eth_blockNumber", [], opts.signal);
-  if (opts.signal?.aborted) {
-    return { ok: false, error: "aborted", reason: "rpc" };
-  }
-  if (tipRes.error || !tipRes.result) {
-    return {
-      ok: false,
-      error: tipRes.error?.message || "eth_blockNumber failed",
-      reason: "rpc",
-    };
-  }
-
-  const toBlock = parseInt(tipRes.result, 16);
-  const fromBlock = Math.max(0, toBlock - windowBlocks);
-  const filter: {
-    fromBlock: string;
-    toBlock: string;
-    topics: (string | string[] | null)[];
-    address?: string;
-  } = {
-    fromBlock: "0x" + fromBlock.toString(16),
-    toBlock: "0x" + toBlock.toString(16),
-    topics: opts.topics.map((t) => normalizeTopicPos(t)),
-  };
-  if (opts.address && isAddress(opts.address, { strict: false })) {
-    filter.address = opts.address.toLowerCase();
-  }
-
-  const logsRes = await jsonRpc<JsonRpcLog[]>(https, "eth_getLogs", [filter], opts.signal);
-  if (opts.signal?.aborted) {
-    return { ok: false, error: "aborted", reason: "rpc" };
-  }
-  if (logsRes.error) {
-    const msg = logsRes.error.message || JSON.stringify(logsRes.error);
-    const code = logsRes.error.code;
-    const reason =
-      /1024|recent blocks|archive|cannot serve this request/i.test(msg) || code === -32014
-        ? "window"
-        : "rpc";
-    // Public Free windows vary by chain (Base ~900, BSC public often ~64).
-    const nextWindow =
-      windowBlocks > 512 ? 512 : windowBlocks > 128 ? 128 : windowBlocks > 64 ? 64 : 0;
-    if (reason === "window" && nextWindow) {
-      return fetchPublicRecentLogs({ ...opts, https, windowBlocks: nextWindow });
+  while (true) {
+    if (opts.signal?.aborted) {
+      return { ok: false, error: "aborted", reason: "rpc" };
     }
-    return { ok: false, error: msg, reason };
-  }
 
-  const logs = Array.isArray(logsRes.result) ? logsRes.result : [];
-  if (logs.length === 0) {
+    const tipRes = await jsonRpc<string>(https, "eth_blockNumber", [], opts.signal);
+    if (opts.signal?.aborted) {
+      return { ok: false, error: "aborted", reason: "rpc" };
+    }
+    if (tipRes.error || !tipRes.result) {
+      const tipMsg = tipRes.error?.message || "eth_blockNumber failed";
+      const tipKind = classifyLogRpcError(tipRes.error?.code, tipMsg);
+      if (tipKind === "rateLimit" && tipRateAttempts + 1 < maxRateAttempts) {
+        tipRateAttempts += 1;
+        opts.onRateLimitRetry?.({
+          attempt: tipRateAttempts,
+          maxAttempts: maxRateAttempts,
+          windowBlocks,
+        });
+        try {
+          await sleep(backoffMs, opts.signal);
+        } catch {
+          return { ok: false, error: "aborted", reason: "rpc" };
+        }
+        continue;
+      }
+      return {
+        ok: false,
+        error: tipMsg,
+        reason: tipKind === "rateLimit" ? "rateLimit" : "rpc",
+      };
+    }
+
+    const toBlock = parseInt(tipRes.result, 16);
+    const fromBlock = Math.max(0, toBlock - windowBlocks);
+    const filter: {
+      fromBlock: string;
+      toBlock: string;
+      topics: (string | string[] | null)[];
+      address?: string;
+    } = {
+      fromBlock: "0x" + fromBlock.toString(16),
+      toBlock: "0x" + toBlock.toString(16),
+      topics: opts.topics.map((t) => normalizeTopicPos(t)),
+    };
+    if (opts.address && isAddress(opts.address, { strict: false })) {
+      filter.address = opts.address.toLowerCase();
+    }
+
+    const logsRes = await jsonRpc<JsonRpcLog[]>(https, "eth_getLogs", [filter], opts.signal);
+    if (opts.signal?.aborted) {
+      return { ok: false, error: "aborted", reason: "rpc" };
+    }
+    if (logsRes.error) {
+      const msg = logsRes.error.message || JSON.stringify(logsRes.error);
+      const kind = classifyLogRpcError(logsRes.error.code, msg);
+      if (kind === "rateLimit") {
+        if (logsRateAttempts + 1 < maxRateAttempts) {
+          logsRateAttempts += 1;
+          opts.onRateLimitRetry?.({
+            attempt: logsRateAttempts,
+            maxAttempts: maxRateAttempts,
+            windowBlocks,
+          });
+          try {
+            await sleep(backoffMs, opts.signal);
+          } catch {
+            return { ok: false, error: "aborted", reason: "rpc" };
+          }
+          continue;
+        }
+        return { ok: false, error: msg, reason: "rateLimit" };
+      }
+      if (kind === "window") {
+        const nextWindow = nextGetLogsWindow(windowBlocks);
+        if (nextWindow) {
+          windowBlocks = nextWindow;
+          logsRateAttempts = 0;
+          tipRateAttempts = 0;
+          continue;
+        }
+        return { ok: false, error: msg, reason: "window" };
+      }
+      return { ok: false, error: msg, reason: "rpc" };
+    }
+
+    const logs = Array.isArray(logsRes.result) ? logsRes.result : [];
+    if (logs.length === 0) {
+      return {
+        ok: true,
+        logs: [],
+        fromBlock,
+        toBlock,
+        windowBlocks,
+      };
+    }
+
+    // Newest first
+    const sorted = [...logs].sort((a, b) => {
+      const ba = a.blockNumber ? parseInt(String(a.blockNumber), 16) : 0;
+      const bb = b.blockNumber ? parseInt(String(b.blockNumber), 16) : 0;
+      if (bb !== ba) return bb - ba;
+      const la = typeof a.logIndex === "string" ? parseInt(a.logIndex, 16) : Number(a.logIndex || 0);
+      const lb = typeof b.logIndex === "string" ? parseInt(b.logIndex, 16) : Number(b.logIndex || 0);
+      return lb - la;
+    });
+
     return {
       ok: true,
-      logs: [],
+      logs: sorted,
       fromBlock,
       toBlock,
       windowBlocks,
     };
   }
-
-  // Newest first
-  const sorted = [...logs].sort((a, b) => {
-    const ba = a.blockNumber ? parseInt(String(a.blockNumber), 16) : 0;
-    const bb = b.blockNumber ? parseInt(String(b.blockNumber), 16) : 0;
-    if (bb !== ba) return bb - ba;
-    const la = typeof a.logIndex === "string" ? parseInt(a.logIndex, 16) : Number(a.logIndex || 0);
-    const lb = typeof b.logIndex === "string" ? parseInt(b.logIndex, 16) : Number(b.logIndex || 0);
-    return lb - la;
-  });
-
-  return {
-    ok: true,
-    logs: sorted,
-    fromBlock,
-    toBlock,
-    windowBlocks,
-  };
 }
 
 /**

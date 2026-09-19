@@ -11,7 +11,7 @@ import {
   CardTitle,
   type ConnStatus,
 } from "@blockreq/ui";
-import { isAddr, shortAddr, unpadTopic, wordAddr } from "@blockreq/rpc";
+import { isAddr, PUBLIC_GETLOGS_BSC_SAFE_WINDOW, shortAddr, unpadTopic, wordAddr } from "@blockreq/rpc";
 import { MonitorChrome } from "../components/monitor-chrome";
 import { AnonStreamLayout } from "../components/layouts/anon-stream-layout";
 import type { FeedEvent } from "../components/feed-types";
@@ -30,7 +30,10 @@ import {
 /** Uniswap V2 / Pancake-style PairCreated — editable for Brew factory ABI. */
 const TOPIC_PAIR =
   "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
-/** Editable sample — PancakeSwap V2 factory on BSC; replace with Brew launch factory. */
+/**
+ * Editable sample — PancakeSwap V2 factory on BSC until 运营 provides a verified Brew launch factory.
+ * Do not invent a BREW_FACTORY address. Pancake volume needs a BSC-safe eth_getLogs window (64).
+ */
 const DEFAULT_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const DEFAULT_CAP = "69000";
 const DEFAULT_QUOTES =
@@ -108,6 +111,9 @@ export function BrewBnbDoublePairDemo({
     topics: [topicPair],
     map: (logs) => mapPairCreatedLogs(logs, locale, "BSC"),
     enabled: !!ep.https.trim() && isAddr(factory.trim()),
+    // Pancake-volume sample factory: start at 64 until a verified Brew factory exists.
+    windowBlocks: PUBLIC_GETLOGS_BSC_SAFE_WINDOW,
+    chainHint: "bsc",
   });
 
   const wsRef = useRef<WebSocket | null>(null);
