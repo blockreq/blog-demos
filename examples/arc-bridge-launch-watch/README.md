@@ -4,7 +4,7 @@ Browser demo: bridge Deposit / Withdraw + Factory `PairCreated` / first `Mint` �
 
 ## Arc public endpoint status
 
-**Arc BlockReq public WSS/HTTPS is not live yet.** This demo runs the same day-0 recipe on Robinhood public WSS so you can practice the pipe today. When Arc public endpoints light up, swap the WSS host (keep trailing `/v1/rpc/public`) — logic ports over unchanged.
+**Arc BlockReq public WSS/HTTPS is live.** Use `/v1/rpc/public` (the bare host without that path returns 401 invalid key). This demo runs the day-0 recipe on Arc public WSS.
 
 On each hit:
 - **bridge inflow spike** — 5m net vs 15m baseline (≥ multiple / floor)
@@ -16,8 +16,8 @@ Bridge / factory lists live in `localStorage` (`blockreq.arc-bridge-launch.*`). 
 
 ## Endpoints (public only)
 
-- Demo WSS (Robinhood fallback): `wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public`
-- Arc public: *not live yet* — swap host when available
+- HTTPS: `https://arc-rpc.blockreq.com/v1/rpc/public`
+- WSS: `wss://arc-rpc.blockreq.com/v1/rpc/public`
 
 No API keys in this repo.
 

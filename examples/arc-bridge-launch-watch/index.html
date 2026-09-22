@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Arc · bridge + launch watch (RH demo pattern)</title>
+  <title>Arc · bridge + launch watch</title>
   <style>
     body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.5rem; max-width: 54rem; }
     button { margin-right: 0.5rem; }
@@ -19,8 +19,6 @@
                min-height: 3.2rem; font-size: 12px; padding: 0.5rem; border-radius: 6px;
                border: 1px solid #cbd5e1; }
     .hint { font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0.75rem; }
-    .banner { border: 1px solid #f59e0b; background: #fffbeb; color: #92400e;
-              border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.75rem 0; font-size: 0.9rem; }
     .card { border: 1px solid #334155; border-radius: 8px; padding: 0.65rem 0.8rem;
             margin: 0.4rem 0; background: #0f172a; color: #e2e8f0; font-size: 12px; }
     .card .kind { color: #38bdf8; font-weight: 600; }
@@ -43,13 +41,9 @@
     Day-0 recipe · <code>eth_subscribe → logs</code> (bridge Deposit / Withdraw + Factory PairCreated / Mint)
     → launch cards (<code>inflow spike</code> · <code>first pool</code> · <code>first LP</code>).
   </p>
-  <div class="banner">
-    <strong>Arc public not live yet.</strong>
-    Demo runs on Robinhood public WSS so the recipe is runnable today.
-    When Arc BlockReq public endpoints light up, swap the WSS host — same logic ports over.
-  </div>
   <p>
-    Demo WSS: <code>wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public</code>
+    Arc public WSS: <code>wss://arc-rpc.blockreq.com/v1/rpc/public</code>
+    · HTTPS: <code>https://arc-rpc.blockreq.com/v1/rpc/public</code>
   </p>
 
   <h2 style="font-size:1.05rem;margin:1rem 0 0.35rem">Bridge watchlist</h2>
@@ -113,9 +107,8 @@
   <pre id="out"></pre>
 
   <script>
-    // Arc public not live yet — Robinhood public WSS is the runnable demo pattern.
-    // Swap this host when Arc BlockReq public endpoints light up.
-    const WSS = "wss://robinhood-mainnet-rpc.blockreq.com/v1/rpc/public";
+    // Arc public WSS — keep trailing /v1/rpc/public (bare host returns 401 invalid key).
+    const WSS = "wss://arc-rpc.blockreq.com/v1/rpc/public";
     const PAIR_CREATED =
       "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9";
     const MINT =
@@ -278,7 +271,7 @@
       if (cappedB.length) parts.push(cappedB.length + " bridge(s)");
       if (factories.length) parts.push(Math.min(factories.length, 5) + " factory(s)");
       setStatus("connected · " + (parts.join(" · ") || "waiting for addresses") +
-        " · Arc public not live — RH demo pattern");
+        " · Arc public WSS");
     }
 
     function prune(now) {

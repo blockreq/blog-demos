@@ -11,7 +11,7 @@ import {
   CardTitle,
   type ConnStatus,
 } from "@blockreq/ui";
-import { isAddr, shortAddr, unpadTopic, wordAddr } from "@blockreq/rpc";
+import { isAddr, PUBLIC_ENDPOINTS, shortAddr, unpadTopic, wordAddr } from "@blockreq/rpc";
 import { MonitorChrome } from "../components/monitor-chrome";
 import { AnonStreamLayout } from "../components/layouts/anon-stream-layout";
 import type { FeedEvent } from "../components/feed-types";
@@ -53,7 +53,7 @@ function SettingsPanel({ open, children }: { open: boolean; children: ReactNode 
 }
 
 /**
- * Arc day-1 Factory PairCreated prep — endpoints empty until BlockReq Arc public live.
+ * Arc day-1 Factory PairCreated listen — default Arc public endpoints prefilled; editable in Config.
  * Layout: launch-feed (continuous creates + optional swap density, same family as Base spike).
  */
 export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
@@ -335,7 +335,7 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
   }, []);
 
   useEffect(() => {
-    // Auto-live only when Arc WSS is filled; otherwise stay idle with placeholder hint.
+    // Auto-live when Arc public WSS is set (defaults are live).
     if (ep.wss.trim()) resume();
     return () => {
       wantRun.current = false;
@@ -359,8 +359,8 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
     { k: L(locale, "SRC", "源"), v: "arc.day1.factory" },
     { k: "CHAIN", v: ep.label },
     { k: "METHOD", v: "paircreated+swap-density" },
-    { k: "WSS", v: ep.wss || (L(locale, "(empty · pending live)", "（空 · 待上线）")) },
-    { k: "HTTPS", v: ep.https || (L(locale, "(empty · pending live)", "（空 · 待上线）")) },
+    { k: "WSS", v: ep.wss },
+    { k: "HTTPS", v: ep.https },
   ];
 
   useEffect(() => {
@@ -380,9 +380,6 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
 
   const settings = (
     <div className="space-y-3">
-      <div className="border border-[rgba(255,209,102,0.35)] bg-[rgba(255,209,102,0.08)] px-3 py-2 text-xs text-[var(--color-warn)]">
-        {t(locale, "arc.endpointHint")}
-      </div>
       <button
         type="button"
         className="w-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-left font-mono text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] hover:border-[rgba(0,240,255,0.35)]"
@@ -443,7 +440,7 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
               {t(locale, "demoHits.toggle")}
             </label>
             <p className="break-all font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              {ep.wss || "ARC_WSS=''"} · {ep.chainIdHex}
+              {ep.wss} · {ep.chainIdHex}
             </p>
           </CardContent>
         </Card>
@@ -533,13 +530,21 @@ export function ArcMainnetDay1Demo({ locale }: { locale: Locale }) {
             }}
             onReset={() => {
               ep.reset();
-              wantRun.current = false;
+              const defaults = PUBLIC_ENDPOINTS.arc;
+              epRef.current = {
+                ...epRef.current,
+                wss: defaults.wss,
+                https: defaults.https,
+                draftWss: defaults.wss,
+                draftHttps: defaults.https,
+              };
+              wantRun.current = true;
               try {
                 wsRef.current?.close();
               } catch {
                 /* ignore */
               }
-              setStatus("idle");
+              connect();
             }}
           />
         }
