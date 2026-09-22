@@ -36,16 +36,13 @@ export const PUBLIC_ENDPOINTS = {
     wss: "wss://arbitrum-one-rpc.blockreq.com/v1/rpc/public",
     https: "https://arbitrum-one-rpc.blockreq.com/v1/rpc/public",
   },
-  /**
-   * Arc Mainnet day-1 prep — BlockReq Arc public HTTPS/WSS ship later (host 522).
-   * Empty placeholders so demos1 UI can pre-wire Factory subs; fill when live.
-   */
+  /** Arc — live BlockReq public HTTPS/WSS (docs). */
   arc: {
     label: "Arc",
-    chainId: 0,
-    chainIdHex: "0x0",
-    wss: "",
-    https: "",
+    chainId: 5042,
+    chainIdHex: "0x13b2",
+    wss: "wss://arc-rpc.blockreq.com/v1/rpc/public",
+    https: "https://arc-rpc.blockreq.com/v1/rpc/public",
   },
   /**
    * Solana — BlockReq Solana public is offline (EVM-only now).
