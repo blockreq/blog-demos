@@ -28,16 +28,21 @@ import {
   useTipHeartbeat,
 } from "../lib/live-pulse";
 
-/** Verified Crossrate Launcher (RH) — MUST prefill */
-const DEFAULT_LAUNCHER = "0x9Ec62caaEDE8Ee54fa1B8BF4747B0bAA523bD5C2";
+/** Verified Crossrate Launcher (RH) — MUST prefill. Current per crossrate.market/contracts + on-chain getters (2026-10-01). */
+const DEFAULT_LAUNCHER = "0xfAD915358508fB5e826e807cAC5294c4233aEde5";
+/** Retired Launchers (same TokenLaunched topic0) — stale localStorage values are dropped so the live default wins. */
+const LEGACY_LAUNCHERS = [
+  "0x9ec62caaede8ee54fa1b8bf4747b0baa523bd5c2",
+  "0x5108ecc10b297d32b83e8b422f432fe435cbddbd",
+];
 /** TokenLaunched(address indexed token, address indexed creator, address indexed quoteToken, bytes32 poolId, uint16 taxBps, uint256 supply, uint128 liquidity) */
 const DEFAULT_TOKEN_LAUNCHED_TOPIC0 =
   "0xe0809b2ad8aaf52f5807c111a464b3be723a8bad83656da180797a3ecca26a15";
 
 /** Hint chips (read-only / paste refs) — verified Crossrate desk */
-const HINT_FACTORY = "0x3032FdC533eb03C5e1B2fA685172541825601C73";
-const HINT_RATE_HOOK = "0xFC3C624F7b94fD6C7274972D6966d0cA9b1c60Cc";
-const HINT_LOCKER = "0x7a5a3C497D6Bacea16eb7267e8D76A4bA353134E";
+const HINT_FACTORY = "0xb8F540bdC1b0A49A9754dE6656fD0082B6fC3CA3";
+const HINT_RATE_HOOK = "0x28EB3bEF14323EffC99D066c9cB4309198b0A0cc";
+const HINT_LOCKER = "0x21Fa7eaF03d80Be670C77aA50dcC348B9774C879";
 const HINT_OWNER = "0xcfF2514c888f3FA9B272005D69A2b1E8240cC3F0";
 const HINT_POOL_MANAGER = "0x8366a39CC670B4001A1121B8F6A443A643e40951";
 const HINT_USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
@@ -243,7 +248,7 @@ export function CrossrateRhcCurrencyLaunchListenDemo({
       const ln = localStorage.getItem(LS + "launcher");
       const tp = localStorage.getItem(LS + "tokenLaunchedTopic");
       const desk = localStorage.getItem(LS + "currencyDesk");
-      if (ln) setLauncher(ln);
+      if (ln && !LEGACY_LAUNCHERS.includes(ln.trim().toLowerCase())) setLauncher(ln);
       if (tp) setTokenLaunchedTopic(tp);
       if (desk) setCurrencyDeskRaw(desk);
     } catch {
