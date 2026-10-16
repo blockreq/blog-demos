@@ -2,6 +2,8 @@ name: demos1
 
 on:
   pull_request:
+    # ready_for_review runs the fast tier when a draft is marked ready.
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "apps/demos1/**"
       - "packages/**"
@@ -25,6 +27,7 @@ on:
         type: boolean
         default: false
 
+# Cancel superseded PR runs only. Pushes to main are never cancelled.
 concurrency:
   group: demos1-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -32,19 +35,36 @@ concurrency:
 jobs:
   build:
     name: Build demos1
+    # Fast tier ceiling. Recent successful jobs finished in about 30s.
+    timeout-minutes: 10
+    # Drafts skip CI. Push and workflow_dispatch always build.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Cache TypeScript build info
+        uses: actions/cache@v4
+        with:
+          path: apps/demos1/tsconfig.tsbuildinfo
+          key: tsc-demos1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.base.json', 'apps/demos1/tsconfig.json', 'apps/demos1/src/**', 'packages/**/src/**', 'packages/**/tsconfig.json') }}
+          restore-keys: |
+            tsc-demos1-${{ runner.os }}-
       - name: Install
-        run: pnpm install --frozen-lockfile
+        timeout-minutes: 3
+        run: pnpm install --frozen-lockfile --prefer-offline
       - name: Build
+        timeout-minutes: 6
         run: pnpm --filter @blockreq/demos1 build
       - name: Upload dist (artifact)
         uses: actions/upload-artifact@v4
@@ -57,6 +77,7 @@ jobs:
     name: Deploy Worker (workflow_dispatch only)
     needs: build
     if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -69,8 +90,10 @@ jobs:
           node-version: "22"
           cache: pnpm
       - name: Install
+        timeout-minutes: 3
         run: pnpm install --frozen-lockfile
       - name: Build
+        timeout-minutes: 6
         run: pnpm --filter @blockreq/demos1 build
       - name: Check secrets
         env:
@@ -90,6 +113,7 @@ jobs:
           fi
           echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
       - name: Deploy
+        timeout-minutes: 10
         working-directory: apps/demos1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
